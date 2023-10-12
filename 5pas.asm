@@ -10,7 +10,7 @@ start:
 	push @data
 	pop ds
 	push @data
-	pop es;data segmentas ir extended segmentas rodo i ta pacia vieta
+	pop es;data segmentas ir extended segmentas rodo i ta pacia vieta atmintyje
 	
 	mov ax, 0a00h
 	mov dx, offset buff1
@@ -18,29 +18,26 @@ start:
 	
 	mov di, offset buff2
 	mov si, offset buff1 + 2;di ir si inicializacija
-	xor cx, cx
+	xor cx, cx ; nunulinimas
 	mov cl, [buff1 + 1];;countery ivestu simboliu kiekis
 	jcxz exit;;jei 0 uzdaro programa
 	mov bx, offset vector
 	l:
-		mov al, [si]
-		shr al, 4
-		xlat
-		mov [di], al
+		mov al, [si]; i al nuskaitytas simbolis
+		shr al, 4	;paliekami didesnioji bitu puse
+		xlat	;basically ka sitas daro tai pasiima is al skaiciu ir ji naudoja kaip offesta prie adreso kuris yra bx ir i al iraso kas yra adrese dx+al
+		mov [di], al	;irasoma raide
 		inc di
-		lods byte ptr ds:[si]
-		;mov al, [si]
-		and al, 0fh
+		lods byte ptr ds:[si]; basically lods i al iraso bytea kuris yra adrese si
+		and al, 0fh; paima 4 mazesniuosiu bitus
 		xlat
-		stos byte ptr es:[si]
-		;mov [di], al
-		;add di, 2
-		inc di
+		stos byte ptr es:[si] al irasi i di stos ir lods auto incrementina indexa, kaip loop cx decrementina
+		inc di	;bufferi tik tarpai tai praleidziama viena vieta
 	loop l
 	
 	exit:
-		mov byte ptr [di], 24h 
-		mov ah, 9
+		mov byte ptr [di], 24h ;dolerio zenklas
+		mov ah, 9	; rasymas ir exit
 		mov dx, offset endl
 		int 21h
 		mov ax, 4c00h

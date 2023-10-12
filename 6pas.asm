@@ -15,52 +15,52 @@ start:
 	push @data
 	pop ds
 	
-	mov ax, 3d00h
-	mov dx, offset fn_in
+	mov ax, 3d00h; failo atidarymas ds:dx turi laikyti failo pavadinima 
+	mov dx, offset fn_in; dx nustatymas kad ds:dx rodytu i failo pavadinima
 	int 21h
 	
-	jc error
+	jc error;jei ivyko klaida carry flag isijungia
 	
-	mov fd_in, ax
+	mov fd_in, ax; failo handleo irasymas i fd_in
 	
-	mov ax, 3c00h
-	mov dx, offset fn_out
+	mov ax, 3c00h	;failo sukurimas
+	mov dx, offset fn_out;pavadinimas failo
 	xor cx, cx
 	int 21h
 	
-	jc error
+	jc error	;tas pats kaip virsuj
 	
 	mov fd_out, ax
 	
 	mov dx, offset buff
 	
 	l:
-		mov ax, 3f00h
-		mov cx, 200h
-		mov bx, fd_in
+		mov ax, 3f00h;skaitymas is failo
+		mov cx, 200h	;kiek skaityti
+		mov bx, fd_in;is kur
 		int 21h
 		
 		jc error
 		
-		mov cx, ax
+		mov cx, ax	; kiek nuskaityta simboliu
 		jcxz end_copy
 		
-		mov ax, 4000h
-		mov bx, fd_out
+		mov ax, 4000h; rasymas i faila
+		mov bx, fd_out;i kuri
 		int 21h
 		
 		jc error
 		
-		call print_progress
+		call print_progress; funkcijos iskvietimas
 		
-		jmp l
+		jmp l;cx jau naudojamas tai loop nera prasmes naudot
 	
 	end_copy:
-		mov ax, 3e00h
+		mov ax, 3e00h; failo uzdarymas
 		mov bx, fd_in
 		int 21h
 		
-		mov ax, 3e00h
+		mov ax, 3e00h;same bizz
 		mov bx, fd_out
 		int 21h
 		

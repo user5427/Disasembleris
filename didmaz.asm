@@ -8,20 +8,20 @@ start:
 	mov ax, @data
 	mov ds, ax
 	
-	mov ah, 0ah
+	mov ah, 0ah	;skaitymas
 	mov dx, offset buff
 	int 21h
 	
-	mov ah, 9
+	mov ah, 9;newline rasymas
 	mov dx, offset endl
 	int 21h
 	
-	mov bx, offset buff + 2
+	mov bx, offset buff + 2 ;bufferio data adresas -> bx
 	xor cx, cx
-	mov cl, [buff + 1] ;offset buff + 1; [buff + 1]  offsetas grazina adresa o [] reiksme
+	mov cl, [buff + 1] ;offset buff + 1; [buff + 1]  offsetas grazina adresa o [] reiksme buff + 1 laiko simboliu kieki
 	l:
-	mov al, [bx]
-	cmp al, 'A'
+	mov al, [bx]	;i al irasoma reiksme adresu bx
+	cmp al, 'A';tikrinama ar didzioji raide
 	jb noth
 	cmp al, 'Z'
 	ja noth
@@ -31,10 +31,10 @@ start:
 	inc bx
 	loop l
 
-	mov ah, 40h
-	mov bx, 1
-	mov cl, [buff + 1]
-	mov dx, offset buff + 2
+	mov ah, 40h	;rasymas (naudojamas sitas o ne kitas rasymo kodas kad butu galima spauzdinti dolerio zenklus)
+	mov bx, 1	;stdout 
+	mov cl, [buff + 1]	;kiek baitu rasyt (simboliu kiekis)
+	mov dx, offset buff + 2	;ds:dx offsetas i bufferi kuris bus rasomas i ekrana
 	int 21h
 	
 	mov ax, 4c00h

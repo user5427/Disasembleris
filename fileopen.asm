@@ -5,7 +5,7 @@
     buff2 db 9 dup(0)
     file1 db 0
     file2 db 0
-    buff db 200 dup(0)
+    buff db 200 dup(61)
     buff0 db 200 dup(0)
     vector dw 0, 0 ; adresai i buff1 ir buff2
     counter db 0
@@ -49,26 +49,27 @@ start:
 
     switch: ; pakeisti i kur raso duomenis
 
-        mov bx, [offset counter]    ;pakeisti i h arba l!
-        xor bh, bh
+        xor bx, bx
+        mov bl, byte ptr [offset counter]    ;pakeisti i h arba l!
         add bx, offset vector
         push bx
-        mov bx, [offset counter]    ;pakeisti i h arba l!
-        xor bh, bh
-
+        xor bx, bx
+        mov bl, byte ptr [offset counter]    ;pakeisti i h arba l!
         cmp bx, 0
         ja cont
         push ax
         xor ax, ax
         mov ah, es:[80h]   
         sub ah, cl
-        add ah, 1
-        mov ds:[offset length0], ah
+        push di
+        mov di, offset length0
+        mov [di], ah
+        pop di
         pop ax 
         cont:
         inc bx
-        mov di, offset counter
-        mov [di], bx
+        mov di,  offset counter
+        mov [di], bl
         pop di
 
     ret
@@ -83,7 +84,8 @@ start:
 	    mov bx, 1
 	    mov dx, offset buff
         xor cx, cx
-        mov cl, ds:[offset length0]
+        mov si, offset length0
+        mov cl, [si]
         int 21h
 
         mov ax, 4c00h

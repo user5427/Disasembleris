@@ -79,7 +79,13 @@ start:
         mov ax, 4000h;rasymas i stdout
 	    mov bx, 1
 	    mov dx, offset buff
+<<<<<<< HEAD
      mov cl, byte ptr [offset length0]
+=======
+        xor cx, cx
+        mov si, offset length0
+        mov cl, [si]
+>>>>>>> refs/remotes/origin/master
         int 21h
 
         mov ax, 4c00h

@@ -77,9 +77,9 @@ start:
     test21:
 
         mov ax, 4000h;rasymas i stdout
-	    mov bx, 1
-	    mov dx, offset buff
-     mov cl, byte ptr [offset length0]
+    	  mov bx, 1
+	  mov dx, offset buff
+        mov cl, byte ptr [offset length0]
         int 21h
 
         mov ax, 4c00h

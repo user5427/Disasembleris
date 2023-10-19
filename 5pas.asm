@@ -31,7 +31,7 @@ start:
 		lods byte ptr ds:[si]; basically lods i al iraso bytea kuris yra adrese si
 		and al, 0fh; paima 4 mazesniuosiu bitus
 		xlat
-		stos byte ptr es:[si] al irasi i di stos ir lods auto incrementina indexa, kaip loop cx decrementina
+		stos byte ptr es:[si]; al iraso i di stos ir lods auto incrementina indexa, kaip loop cx decrementina
 		inc di	;bufferi tik tarpai tai praleidziama viena vieta
 	loop l
 	

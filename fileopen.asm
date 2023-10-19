@@ -5,7 +5,7 @@
     buff2 db 9 dup(0)
     file1 db 0
     file2 db 0
-    buff db 200 dup(61)
+    buff db 200 dup(0)
     buff0 db 200 dup(0)
     vector dw 0, 0 ; adresai i buff1 ir buff2
     counter db 0

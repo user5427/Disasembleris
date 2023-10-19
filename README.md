@@ -1,5 +1,5 @@
 # Assemblerio-kancios
+## usefull stuff
+* cia visos int 21 operacijos
 
-cia visos int 21 operacijos
-
-http://bbc.nvg.org/doc/Master%20512%20Technical%20Guide/m512techb_int21.htm
+* http://bbc.nvg.org/doc/Master%20512%20Technical%20Guide/m512techb_int21.htm

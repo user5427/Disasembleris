@@ -148,7 +148,8 @@ convert_decimal:             ; takes number in dx register
     mov dl, 10
     div dl
     add ah, 48                  ; fix the ASCII stuff, this is value 
-    mov dl, ah
+    mov dl, ah   
+    xor ah, ah                  ; reset ah so it does not break division
     jmp save_number
  
     large_number:       
@@ -159,13 +160,11 @@ convert_decimal:             ; takes number in dx register
     
     save_number:
     pop bx
-    mov [DI + bx], dl           ; move the location of the symbol to our symbol array, similar to array[i] = location  
+    mov [DI + bx], dl           ; move the location of the symbol to our symbol array, similar to array[i] = location      
     
-          
-    xor ah, ah                  ; reset ah so it does not break division
     
-    mov dh, 0                   ; this one is used for comparing two values
-    cmp al, dh
+    xor dx, dx                  ; this one is used for comparing two values
+    cmp ax, dx
     jle exit_loop               ; if the number is 0 after division, exit the loop
 
     jmp ASCII_values_loop       ; continue the loop if the number is not 0 for further divisions

@@ -139,12 +139,28 @@ convert_decimal:             ; takes number in dx register
 
     ASCII_values_loop:   
     inc bl
+    push bx
+    
+    cmp ah, 0
+    jne large_number
+    
     xor dx, dx
     mov dl, 10
     div dl
     add ah, 48                  ; fix the ASCII stuff, this is value 
-    mov [DI + bx], ah           ; move the location of the symbol to our symbol array, similar to array[i] = location  
+    mov dl, ah
+    jmp save_number
  
+    large_number:       
+    xor dx, dx
+    mov bx, 10
+    div bx
+    add dl, 48
+    
+    save_number:
+    pop bx
+    mov [DI + bx], dl           ; move the location of the symbol to our symbol array, similar to array[i] = location  
+    
           
     xor ah, ah                  ; reset ah so it does not break division
     
@@ -202,8 +218,13 @@ search_buff:                 ; search for information about the elements (amount
     mov DI, offset numbers_in_binary    ; get the numbers_in_binary array address 
     
     mov ax, [DI + 1]         ; get the symbol amount
-    add ax, cx               ; add the value with register cx to find how many symbols the file has now
-    mov [DI + 1], ax         ; save the value back in the numbers_in_binary array   
+    add ax, cx               ; add the value with register cx to find how many symbols the file has now    
+    ;cmp ax, cx
+    ;jnl number_not_higher_than_max
+    ;xor ax, ax
+    ;not ax
+    ;number_not_higher_than_max:
+    mov [DI + 1], ax         ; save the value back in the numbers_in_binary array        
     
     xor ax, ax               ; reset register ax.
     xor dx, dx               ; if dx register is set to one, then it is checking a word, otherwise, there is a special symbol

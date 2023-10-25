@@ -12,7 +12,7 @@
     output_low db "Mazuju raidziu yra: ", 24h
     output_high db "Didziuju raidziu yra: ", 24h   
     endl db 0dh, 0ah, 24h
-    limit_reached db 0
+    limit_reached db 0       ; stop reading if the number has reached its maximum value
     limit_reached_msg db "Pasiektas skaiciu maksimumas!", 24h
     
     number_in_ASCII db 0, 255 dup(?)

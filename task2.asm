@@ -90,7 +90,7 @@ end_search:                  ; used as a pointer for the jump when the program f
     call print_line
 
     cmp limit_reached, 1
-    je print_size_error
+    call print_size_error
     
     mov ax, 4c00h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
     int 21h            

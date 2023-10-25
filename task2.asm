@@ -12,6 +12,8 @@
     output_low db "Mazuju raidziu yra: ", 24h
     output_high db "Didziuju raidziu yra: ", 24h   
     endl db 0dh, 0ah, 24h
+    limit_reached db 0
+    limit_reached_msg db "Pasiektas skaiciu maksimumas!", 24h
     
     number_in_ASCII db 0, 255 dup(?)
 
@@ -50,10 +52,12 @@ l:                           ; the loop is continous. It will only stop if there
     pop dx
     pop ax  
 
+    cmp limit_reached, 1
+    je end_search
+
     call print_progress      ; show that the program is doing something
     jmp l                    ; the loop jump, like do {} while();
-                              
-                              
+                            
 end_search:                  ; used as a pointer for the jump when the program finished reading files
 
     mov ax, 3e00h            ; close file with a handle
@@ -84,6 +88,9 @@ end_search:                  ; used as a pointer for the jump when the program f
     call convert_decimal     ; convert the number to ASCII symbols    
     mov dx, offset output_high
     call print_line
+
+    cmp limit_reached, 1
+    je print_size_error
     
     mov ax, 4c00h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
     int 21h            
@@ -122,6 +129,12 @@ print_line:                  ; set dx to message adress
     
     mov ah, 9
     mov dx, offset endl
+    int 21h
+    RET
+
+print_size_error:
+    mov ah, 9
+    mov dx, offset limit_reached_msg
     int 21h
     RET
 
@@ -213,16 +226,17 @@ convert_decimal:             ; takes number in dx register
                              ; return back to loop   
 
 search_buff:                 ; search for information about the elements (amount of symbols, lower case, higher case, letters)
-
+    
+    push bx
     mov DI, offset numbers_in_binary    ; get the numbers_in_binary array address 
     
     mov ax, [DI + 1]         ; get the symbol amount
     add ax, cx               ; add the value with register cx to find how many symbols the file has now    
-    ;cmp ax, cx
-    ;jnl number_not_higher_than_max
-    ;xor ax, ax
-    ;not ax
-    ;number_not_higher_than_max:
+    cmp ax, cx
+    jnl number_not_higher_than_max
+    xor ax, ax
+    not ax
+    number_not_higher_than_max:
     mov [DI + 1], ax         ; save the value back in the numbers_in_binary array        
     
     xor ax, ax               ; reset register ax.
@@ -256,30 +270,43 @@ search_buff:                 ; search for information about the elements (amount
 
     higher_case:             ; save how much higher case letters there are in the numbers_in_binary array
     mov ax, [DI + 7]
+    mov bx, ax
     inc ax
+    cmp ax, bx
+    jnl number_not_higher_than_max_two
+    xor ax, ax
+    not ax
+    number_not_higher_than_max_two:
     mov [DI + 7], ax
     jmp check_new_word
 
     lower_case:              ; save how much lower case letters there are in the numbers_in_binary array
     mov ax, [DI + 5]
+    mov bx, ax
     inc ax
+    cmp ax, bx
+    jnl number_not_higher_than_max_three
+    xor ax, ax
+    not ax
+    number_not_higher_than_max_three:
     mov [DI + 5], ax
     
     jmp check_new_word
 
     not_letter:              ; if it is not letter, check if it is a space or new line
-    mov al, 9                ; tab
-    cmp ah, al
-    je special_symbol
-    mov al, 10               ; newl
-    cmp ah, al
-    je special_symbol
-    mov al, 13               ; create
-    cmp ah, al
-    je special_symbol
-    mov al, 32               ; space
-    cmp ah, al
-    je special_symbol
+    ;mov al, 9                ; tab
+    ;cmp ah, al
+    ;je special_symbol
+    ;mov al, 10               ; newl
+    ;cmp ah, al
+    ;je special_symbol
+    ;mov al, 13               ; create
+    ;cmp ah, al
+    ;je special_symbol
+    ;mov al, 32               ; space
+    ;cmp ah, al
+    ;je special_symbol
+    jmp special_symbol
     jmp exit_check           ; if it is not a special symbol, then skip the rest of the checking
     
     special_symbol:          ; if it is a special symbol, set register dx to zero
@@ -292,14 +319,42 @@ search_buff:                 ; search for information about the elements (amount
     je exit_check            ; if previously the program was checking a word too, then it is not a new word
     
     mov dx, ax               ; set dx to one to indicate that it is a new word
-    mov ax, [DI + 3]         ; word counter
-    inc ax
+    mov ax, [DI + 3]         ; word counter  
+    mov bx, ax
+    inc ax     
+    cmp ax, bx
+    jnl number_not_higher_than_max_four
+    xor ax, ax
+    not ax
+    number_not_higher_than_max_four:
     mov [DI + 3], ax         ; save word counts
 
     exit_check:              ; skip checking symbol
     inc SI                   ; lastly increment SI to check the next element in the buffer
     loop j
 
-    mov [DI], dl             ; save the info if the program was checing word or special symbol for the next time    
+    mov [DI], dl             ; save the info if the program was checing word or special symbol for the next time
+
+    xor bx, bx
+    not bx
+    cmp [DI + 1], bx
+    je limit_r
+    cmp [DI + 3], bx
+    je limit_r
+    cmp [DI + 5], bx
+    je limit_r
+    cmp [DI + 7], bx
+    je limit_r
+
+    jmp limit_not_reached
+
+    limit_r:
+    mov limit_reached, 1
+
+    limit_not_reached:
+
+    pop bx    
     RET
+
+
 end start

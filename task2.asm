@@ -57,7 +57,15 @@ l:                           ; the loop is continous. It will only stop if there
 
     call print_progress      ; show that the program is doing something
     jmp l                    ; the loop jump, like do {} while();
-                            
+
+error:                       ; move this before end_search if it does not behave normaly
+    mov ah, 9
+    mov dx, offset msg
+    int 21h
+
+    mov ax, 4c01h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
+    int 21h 
+
 end_search:                  ; used as a pointer for the jump when the program finished reading files
 
     mov ax, 3e00h            ; close file with a handle
@@ -90,18 +98,11 @@ end_search:                  ; used as a pointer for the jump when the program f
     call print_line
 
     cmp limit_reached, 1
+    jne skip_size_error
     call print_size_error
-    
+    skip_size_error:
     mov ax, 4c00h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
     int 21h            
-
-error:
-    mov ah, 9
-    mov dx, offset msg
-    int 21h
-
-    mov ax, 4c01h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
-    int 21h
 
 print_progress:
     push dx

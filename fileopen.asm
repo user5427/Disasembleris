@@ -1,10 +1,11 @@
+
+;;VOID PROJECT
+
 .model small
 .stack 100h
 .data
     buff1 db 9 dup(0)
-    buff2 db 9 dup(0)
     file1 db 0
-    file2 db 0
     buff db 200 dup(0)
     buff0 db 200 dup(0)
     vector dw 0, 0 ; adresai i buff1 ir buff2
@@ -45,7 +46,7 @@ start:
 
     loop l
 
-    jmp test21
+    jmp end
 
     switch: ; pakeisti i kur raso duomenis
 
@@ -57,6 +58,10 @@ start:
         mov bl, byte ptr [offset counter]    ;pakeisti i h arba l!
         cmp bx, 0
         ja cont
+        cmp bx, 1
+        je change
+        call read_n_replace
+        change:
         push ax
         xor ax, ax
         mov ah, es:[80h]   
@@ -74,7 +79,7 @@ start:
 
     ret
 
-    test21:
+    end:
 
         mov ax, 4000h;rasymas i stdout
 	    mov bx, 1
@@ -84,5 +89,22 @@ start:
 
         mov ax, 4c00h
         int 21h
+
+    read_n_replace:
+        push ax
+        push bx
+        push cx
+        push si
+        mov si, offset sector
+        l:
+            mov ax, 3f00h
+            mov cx, 200h
+            mov bx, file1
+            int 21h
+
+            ;;
+            
+
+        loop l
 
 end start

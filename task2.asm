@@ -1,8 +1,9 @@
 .model small
 .stack 100h
 .data
-    msg db "Error!"          ; numbers_in_binary error message if something went wrong
-    fn_in db "hey.txt", 0    ; input file name
+
+    fn_in db 127 dup(?)      ; input file names
+    msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
                              
     buff db 200h dup(?)      
@@ -20,10 +21,28 @@
 .code
 start:
     mov ax, @data            ; get data
-    mov ds, ax                   
+    mov ds, ax     
+
+    mov ah, 0ah
+    mov dx, offset fn_in
+    int 21h
+
+    xor cx, cx
+    mov cl, es:[80h]
+    mov si, 81h
+    mov di, offset fn_in
+    jcxz error
+
+    SKAITYTI:
+    mov al, es:[si]
+    mov [di], al
+    inc si
+    inc di
+    loop SKAITYTI
 
     mov ax, 3d00h            ; open existing file in read mode only
     mov dx, offset fn_in     ; return file handle to register AX
+    inc dx
     int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
 
     JC error                 ; jump if carry flag = 1 (CF = 1)

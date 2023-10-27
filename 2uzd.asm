@@ -1,6 +1,9 @@
 .model small
 .stack 100h
 .data
+    col_sp db ": "
+    spac db " "
+    endl db 0dh, 0ah, 24h
     words dw 0
     file_name db 12 dup(0)
     file dw 0
@@ -9,14 +12,17 @@
     lower_case dw 0
     counter db 0
     sector db 512 dup(0)
+    number db 0, 0, 0, 0, 24h
+    ten db 0ah
 .code
 start:
     push @data
     pop ds
 
-    mov si, es:[82h]
+    mov si, es:82h
     xor cx, cx
     mov cl, es:[80h]
+    dec cl
     push bx
     xor bx, bx
     mov bx, offset counter
@@ -27,12 +33,89 @@ start:
 
         mov al, es:[si]
         cmp al, 20h ; ar space characteris
-        jne jump
+        je testi
+        jmp jump
+
+        testi:
         call switch
 
-        ;;rasyti printinima
+        push bx
+        mov bx, offset symbol
+        push ax
+        mov ax, [bx]
+        cmp ax, 0
+        je cont
+        push ax
+        mov ax, [bx]
+        inc ax
+        mov [bx], ax
+        pop ax
 
-        pop cx
+        cont:
+
+        push ax
+        mov ax, 4000h
+        push bx
+        mov bx, 1
+        push cx
+        xor cx, cx
+        mov cl, 12
+        push dx
+        mov dx, offset file_name
+        int 21h
+
+        mov cl, 2
+        mov dx, offset col_sp
+        int 21h
+
+        call to_num
+
+
+        mov ax, 0
+        mov ah, 9
+        push ax
+        mov ax, symbol
+        call to_num
+        pop ax
+        mov dx, offset number
+        int 21h
+        mov dx, offset spac
+        int 21h
+
+        mov ax, 0
+        mov ah, 9
+        push ax
+        mov ax, words
+        call to_num
+        pop ax
+        mov dx, offset number
+        int 21h
+        mov dx, offset spac
+        int 21h
+
+        mov ax, 0
+        mov ah, 9
+        push ax
+        mov ax, upper_case
+        call to_num
+        pop ax
+        mov dx, offset number
+        int 21h
+        mov dx, offset spac
+        int 21h
+
+        mov ax, 0
+        mov ah, 9
+        push ax
+        mov ax, lower_case
+        call to_num
+        pop ax
+        mov dx, offset number
+        int 21h
+        mov dx, offset spac
+        int 21h
+
+        push cx
         mov cx, 12
         mov si, offset file_name
         null:
@@ -46,10 +129,15 @@ start:
         inc si
         inc di
 
-    loop l
 
+        dec cl
+        cmp cl, 0
+        je exit_loop
+    jmp l
+    exit_loop:
 
-
+    mov ax, 4c01h
+    int 21h
 
     switch:
         push ax
@@ -144,4 +232,30 @@ start:
 
     mov ax, 4c01h
     int 21h
+
+
+    to_num:
+        ;ax laiko skaiciu
+        push bx
+        push cx
+        push dx
+        push di
+        mov di, offset number
+        add di, 3
+        loopas:
+
+            div ten
+            mov [di], ah
+            xor ah, ah
+            dec di
+
+        cmp al, 0
+        jne loopas
+
+        pop di
+        pop dx
+        pop cx
+        pop bx
+
+    ret
 end start

@@ -1,6 +1,9 @@
 .model small
 .stack 100h
 .data
+    col_sp db ": "
+    spac db " "
+    endl db 0dh, 0ah, 24h
     words dw 0
     file_name db 12 dup(0)
     file dw 0
@@ -14,9 +17,10 @@ start:
     push @data
     pop ds
 
-    mov si, es:[82h]
+    mov si, es:82h
     xor cx, cx
     mov cl, es:[80h]
+    dec cl
     push bx
     xor bx, bx
     mov bx, offset counter
@@ -30,9 +34,38 @@ start:
         jne jump
         call switch
 
-        ;;rasyti printinima
+        push bx
+        mov bx, offset symbol
+        cmp [bx], 0
+        je cont
+        push ax
+        mov ax, [bx]
+        inc ax
+        mov [bx], ax
+        pop ax
 
-        pop cx
+        cont:
+
+            push ax
+            mov ax, 4000h
+            push bx
+            mov bx, 1
+            push cx
+            xor cx, cx
+            mov cl, 12
+            push dx
+            mov dx, offset file_name
+            int 21h
+
+            mov cl, 2
+            mov dx, offset col_sp
+            int 21h
+
+            ;;todo rasyma ir skaiciaus konvertavima
+
+
+
+        push cx
         mov cx, 12
         mov si, offset file_name
         null:
@@ -49,7 +82,8 @@ start:
     loop l
 
 
-
+    mov ax, 4c01h
+    int 21h
 
     switch:
         push ax
@@ -142,6 +176,5 @@ start:
 
     error:
 
-    mov ax, 4c01h
-    int 21h
+   
 end start

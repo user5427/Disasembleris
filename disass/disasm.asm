@@ -6,7 +6,7 @@
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
 
-    buff db 200h dup(?) 
+    buff db 200h dup(?)      ; the buffer which will be used to read the input file later
 
 .code
 start:
@@ -14,11 +14,11 @@ start:
     mov ax, @data            ; get data
     mov ds, ax     
 
-    mov ah, 0ah
-    mov dx, offset fn_in
-    int 21h
+    mov ah, 0ah              ; why?
+    mov dx, offset fn_in     ; no but why?
+    int 21h                  ; why is this needed?
 
-    xor cx, cx               ; i have no idea how this works and at this point i am to scared to ask
+    xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
     mov cl, es:[80h]         ; the length of the argument?
     mov si, 81h              ; the start of the argument?
     mov di, offset fn_in     ; move the adress of file name to register dx
@@ -30,10 +30,6 @@ start:
     inc si                   ; inc si to check another symbol in the argument
     inc di                   ; inc di to save another symbol in the file name 'array'
     loop SKAITYTI            ; loop till cx register is equal to zero
-
-    mov ah, 9
-    mov dx, offset fn_in
-    int 21h
 
     mov ax, 3d00h            ; open existing file in read mode only
     mov dx, offset fn_in     ; return file handle to register AX
@@ -53,7 +49,9 @@ start:
 
     ;jmp l:
 
-
+    mov ah, 9
+    mov dx, offset fn_in
+    int 21h
 
     mov ax, 4c00h           ; end the program
     int 21h  

@@ -16,51 +16,47 @@
     ten db 0ah
 .code
 start:
-    push @data
-    pop ds
+    push @data  ;s: daga
+    pop ds      ;s: 0
 
-    mov si, es:82h
+    mov si, 82h
     xor cx, cx
     mov cl, es:[80h]
     dec cl
-    push bx
+    push bx     ;s: bx
     xor bx, bx
     mov bx, offset counter
     mov [bx], cl
-    pop bx
+    pop bx      ;s 0
     mov di, offset file_name
     l:
 
         mov al, es:[si]
         cmp al, 20h ; ar space characteris
         je testi
+        cmp cl, 0
+        je testi
         jmp jump
 
         testi:
-        call switch
 
-        push bx
+        call switch ;;; infinite loopas galimai cia (yup hopefully sufixintas)
+
         mov bx, offset symbol
-        push ax
         mov ax, [bx]
         cmp ax, 0
         je cont
-        push ax
-        mov ax, [bx]
         inc ax
         mov [bx], ax
-        pop ax
 
         cont:
 
-        push ax
+       
         mov ax, 4000h
-        push bx
         mov bx, 1
-        push cx
+        push cx ;s: cx (simb kiekis)
         xor cx, cx
         mov cl, 12
-        push dx
         mov dx, offset file_name
         int 21h
 
@@ -68,15 +64,12 @@ start:
         mov dx, offset col_sp
         int 21h
 
-        call to_num
-
-
         mov ax, 0
         mov ah, 9
-        push ax
+        push ax ;s: ax cx
         mov ax, symbol
         call to_num
-        pop ax
+        pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
         mov dx, offset spac
@@ -84,10 +77,10 @@ start:
 
         mov ax, 0
         mov ah, 9
-        push ax
+        push ax ;s: ax cx
         mov ax, words
         call to_num
-        pop ax
+        pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
         mov dx, offset spac
@@ -95,10 +88,10 @@ start:
 
         mov ax, 0
         mov ah, 9
-        push ax
+        push ax ;s: ax cx
         mov ax, upper_case
         call to_num
-        pop ax
+        pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
         mov dx, offset spac
@@ -106,126 +99,135 @@ start:
 
         mov ax, 0
         mov ah, 9
-        push ax
+        push ax ;s: ax cx
         mov ax, lower_case
         call to_num
-        pop ax
+        pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
         mov dx, offset spac
         int 21h
-
-        push cx
         mov cx, 12
         mov si, offset file_name
         null:
             mov si, 0
             inc si
         loop null
-        pop cx
+        pop cx  ;s: 0
         mov si, offset file_name
         jump:
         mov [di], al
         inc si
         inc di
-
-
-        dec cl
         cmp cl, 0
         je exit_loop
+        dec cl
     jmp l
     exit_loop:
 
-    mov ax, 4c01h
+    mov ax, 4c00h
     int 21h
 
     switch:
-        push ax
-        push bx
-        push cx
-        push dx
-            mov ax, 3d00h 
-            mov dx, offset file_name
-            xor cx, cx
-            int 21h
+        push ax ;s: ax
+        push bx ;s: bx ax
+        push cx ;s: cx bx ax
+        push dx ;s: dx cx bx ax
+        mov ax, 3d00h 
+        mov dx, offset file_name
+        xor cx, cx
+        int 21h
 
         jc error
 
-        mov file, ax
+        mov [file], ax
 
         loop1:
-
+            push cx ;s: cx dx cx bx ax
             mov ax, 3f00h
             mov bx, file
             mov cx, 200h
             mov dx, offset sector
-
-            push cx
+            int 21h
             mov cx, ax
             jcxz enda
-            push si
+            push si ;s: si cx dx cx bx ax
             mov si, offset sector
+           
             loop2:
+                push ax ;s:ax si cx dx cx bx ax
                 mov bl, [si]
                 cmp bl, 20h
                 ja not_space
-                push bx
+                push bx ;s: bx ax si cx dx cx bx ax
                 mov bx, offset words
                 mov ax, [bx]
                 inc ax
                 mov [bx], ax
-                pop bx
+                pop bx  ;s: ax si cx dx cx bx ax
 
                 not_space:
-                jb continue
-                cmp bl, 7fh
-                je continue
-                push bx
+                cmp bl, 20h     ;
+                jb continue     ;
+                cmp bl, 7fh     ;tikrina ar simbolis
+                je continue     ;
+                push bx ;s: bx bx ax si cx dx cx bx ax
                 xor bx, bx
                 mov bx, offset symbol
                 mov ax, [bx]
                 inc ax
                 mov [bx], ax
-                pop bx
+                pop bx  ;s: bx ax si cx dx cx bx ax
 
                 cmp bl, 41h
                 jb continue
                 cmp bl, 5ah
                 ja lower
-                push bx
+                push bx ;s: bx bx ax si cx dx cx bx ax
                 mov bx, offset upper_case
                 mov ax, [bx]
                 inc ax
                 mov [bx], ax
-                pop bx
+                pop bx  ;s: bx ax si cx dx cx bx ax
 
                 lower:
                     cmp bl, 61h
                     jb continue
                     cmp bl, 7ah
                     ja continue
-                    push bx
+                    push bx ; s: bx bx ax si cx dx cx bx ax
                     mov bx, offset lower_case
                     mov ax, [bx]
                     inc ax
                     mov [bx], ax
-                    pop bx
+                    pop bx  ;s: bx ax si cx dx cx bx ax
                 continue:
-            loop loop2
+                pop bx  ;s: ax si cx dx cx bx ax
+                inc si
+                pop ax  ;s: si cx dx cx bx ax
+                dec ax
+                cmp ax, 0
+                je break
 
-            pop si
-            pop cx
+            jmp loop2
+            break:
+            pop si  ;s: cx dx cx bx ax
+            pop cx  ;s: dx cx bx ax
 
         jmp loop1
         
-
+    pop dx  ;s: cx bx ax
+    pop cx  ;s: bx ax
+    pop bx  ;s: ax
+    pop ax  ;s: 0
+    ret  
 
     enda:
-
-        pop dx
-        pop cx
-        pop bx
-        pop ax
+        pop cx  ;s: dx cx bx ax
+        pop dx  ;s: cx bx ax
+        pop cx  ;s: bx ax
+        pop bx  ;s: ax
+        pop ax  ;s: 0
         ret    
 
     error:
@@ -236,10 +238,10 @@ start:
 
     to_num:
         ;ax laiko skaiciu
-        push bx
-        push cx
-        push dx
-        push di
+        push bx ;s: bx
+        push cx ;s: cx bx
+        push dx ;s: dx cx bx
+        push di ;s: di dx cx bx 
         mov di, offset number
         add di, 3
         loopas:
@@ -252,10 +254,10 @@ start:
         cmp al, 0
         jne loopas
 
-        pop di
-        pop dx
-        pop cx
-        pop bx
+        pop di  ;s: dx cx bx
+        pop dx  ;s: cx bx
+        pop cx  ;s: bx
+        pop bx  ;s: 0
 
     ret
 end start

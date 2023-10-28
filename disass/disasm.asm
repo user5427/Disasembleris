@@ -12,13 +12,14 @@ start:
     mov ax, @data            ; get data
     mov ds, ax     
 
-    mov ah, 0ah
+    mov ah, 0ah             ;wot? imsi inputa ne tik is parametru bet ir per terminala?
     mov dx, offset fn_in
     int 21h
 
     xor cx, cx                ; read the argument
     mov cl, es:[80h]
-    mov si, 81h
+    mov si, 82h                 ;We can start from 82h, since 81h will always contain a space bar
+    dec cl                      ;We need to adjust C so that it truthfully represents the character amount
     mov di, offset fn_in
     jcxz error
 

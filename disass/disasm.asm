@@ -2,7 +2,7 @@
 .stack 100h
 .data
 
-    fn_in db 127 dup(?)      ; input file name (must be .com)
+    fn_in db 12 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
 
@@ -14,13 +14,14 @@ start:
     mov ax, @data            ; get data
     mov ds, ax     
 
-    mov ah, 0ah              ; why?
-    mov dx, offset fn_in     ; no but why?
-    int 21h                  ; why is this needed?
+    mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
+    mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
+    int 21h                  
 
     xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
     mov cl, es:[80h]         ; the length of the argument?
-    mov si, 81h              ; the start of the argument?
+    mov si, 82h                 ;We can start from 82h, since 81h              ; the start of the argument? will always contain a space bar
+    dec cl                      ;We need to adjust C so that it truthfully represents the character amount
     mov di, offset fn_in     ; move the adress of file name to register dx
     jcxz error
 

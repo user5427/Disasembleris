@@ -2,7 +2,7 @@
 .stack 100h
 .data
 
-    fn_in db 127 dup(?)      ; input file name (must be .com)
+    fn_in db 12 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
 

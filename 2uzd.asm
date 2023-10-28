@@ -2,7 +2,7 @@
 .stack 100h
 .data
     col_sp db ": "
-    spac db " "
+    spac db 20h, 24h
     endl db 0dh, 0ah, 24h
     words dw 0
     file_name db 12 dup(0)
@@ -42,16 +42,6 @@ start:
 
         call switch ;;; infinite loopas galimai cia (yup hopefully sufixintas)
 
-        mov bx, offset symbol
-        mov ax, [bx]
-        cmp ax, 0
-        je cont
-        inc ax
-        mov [bx], ax
-
-        cont:
-
-       
         mov ax, 4000h
         mov bx, 1
         push cx ;s: cx (simb kiekis)
@@ -59,7 +49,7 @@ start:
         mov cl, 12
         mov dx, offset file_name
         int 21h
-
+        mov ax, 4000h
         mov cl, 2
         mov dx, offset col_sp
         int 21h
@@ -67,15 +57,31 @@ start:
         mov ax, 0
         mov ah, 9
         push ax ;s: ax cx
-        mov ax, symbol
+        mov ax, symbol  ;vienu per didelis
         call to_num
         pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
+        mov ax, 0900h
         mov dx, offset spac
         int 21h
 
-        mov ax, 0
+        push di
+        push ax
+        xor ax, ax
+        mov al, 0
+        mov di, offset number
+        add di, 3
+        mov [di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        pop di
+        pop ax
+
         mov ah, 9
         push ax ;s: ax cx
         mov ax, words
@@ -83,8 +89,25 @@ start:
         pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
+        mov ax, 0900h
         mov dx, offset spac
         int 21h
+
+        push di
+        push ax
+        xor ax, ax
+        mov al, 0
+        mov di, offset number
+        add di, 3
+        mov [di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        pop di
+        pop ax
 
         mov ax, 0
         mov ah, 9
@@ -94,8 +117,25 @@ start:
         pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
+        mov ax, 0900h
         mov dx, offset spac
         int 21h
+
+        push di
+        push ax
+        xor ax, ax
+        mov al, 0
+        mov di, offset number
+        add di, 3
+        mov [di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        pop di
+        pop ax
 
         mov ax, 0
         mov ah, 9
@@ -105,8 +145,33 @@ start:
         pop ax  ;s: cx (simb kiekis)
         mov dx, offset number
         int 21h
+
+        push di
+        push ax
+        xor ax, ax
+        mov al, 0
+        mov di, offset number
+        add di, 3
+        mov [di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        dec di
+        mov[di], al
+        pop di
+        pop ax
+
+        mov ax, 0900h
         mov dx, offset spac
         int 21h
+        MOV AX, 0900h
+        mov dx, offset endl
+        int 21h
+        mov words, 0
+        mov symbol, 0
+        mov upper_case, 0
+        mov lower_case, 0
         mov cx, 12
         mov si, offset file_name
         null:
@@ -138,19 +203,21 @@ start:
         xor cx, cx
         int 21h
 
-        jc error
+        jnc tesimas
+        jmp error
+        tesimas:
 
         mov [file], ax
 
         loop1:
-            push cx ;s: cx dx cx bx ax
+            push cx ;s: cx dx cx bx ax  ;kam as ji pushinu?
             mov ax, 3f00h
             mov bx, file
             mov cx, 200h
             mov dx, offset sector
             int 21h
             mov cx, ax
-            jcxz enda
+            jcxz enda   ;good jumpas
             push si ;s: si cx dx cx bx ax
             mov si, offset sector
            
@@ -158,7 +225,7 @@ start:
                 push ax ;s:ax si cx dx cx bx ax
                 mov bl, [si]
                 cmp bl, 20h
-                ja not_space
+                ja not_space    ;good jumpas
                 push bx ;s: bx ax si cx dx cx bx ax
                 mov bx, offset words
                 mov ax, [bx]
@@ -171,38 +238,37 @@ start:
                 jb continue     ;
                 cmp bl, 7fh     ;tikrina ar simbolis
                 je continue     ;
-                push bx ;s: bx bx ax si cx dx cx bx ax
+                push bx ;s: bx ax si cx dx cx bx ax
                 xor bx, bx
                 mov bx, offset symbol
                 mov ax, [bx]
                 inc ax
                 mov [bx], ax
-                pop bx  ;s: bx ax si cx dx cx bx ax
+                pop bx  ;s: ax si cx dx cx bx ax
 
                 cmp bl, 41h
-                jb continue
+                jb continue ;toks pat stack kaip kituose continue jumpuose virsuje
                 cmp bl, 5ah
                 ja lower
-                push bx ;s: bx bx ax si cx dx cx bx ax
+                push bx ;s: bx ax si cx dx cx bx ax
                 mov bx, offset upper_case
                 mov ax, [bx]
                 inc ax
                 mov [bx], ax
-                pop bx  ;s: bx ax si cx dx cx bx ax
-
+                pop bx  ;s: ax si cx dx cx bx ax
+                jmp continue
                 lower:
                     cmp bl, 61h
                     jb continue
                     cmp bl, 7ah
                     ja continue
-                    push bx ; s: bx bx ax si cx dx cx bx ax
+                    push bx ; s: bx ax si cx dx cx bx ax
                     mov bx, offset lower_case
                     mov ax, [bx]
                     inc ax
                     mov [bx], ax
-                    pop bx  ;s: bx ax si cx dx cx bx ax
+                    pop bx  ;s: ax si cx dx cx bx ax
                 continue:
-                pop bx  ;s: ax si cx dx cx bx ax
                 inc si
                 pop ax  ;s: si cx dx cx bx ax
                 dec ax
@@ -221,7 +287,10 @@ start:
     pop bx  ;s: ax
     pop ax  ;s: 0
     ret  
+    error:
 
+        mov ax, 4c01h
+        int 21h
     enda:
         pop cx  ;s: dx cx bx ax
         pop dx  ;s: cx bx ax
@@ -230,10 +299,7 @@ start:
         pop ax  ;s: 0
         ret    
 
-    error:
-
-    mov ax, 4c01h
-    int 21h
+    
 
 
     to_num:
@@ -247,6 +313,7 @@ start:
         loopas:
 
             div ten
+            add ah, 30h
             mov [di], ah
             xor ah, ah
             dec di
@@ -259,5 +326,5 @@ start:
         pop cx  ;s: bx
         pop bx  ;s: 0
 
-    ret
+        ret
 end start

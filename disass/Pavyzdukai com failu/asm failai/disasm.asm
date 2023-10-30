@@ -3,13 +3,11 @@
 ;.stack 100h
 .data
 
-    fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_in db 12 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
 
     buff db 200h dup(?)      ; the buffer which will be used to read the input file later
-    index db 0               ; index used to get byte from buffer and remember last location
-    temp_byte db 8 dup(?)    ; used to get a byte from buffer
 
 .code
 ORG 100h
@@ -18,9 +16,9 @@ start:
     ;mov ax, @data            ; get data
     ;mov ds, ax     
 
-    ;mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
-    ;mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
-    ;int 21h                  
+    mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
+    mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
+    int 21h                  
 
     xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
     mov cl, es:[80h]         ; the length of the argument?
@@ -46,64 +44,22 @@ start:
 
     mov dx, offset buff      ; the start adress of the array "buff"
 
+    ;l:
 
-    l:                           ; the loop is continous. It will only stop if there is an error or the program has reached file end
-    xor cx, cx               ; just in case
-    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
-    mov bx, fh_in            ; bx- the input file handle
-    mov cx, A0h              ; cx - number of bytes to read
-    int 21h                  ;
-    JC error                 ;
-
-    
-
-    jmp l:
-
-; -- The end.
+    ; if my_brain_works:
+    ;     output_code()
 
 
-get_byte:
-    push ax
-   ; push bx
-    push cx
-   ; push dx
+    ;jmp l:
 
-    mov SI, offset buff
-    add SI, index
-    mov DI, offset temp_byte
-    mov cx, 8
-
-    okay:
-    mov al, [SI]
-    mov [DI], al
-    inc SI
-    inc DI
-    loop okay
-
-    add index, 8
-
-   ; pop dx
-    pop cx
-   ; pop bx
-    pop ax
-
-    RET
-
-
-
-
-
-
-    ; ignore everything below, it is pointless
-
-    ;mov ah, 9
-    ;mov dx, offset fn_in
-    ;int 21h
+    mov ah, 9
+    mov dx, offset fn_in
+    int 21h
 
     mov ax, 4c00h           ; end the program
     int 21h  
 
-error:                  ; output error msg
+    error:                  ; output error msg
     mov ah, 9
     mov dx, offset msg
     int 21h

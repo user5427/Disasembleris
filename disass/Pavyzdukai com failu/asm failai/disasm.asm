@@ -3,7 +3,7 @@
 ;.stack 100h
 .data
 
-    fn_in db 12 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
 
@@ -44,17 +44,41 @@ start:
 
     mov dx, offset buff      ; the start adress of the array "buff"
 
-    ;l:
 
-    ; if my_brain_works:
-    ;     output_code()
+    l:                           ; the loop is continous. It will only stop if there is an error or the program has reached file end
+    xor cx, cx               ; just in case
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, fh_in            ; bx- the input file handle
+    mov cx, A0h              ; cx - number of bytes to read
+    int 21h                  
+    JC error    
+
+    
+
+    jmp l:
 
 
-    ;jmp l:
+    get_byte:
+    push ax
+    push bx
+    push cx
+    push dx
 
-    mov ah, 9
-    mov dx, offset fn_in
-    int 21h
+
+
+
+    RET
+
+
+
+
+
+
+    ; ignore everything below, it is pointless
+
+    ;mov ah, 9
+    ;mov dx, offset fn_in
+    ;int 21h
 
     mov ax, 4c00h           ; end the program
     int 21h  

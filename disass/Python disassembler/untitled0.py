@@ -28,9 +28,10 @@ f.close()
 #print(type(input_data))
 for binary in input_data:
     binary_number = ("{:08b}".format(binary))
-    binary_number = binary_number[:-4]
-    if (binary_number == "1011"):
-        print("mov ")
+    print(binary_number)
+    #binary_number = binary_number[:-4]
+    #if (binary_number == "1011"):
+    #   print("mov ")
     
 
 

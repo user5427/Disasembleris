@@ -60,6 +60,7 @@ open_file:
 
     JC error                 ; jump if carry flag = 1 (CF = 1)
     mov fh_in, ax            ; save the file handle in the double word type for later use
+
 RET
 
 loop_over_bytes:
@@ -69,7 +70,7 @@ loop_over_bytes:
     call get_byte              ; returns byte to temp_byte from buffer
     call check_byte            ; check the command
 
-    loop loop_bytes:
+    loop loop_bytes
 
 RET
 
@@ -77,7 +78,8 @@ check_byte:
     xor ax, ax
     mov al, temp_byte
 
-
+    mov cx, 7
+    
 
 
 RET

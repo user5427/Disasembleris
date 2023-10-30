@@ -52,8 +52,8 @@ start:
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
     mov bx, fh_in            ; bx- the input file handle
     mov cx, A0h              ; cx - number of bytes to read
-    int 21h                  
-    JC error    
+    int 21h                  ;
+    JC error                 ;
 
     
 
@@ -61,11 +61,12 @@ start:
 
 ; -- The end.
 
+
 get_byte:
     push ax
-    push bx
+   ; push bx
     push cx
-    push dx
+   ; push dx
 
     mov SI, offset buff
     add SI, index
@@ -80,6 +81,11 @@ get_byte:
     loop okay
 
     add index, 8
+
+   ; pop dx
+    pop cx
+   ; pop bx
+    pop ax
 
     RET
 

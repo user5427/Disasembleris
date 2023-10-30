@@ -8,6 +8,8 @@
     fh_in dw 0               ; used to save file handles
 
     buff db 200h dup(?)      ; the buffer which will be used to read the input file later
+    index db 0               ; index used to get byte from buffer and remember last location
+    temp_byte db 8 dup(?)    ; used to get a byte from buffer
 
 .code
 ORG 100h
@@ -16,9 +18,9 @@ start:
     ;mov ax, @data            ; get data
     ;mov ds, ax     
 
-    mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
-    mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
-    int 21h                  
+    ;mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
+    ;mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
+    ;int 21h                  
 
     xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
     mov cl, es:[80h]         ; the length of the argument?
@@ -57,15 +59,27 @@ start:
 
     jmp l:
 
+; -- The end.
 
-    get_byte:
+get_byte:
     push ax
     push bx
     push cx
     push dx
 
+    mov SI, offset buff
+    add SI, index
+    mov DI, offset temp_byte
+    mov cx, 8
 
+    okay:
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    loop okay
 
+    add index, 8
 
     RET
 
@@ -83,7 +97,7 @@ start:
     mov ax, 4c00h           ; end the program
     int 21h  
 
-    error:                  ; output error msg
+error:                  ; output error msg
     mov ah, 9
     mov dx, offset msg
     int 21h

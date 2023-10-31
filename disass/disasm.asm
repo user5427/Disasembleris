@@ -9,30 +9,27 @@
 
     buff db 200h dup(?)      ; the buffer which will be used to read the input file later
     index db -1              ; index used to get byte from buffer and remember last location
-    temp_byte db 8 dup(?)    ; used to get a byte from buffer
+    file_end db 0            ; is set to 1 when file end is reached
+    byte_ db 8 dup(?)    ; used to get a byte from buffer
 
 .code
 ORG 100h
 start:
-
-    ;mov ax, @data            ; get data
-    ;mov ds, ax     
-
-    ;mov ah, 0ah              ;wot? imsi inputa ne tik is parametru bet ir per terminala?
-    ;mov dx, offset fn_in     ; i 'stole' it from previous task. maybe i dont need it
-    ;int 21h                  
-
+    
     call read_argument
     call open_file 
-
-    l:                           ; the loop is continous. It will only stop if there is an error or the program has reached file end
-
     call loop_over_bytes     
-    
 
-    jmp l
+    mov ax, 4c01h
+    int 21h 
 
 ; -- The end.
+
+error:                  ; output error msg
+    mov ah, 9
+    mov dx, offset msg
+    int 21h
+;error
 
 read_argument:
     xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
@@ -64,18 +61,18 @@ RET
 
 loop_over_bytes:
 
-    loop_bytes:                ; do this until cx is equal to zero
+    loop_bytes:                ; do this until the end of file
     
-    call get_byte              ; returns byte to temp_byte from buffer
+    call get_byte              ; returns byte to byte_ from buffer
     call check_byte            ; check the command
 
-    loop loop_bytes
+    jmp loop_bytes
 
 RET
 
 check_byte:
     xor ax, ax
-    mov al, temp_byte
+    mov al, byte_
 
     mov cx, 7                ; check all 8 bits individually
     
@@ -97,22 +94,26 @@ RET
 
 get_byte:
     push ax
-   ; push bx
+    push bx
     push cx
-   ; push dx
+    push dx
 
     cmp index, -1
     jne skip_first_time_reading
+    mov index, 0
     call read_buffer
     skip_first_time_reading:
 
     cmp index, 160
     jnae skip_reading
+    mov index, 0
     call read_buffer
     skip_reading:
 
+    jcxz file_end_reached
+
     mov SI, offset buff
-    mov DI, offset temp_byte
+    mov DI, offset byte_
     mov cx, 8
 
     okay:
@@ -123,10 +124,15 @@ get_byte:
     loop okay
 
     add index, 8
-
-   ; pop dx
+    
+    jmp skip_file_end_indicator
+    file_end_reached:
+    mov file_end, 1
+    skip_file_end_indicator:
+    
+    pop dx
     pop cx
-   ; pop bx
+    pop bx
     pop ax
 
 RET
@@ -140,14 +146,6 @@ RET
 
     mov ax, 4c00h           ; end the program
     int 21h  
-
-error:                  ; output error msg
-    mov ah, 9
-    mov dx, offset msg
-    int 21h
-
-    mov ax, 4c01h           ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida <- no idea what this means
-    int 21h 
 
 end start
 

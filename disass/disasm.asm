@@ -4,13 +4,18 @@
 .data
 
     fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db 127 dup(?)
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
+    fh_out dw 0
 
     buff db 200h dup(?)      ; the buffer which will be used to read the input file later
     index db -1              ; index used to get byte from buffer and remember last location
     file_end db 0            ; is set to 1 when file end is reached
-    byte_ db 8 dup(?)    ; used to get a byte from buffer
+    byte_ db 8 dup(?)        ; used to get a byte from buffer
+
+    write_buff db 200h (?)
+    write_index db 0
 
 .code
 ORG 100h
@@ -125,10 +130,26 @@ get_byte:
 
 RET
 
+write_to_file ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
+
+RET
+
 check_byte:
     xor ax, ax
-    mov al, byte_
 
+    mov al, byte_
+    shl al, 2
+    cmp al, 0 ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    jne not_1 
+
+    not_1:
+
+    mov al, byte_
+    shl al, 1
+    cmp al, 2 ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    jne not_2 
+
+    not_2:
     
     
 

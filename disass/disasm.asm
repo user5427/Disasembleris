@@ -8,7 +8,7 @@
     fh_in dw 0               ; used to save file handles
 
     buff db 200h dup(?)      ; the buffer which will be used to read the input file later
-    index db 0               ; index used to get byte from buffer and remember last location
+    index db -1              ; index used to get byte from buffer and remember last location
     temp_byte db 8 dup(?)    ; used to get a byte from buffer
 
 .code
@@ -27,7 +27,6 @@ start:
 
     l:                           ; the loop is continous. It will only stop if there is an error or the program has reached file end
 
-    call read_buffer         ; returns cx and buffer
     call loop_over_bytes     
     
 
@@ -78,8 +77,10 @@ check_byte:
     xor ax, ax
     mov al, temp_byte
 
-    mov cx, 7
+    mov cx, 7                ; check all 8 bits individually
     
+
+
 
 
 RET
@@ -99,6 +100,16 @@ get_byte:
    ; push bx
     push cx
    ; push dx
+
+    cmp index, -1
+    jne skip_first_time_reading
+    call read_buffer
+    skip_first_time_reading:
+
+    cmp index, 160
+    jnae skip_reading
+    call read_buffer
+    skip_reading:
 
     mov SI, offset buff
     mov DI, offset temp_byte

@@ -70,18 +70,6 @@ loop_over_bytes:
 
 RET
 
-check_byte:
-    xor ax, ax
-    mov al, byte_
-
-    mov cx, 7                ; check all 8 bits individually
-    
-
-
-
-
-RET
-
 read_buffer:
     mov dx, offset buff      ; the start adress of the array "buff"
     xor cx, cx               ; just in case
@@ -136,6 +124,20 @@ get_byte:
     pop ax
 
 RET
+
+check_byte:
+    xor ax, ax
+    mov al, byte_
+
+    
+    
+
+
+
+
+RET
+
+
 
 
 ; ignore everything below, it is pointless

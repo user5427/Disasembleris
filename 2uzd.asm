@@ -310,7 +310,7 @@ start:
         push di ;s: di dx cx bx 
         mov di, offset number
         add di, 3
-        loopas:
+        loopas:ell?
 
             div ten
             add ah, 30h

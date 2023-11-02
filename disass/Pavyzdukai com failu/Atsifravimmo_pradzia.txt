@@ -44,13 +44,38 @@ jb 14h
 xchg ax, ax
 xchg ax, ax //wtf? ar kompileris durnas kad useless komanda raso ar as dauztas kad ja taip decryptinu?
 
+mov [015fh], ax
+mov dx, 0161h
+mov ah, 09h
+mov dx, 014ch
+int 21
+
+mov ax, 4c00h
+int 21
+
+mov ah, 9
+mov dx, 0158h
+int 21
+
+mov ax, 4c01h
+int 21
+
+// teoriskai sitas blokas niekada neturetu execute'inti nebent fuckini up kokybiskai bet tada yra rimtesniu problemu
+00 00 00 00
+00 00 00 00 00 00 00 00
 
 
-a3 5f  |...=.L.B.!r...._|
-01 ba 61 01 b4 09 ba 4c  01 cd 21 b8 00 4c cd 21  |..a....L..!..L.!|
-b4 09 ba 58 01 cd 21 b8  01 4c cd 21 00 00 00 00  |...X..!..L.!....|
-00 00 00 00 00 00 00 00  45 72 72 6f 72 21 24 00  |........Error!$.|
-00                                                |.|
+'E'
+'r'
+'r'
+'o'
+'r'
+'!'
+'$'
+
+// taspats kaip virsuj
+00
+00
 
 
 

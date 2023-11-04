@@ -2,3 +2,5 @@
 *.OBJ
 *.MAP
 *.txt
+disass/Python disassembler/.vs/Python disassembler/FileContentIndex/7b136634-bc1a-45a5-97ca-a1d2dd2cf52a.vsidx
+*.debug

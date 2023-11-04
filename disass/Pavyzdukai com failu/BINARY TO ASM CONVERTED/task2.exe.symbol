@@ -1,0 +1,43 @@
+< THE SYMBOL TABLE >  task2.exe  --  emu8086 assembler version: 4.08 
+===================================================================================================
+Name                     	Offset    	Size      	Type      	Segment   
+===================================================================================================
+STACK                    	00000     	-5        	SEGMENT   	(ITSELF)  
+DATA                     	00010     	-5        	SEGMENT   	(ITSELF)  
+MSG                      	00000     	1         	VAR       	data      
+FN_IN                    	00006     	1         	VAR       	data      
+FH_IN                    	0000E     	2         	VAR       	data      
+BUFF                     	00010     	1         	VAR       	data      
+NUMBERS_IN_BINARY        	00210     	1         	VAR       	data      
+OUTPUT_SYMBOLS           	0021A     	1         	VAR       	data      
+OUTPUT_WORDS             	00229     	1         	VAR       	data      
+OUTPUT_LOW               	00236     	1         	VAR       	data      
+OUTPUT_HIGH              	0024B     	1         	VAR       	data      
+ENDL                     	00262     	1         	VAR       	data      
+NUMBER_IN_ASCII          	00265     	1         	VAR       	data      
+CODE                     	00047     	-5        	SEGMENT   	(ITSELF)  
+START                    	00000     	-1        	LABEL     	code      
+L                        	00015     	-1        	LABEL     	code      
+END_SEARCH               	00037     	-1        	LABEL     	code      
+ERROR                    	0007E     	-1        	LABEL     	code      
+PRINT_PROGRESS           	0008A     	-1        	LABEL     	code      
+PRINT_LINE               	00093     	-1        	LABEL     	code      
+CONVERT_DECIMAL          	000B6     	-1        	LABEL     	code      
+ASCII_VALUES_LOOP        	000C3     	-1        	LABEL     	code      
+EXIT_LOOP                	000DA     	-1        	LABEL     	code      
+FLIP_LOOP                	000E8     	-1        	LABEL     	code      
+SKIP                     	000FC     	-1        	LABEL     	code      
+EXI_LOOP                 	00104     	-1        	LABEL     	code      
+SEARCH_BUFF              	00109     	-1        	LABEL     	code      
+NUMBER_NOT_HIGHER_THAN_MAX	00119     	-1        	LABEL     	code      
+J                        	00127     	-1        	LABEL     	code      
+HIGHER_CASE              	00143     	-1        	LABEL     	code      
+LOWER_CASE               	0014C     	-1        	LABEL     	code      
+NOT_LETTER               	00155     	-1        	LABEL     	code      
+SPECIAL_SYMBOL           	0016F     	-1        	LABEL     	code      
+CHECK_NEW_WORD           	00174     	-1        	LABEL     	code      
+EXIT_CHECK               	00184     	-1        	LABEL     	code      
+===================================================================================================
+[ 2023-10-23  --  22:19:54 ] 
+< END >
+ 

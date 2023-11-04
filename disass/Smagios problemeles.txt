@@ -1,0 +1,4 @@
+smagios problemėles:
+-> komandos argumentai kitame buferyje
+-> jumpai nutole daugiau negu jie gali sokti
+-> realybeje (arba bent pagal python programa) pradzioje nera RET c2

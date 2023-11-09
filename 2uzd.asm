@@ -12,10 +12,11 @@
     lower_case dw 0
     counter db 0
     sector db 512 dup(0)
-    number db 0, 0, 0, 0, 24h
-    ten db 0ah
+    number db 0, 0, 0, 0, 0, 24h   ; gal cia problema?
+    ten dw 000ah
 .code
 start:
+;breakina ant 2560
     push @data  ;s: daga
     pop ds      ;s: 0
 
@@ -309,16 +310,17 @@ start:
         push dx ;s: dx cx bx
         push di ;s: di dx cx bx 
         mov di, offset number
-        add di, 3
-        loopas:ell?
-
-            div ten
-            add ah, 30h
-            mov [di], ah
-            xor ah, ah
+        add di, 4
+        loopas:
+            xor dx, dx
+            mov cx, 0ah
+            div cx
+            add dl, 30h
+            ;mov cl, dl
+            mov [di], dl
             dec di
 
-        cmp al, 0
+        cmp ax, 0
         jne loopas
 
         pop di  ;s: dx cx bx

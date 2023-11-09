@@ -137,21 +137,46 @@ RET
 check_byte:
     xor ax, ax
 
-    mov al, byte_
-    shl al, 2
-    cmp al, 0 ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    shr al, 2 ;  0000 00dw -> 0000 0000
+    cmp al, 0 
     jne not_1 
 
     not_1:
 
-    mov al, byte_
-    shl al, 1
-    cmp al, 2 ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    mov al, byte_ ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    shr al, 1 ; 0000 010w -> 0000 0010
+    shl al, 1 ; 000 0010 -> 0000 0100
+    cmp al, 4 
     jne not_2 
 
     not_2:
+
+    mov al, byte_ ; 000sr 110 – PUSH segmento registras 
+    shr al, 5 ; 000sr 110 -> 0000 0000
+    mov ah, byte_
+    shl ah, 5 ; 000sr 110 -> 1100 0000
+    shr ah, 5 ; 1100 0000 -> 0000 0110
+    add al, ah ; 0000 0000 + 0000 0100 -> 0000 0110
+    cmp al, 6 ; check 0000 0110
+    jne not_3
     
+    not_3:
     
+    mov al, byte_ ; 000sr 111 – POP segmento registras
+    shr al, 5 ; 000sr 111 -> 0000 0000
+    mov ah, byte_
+    shl ah, 5 ; 000sr 111 -> 1110 0000
+    shr ah, 5 ; 1110 0000 -> 0000 0111
+    add al, ah ; 0000 0000 + 0000 0111 -> 0000 0111
+    cmp al, 7 ; check 111
+    jne not_4
+
+    not_4:
+
+    mov al, byte_ ; 0000 10dw mod reg r/m [poslinkis] – OR registras V registras/atmintis
+    shr al, 2
+    cmp al, 
 
 
 

@@ -17,6 +17,8 @@
     write_buff db 200h (?)
     write_index db 0
 
+    decoded_IP dw 0 0        ; jeigu noresim panaudoti
+
 .code
 ORG 100h
 start:
@@ -137,24 +139,146 @@ RET
 check_byte:
     xor ax, ax
 
-    mov al, byte_
-    shl al, 2
-    cmp al, 0 ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    shr al, 2 ;  0000 00dw -> 0000 0000
+    cmp al, 0 
     jne not_1 
 
     not_1:
 
-    mov al, byte_
-    shl al, 1
-    cmp al, 2 ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    mov al, byte_ ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    shr al, 1 ; 0000 010w -> 0000 0010
+    shl al, 1 ; 000 0010 -> 0000 0100
+    cmp al, 4 
     jne not_2 
 
     not_2:
+
+    mov al, byte_ ; 000sr 110 – PUSH segmento registras 
+    shr al, 5 ; 000sr 110 -> 0000 0000
+    mov ah, byte_
+    shl ah, 5 ; 000sr 110 -> 1100 0000
+    shr ah, 5 ; 1100 0000 -> 0000 0110
+    add al, ah ; 0000 0000 + 0000 0100 -> 0000 0110
+    cmp al, 6 ; check 0000 0110
+    jne not_3
     
+    not_3:
     
+    mov al, byte_ ; 000sr 111 – POP segmento registras
+    shr al, 5 ; 000sr 111 -> 0000 0000
+    mov ah, byte_
+    shl ah, 5 ; 000sr 111 -> 1110 0000
+    shr ah, 5 ; 1110 0000 -> 0000 0111
+    add al, ah ; 0000 0000 + 0000 0111 -> 0000 0111
+    cmp al, 7 ; check 111
+    jne not_4
 
+    not_4:
 
+    mov al, byte_ ; 0000 10dw mod reg r/m [poslinkis] – OR registras V registras/atmintis
+    shr al, 2 ; 0000 10dw -> 0000 0010
+    shl al, 2 ; 0000 0010 -> 0000 1000
+    cmp al, 8
+    jne not_5
 
+    not_5:
+
+    mov al, byte_ ; 0000 110w bojb [bovb] – OR akumuliatorius V betarpiškas operandas
+    shr al, 1 ; 0000 110w -> 0000 0110
+    shl al, 1 ; 0000 0110 -> 0000 1100
+    cmp al, 12
+    jne not_6
+
+    not_6:
+
+    mov al, byte_ ; 0001 00dw mod reg r/m [poslinkis] – ADC registras += registras/axtmintis
+    shr al, 2 ; 0001 00dw -> 0000 0100
+    shl al, 2 ; 0000 0100 -> 0001 0000
+    cmp al, 16
+    jne not_7
+
+    not_7:
+
+    mov al, byte_ ; 0001 010w bojb [bovb] – ADC akumuliatorius += betarpiškas operandas
+    shr al, 1 ; 0001 010w -> 0000 1010
+    shl al, 1 ; 0000 1010 -> 0001 0100
+    cmp al, 20
+    jne not_8
+
+    not_8:
+
+    mov al, byte_ ; 0001 10dw mod reg r/m [poslinkis] – SBB registras -= registras/atmintis
+
+    mov al, byte_ ; 0001 110w bojb [bovb] – SBB akumuliatorius -= betarpiškas operandas
+
+    mov al, byte_ ; 0010 00dw mod reg r/m [poslinkis] – AND registras & registras/atmintis
+
+    mov al, byte_ ; 0010 010w bojb [bovb] – AND akumuliatorius & betarpiškas operandas
+
+    mov al, byte_ ; 001sr 110 – segmento registro keitimo prefiksas
+
+    mov al, byte_ ; 0010 0111 – DAA
+
+    mov al, byte_ ; 0010 10dw mod reg r/m [poslinkis] – SUB registras -= registras/atmintis
+
+    mov al, byte_ ; 0010 110w bojb [bovb] – SUB akumuliatorius -= betarpiškas operandas
+
+    mov al, byte_ ; 0010 1111 – DAS
+
+    mov al, byte_ ; 0011 00dw mod reg r/m [poslinkis] – XOR registras | registras/atmintis
+
+    mov al, byte_ ; 0011 010w bojb [bovb] – XOR akumuliatorius | betarpiškas operandas
+
+    mov al, byte_ ; 0011 0111 – AAA
+
+    mov al, byte_ ; 0011 10dw mod reg r/m [poslinkis] – CMP registras ~ registras/atmintis
+
+    mov al, byte_ ; 0011 110w bojb [bovb] – CMP akumuliatorius ~ betarpiškas operandas
+
+    mov al, byte_ ; 0011 1111 – AAS
+
+    mov al, byte_ ; 0100 0reg – INC registras (žodinis)
+
+    mov al, byte_ ; 0100 1reg – DEC registras (žodinis)
+
+    mov al, byte_ ; 0101 0reg – PUSH registras (žodinis)
+
+    mov al, byte_ ; 0101 1reg – POP registras (žodinis)
+
+    mov al, byte_ ; 0111 0000 poslinkis – JO žymė
+
+    mov al, byte_ ; 0111 0001 poslinkis – JNO žymė
+
+    mov al, byte_ ; 0111 0010 poslinkis – JNAE žymė; JB žymė; JC žymė
+
+    mov al, byte_ ; 0111 0011 poslinkis – JAE žymė; JNB žymė; JNC žymė
+    
+    mov al, byte_ ; 0111 0100 poslinkis – JE žymė; JZ žymė
+
+    mov al, byte_ ; 0111 0101 poslinkis – JNE žymė; JNZ žymė
+
+    mov al, byte_ ; 0111 0110 poslinkis – JBE žymė; JNA žymė
+
+    mov al, byte_ ; 0111 0111 poslinkis – JA žymė; JNBE žymė
+
+    mov al, byte_ ; 0111 1000 poslinkis – JS žymė
+
+    mov al, byte_ ; 0111 1001 poslinkis – JNS žymė
+
+    mov al, byte_ ; 0111 1010 poslinkis – JP žymė; JPE žymė
+
+    mov al, byte_ ; 0111 1011 poslinkis – JNP žymė; JPO žymė
+
+    mov al, byte_ ; 0111 1100 poslinkis – JL žymė; JNGE žymė
+
+    mov al, byte_ ; 0111 1101 poslinkis – JGE žymė; JNL žymė
+
+    mov al, byte_ ; 0111 1110 poslinkis – JLE žymė; JNG žymė
+
+    mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
+
+    mov al, byte_ ; shit it needs two bytes ->>>> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
 
 RET
 

@@ -1,0 +1,7 @@
+smagios problemėles:
+-> komandos argumentai kitame buferyje -> FIXED
+-> jumpai nutole daugiau negu jie gali sokti -> IN PROGRESS
+-> realybeje (arba bent pagal python programa) pradzioje nera RET c2
+-> reikia \? pagalbos komanda padaryti
+-> reikia sutvarkyti argumentu skaityma kad taip pat nuskaitytu ir output file varda
+-> reikia rasymo funkcijos i faila

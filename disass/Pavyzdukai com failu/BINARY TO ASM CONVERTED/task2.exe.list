@@ -1,0 +1,414 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+task2.exe -- emu8086 assembler version: 4.08  
+ 
+[ 2023-10-23  --  22:19:54 ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       .model small
+[   2]        :                                       .stack 100h
+[   3]        :                                       .data
+[   4]    0100: 45 72 72 6F 72 21                     msg db "Error!"          ; numbers_in_binary error message if something went wrong
+[   5]    0106: 68 65 79 2E 74 78 74 00               fn_in db "hey.txt", 0    ; input file name
+[   6]    010E: 00 00                                 fh_in dw 0               ; used to save file handles
+[   7]        :                                       
+[   8]    0110: 00 00 00 00 00 00 00 00 00 00 00 00   buff db 200h dup(?)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00             
+[   9]    0310: 00 00 00 00 00 00 00 00 00 00         numbers_in_binary db 10 dup(0)     ; symb, words, lowC, highC
+[  10]    031A: 53 79 6D 62 6F 6C 69 75 20 79 72 61   output_symbols db "Symboliu yra: ", 24h
+                3A 20 24                            
+[  11]    0329: 5A 6F 64 7A 69 75 20 79 72 61 3A 20   output_words db "Zodziu yra: ", 24h
+                24                                  
+[  12]    0336: 4D 61 7A 75 6A 75 20 72 61 69 64 7A   output_low db "Mazuju raidziu yra: ", 24h
+                69 75 20 79 72 61 3A 20 24          
+[  13]    034B: 44 69 64 7A 69 75 6A 75 20 72 61 69   output_high db "Didziuju raidziu yra: ", 24h
+                64 7A 69 75 20 79 72 61 3A 20 24    
+[  14]    0362: 0D 0A 24                              endl db 0dh, 0ah, 24h
+[  15]        :                                       
+[  16]    0365: 00 00 00 00 00 00 00 00 00 00 00 00   number_in_ASCII db 0, 255 dup(?)
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00 00 00 00 00 00 00 00 00 
+                00 00 00 00                         
+[  17]        :                                       
+[  18]        :                                       .code
+[  19]    0470:                                       start:
+[  20]    0470: B8 10 00                              mov ax, @data            ; get data
+[  21]    0473: 8E D8                                 mov ds, ax
+[  22]        :                                       
+[  23]    0475: B8 00 3D                              mov ax, 3d00h            ; open existing file in read mode only
+[  24]    0478: BA 06 00                              mov dx, offset fn_in     ; return file handle to register AX
+[  25]    047B: CD 21                                 int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
+[  26]        :                                       
+[  27]    047D: 72 6F                                 JC error                 ; jump if carry flag = 1 (CF = 1)
+[  28]    047F: A3 0E 00                              mov fh_in, ax            ; save the file handle in the double word type for later use
+[  29]        :                                       
+[  30]    0482: BA 10 00                              mov dx, offset buff      ; the start adress of the array "buff"
+[  31]        :                                       
+[  32]        :                                       ; dx is the adress of the buffer which will be used by
+[  33]        :                                       ; both the read and the write instructions
+[  34]        :                                       
+[  35]    0485:                                       l:                           ; the loop is continous. It will only stop if there is an error or the program has reached file end
+[  36]    0485: 33 C9                                 xor cx, cx               ; just in case
+[  37]    0487: B8 00 3F                              mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+[  38]    048A: 8B 1E 0E 00                           mov bx, fh_in            ; bx- the input file handle
+[  39]    048E: B9 00 02                              mov cx, 200h             ; cx - number of bytes to read
+[  40]    0491: CD 21                                 int 21h
+[  41]    0493: 72 59                                 JC error                 ; if there is an error, skip the rest of the code
+[  42]        :                                       
+[  43]    0495: 8B C8                                 mov cx, ax               ; if the program reached file end, exit the loop. AX register returns number of bytes read
+[  44]    0497: E3 0E                                 jcxz end_search          ; jump if cx is zero
+[  45]        :                                       
+[  46]    0499: 8B C8                                 mov cx, ax
+[  47]    049B: 50                                    push ax
+[  48]    049C: 52                                    push dx
+[  49]    049D: E8 D9 00                              call search_buff         ; loop through all elements in the buff
+[  50]    04A0: 5A                                    pop dx
+[  51]    04A1: 58                                    pop ax
+[  52]        :                                       
+[  53]    04A2: E8 55 00                              call print_progress      ; show that the program is doing something
+[  54]    04A5: EB DE                                 jmp l                    ; the loop jump, like do {} while();
+[  55]        :                                       
+[  56]        :                                       
+[  57]    04A7:                                       end_search:                  ; used as a pointer for the jump when the program finished reading files
+[  58]        :                                       
+[  59]    04A7: B8 00 3E                              mov ax, 3e00h            ; close file with a handle
+[  60]    04AA: BB 0E 00                              mov bx, offset fh_in     ; move file handle to register bx
+[  61]    04AD: CD 21                                 int 21h
+[  62]        :                                       ; print new line
+[  63]    04AF: B4 09                                 mov ah, 9
+[  64]    04B1: BA 62 02                              mov dx, offset endl
+[  65]    04B4: CD 21                                 int 21h
+[  66]        :                                       
+[  67]    04B6: BE 10 02                              mov SI, offset numbers_in_binary
+[  68]    04B9: 8B 54 01                              mov dx, [SI + 1]
+[  69]    04BC: E8 67 00                              call convert_decimal     ; convert the number to ASCII symbols, this will set DI to output aswell
+[  70]    04BF: BA 1A 02                              mov dx, offset output_symbols ; set dx to have the adress of the string
+[  71]    04C2: E8 3E 00                              call print_line
+[  72]        :                                       
+[  73]    04C5: 8B 54 03                              mov dx, [SI + 3]
+[  74]    04C8: E8 5B 00                              call convert_decimal     ; convert the number to ASCII symbols
+[  75]    04CB: BA 29 02                              mov dx, offset output_words
+[  76]    04CE: E8 32 00                              call print_line
+[  77]        :                                       
+[  78]    04D1: 8B 54 05                              mov dx, [SI + 5]
+[  79]    04D4: E8 4F 00                              call convert_decimal     ; convert the number to ASCII symbols
+[  80]    04D7: BA 36 02                              mov dx, offset output_low
+[  81]    04DA: E8 26 00                              call print_line
+[  82]        :                                       
+[  83]    04DD: 8B 54 07                              mov dx, [SI + 7]
+[  84]    04E0: E8 43 00                              call convert_decimal     ; convert the number to ASCII symbols
+[  85]    04E3: BA 4B 02                              mov dx, offset output_high
+[  86]    04E6: E8 1A 00                              call print_line
+[  87]        :                                       
+[  88]    04E9: B8 00 4C                              mov ax, 4c00h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
+[  89]    04EC: CD 21                                 int 21h
+[  90]        :                                       
+[  91]    04EE:                                       error:
+[  92]    04EE: B4 09                                 mov ah, 9
+[  93]    04F0: BA 00 00                              mov dx, offset msg
+[  94]    04F3: CD 21                                 int 21h
+[  95]        :                                       
+[  96]    04F5: B8 01 4C                              mov ax, 4c01h            ; vienetas reiskia visi kiti baitai, o ne 0 yra klaida
+[  97]    04F8: CD 21                                 int 21h
+[  98]        :                                       
+[  99]    04FA:                                       print_progress:
+[ 100]    04FA: 52                                    push dx
+[ 101]    04FB: B4 02                                 mov ah, 2
+[ 102]    04FD: B2 2E                                 mov dl, '.'
+[ 103]    04FF: CD 21                                 int 21h
+[ 104]    0501: 5A                                    pop dx                   ; return dx register back to its previous state
+[ 105]    0502: C3                                    RET
+[ 106]        :                                       
+[ 107]    0503:                                       print_line:                  ; set dx to message adress
+[ 108]    0503: B4 09                                 mov ah, 9
+[ 109]    0505: CD 21                                 int 21h
+[ 110]        :                                       
+[ 111]    0507: B8 00 40                              mov ax, 4000h
+[ 112]    050A: BB 01 00                              mov bx, 1
+[ 113]    050D: 33 C9                                 xor cx, cx
+[ 114]    050F: 33 D2                                 xor dx, dx
+[ 115]    0511: 8B 0D                                 mov cx, [DI]             ; the length of number
+[ 116]    0513: B5 00                                 mov ch, 0
+[ 117]    0515: BA 66 02                              mov dx, offset number_in_ASCII + 1          ; the number symbol array
+[ 118]    0518: CD 21                                 int 21h
+[ 119]        :                                       
+[ 120]    051A: B2 00                                 mov dl, 0                ; reset number length in the output array
+[ 121]    051C: 88 15                                 mov [DI], dl
+[ 122]        :                                       
+[ 123]    051E: B4 09                                 mov ah, 9
+[ 124]    0520: BA 62 02                              mov dx, offset endl
+[ 125]    0523: CD 21                                 int 21h
+[ 126]    0525: C3                                    RET
+[ 127]        :                                       
+[ 128]    0526:                                       convert_decimal:             ; takes number in dx register
+[ 129]    0526: 50                                    push ax
+[ 130]    0527: 52                                    push dx
+[ 131]    0528: 51                                    push cx
+[ 132]    0529: 53                                    push bx
+[ 133]        :                                       
+[ 134]    052A: BF 65 02                              mov DI, offset number_in_ASCII
+[ 135]        :                                       
+[ 136]    052D: 33 C9                                 xor cx, cx
+[ 137]    052F: 8B C2                                 mov ax, dx                  ; move the number from dx to register ax
+[ 138]    0531: 8A 1D                                 mov bl, [DI]                ; the lenght of numbers_in_binary
+[ 139]        :                                       
+[ 140]    0533:                                       ASCII_values_loop:
+[ 141]    0533: FE C3                                 inc bl
+[ 142]    0535: 33 D2                                 xor dx, dx
+[ 143]    0537: B2 0A                                 mov dl, 10
+[ 144]    0539: F6 F2                                 div dl
+[ 145]    053B: 80 C4 30                              add ah, 48                  ; fix the ASCII stuff, this is value
+[ 146]    053E: 88 21                                 mov [DI + bx], ah           ; move the location of the symbol to our symbol array, similar to array[i] = location
+[ 147]        :                                       
+[ 148]        :                                       
+[ 149]    0540: 32 E4                                 xor ah, ah                  ; reset ah so it does not break division
+[ 150]        :                                       
+[ 151]    0542: B6 00                                 mov dh, 0                   ; this one is used for comparing two values
+[ 152]    0544: 3A C6                                 cmp al, dh
+[ 153]    0546: 7E 02                                 jle exit_loop               ; if the number is 0 after division, exit the loop
+[ 154]        :                                       
+[ 155]    0548: EB E9                                 jmp ASCII_values_loop       ; continue the loop if the number is not 0 for further divisions
+[ 156]        :                                       
+[ 157]    054A:                                       exit_loop:
+[ 158]        :                                       
+[ 159]    054A: 8A D3                                 mov dl, bl                  ; save a copy
+[ 160]    054C: 8B 05                                 mov ax, [DI]                ; save the previous last position
+[ 161]    054E: B4 00                                 mov ah, 0                   ; remove the senior byte
+[ 162]    0550: 88 1D                                 mov [DI], bl                ; save the bx value
+[ 163]    0552: 04 01                                 add al, 1                   ; get the begining of element
+[ 164]        :                                       
+[ 165]    0554: 8A CA                                 mov cl, dl
+[ 166]    0556: 2A C8                                 sub cl, al                  ; get how many times to loop
+[ 167]        :                                       
+[ 168]    0558:                                       flip_loop:                  ; change the number from 4321 to its real value 1234
+[ 169]        :                                       ; al - the left element
+[ 170]        :                                       ; dl - the right element
+[ 171]    0558: 8A D8                                 mov bl, al
+[ 172]    055A: 8A 21                                 mov ah, [DI + bx]           ; get the left element
+[ 173]    055C: 8A DA                                 mov bl, dl
+[ 174]    055E: 8A 31                                 mov dh, [DI + bx]           ; get the right element
+[ 175]    0560: 3A E6                                 cmp ah, dh                  ; compare these two values
+[ 176]    0562: 74 08                                 je skip                     ; if they are the same, skip then
+[ 177]        :                                       
+[ 178]    0564: 8A D8                                 mov bl, al                  ; flip the two numbers in the array
+[ 179]    0566: 88 31                                 mov [DI + bx], dh
+[ 180]    0568: 8A DA                                 mov bl, dl
+[ 181]    056A: 88 21                                 mov [DI + bx], ah
+[ 182]        :                                       
+[ 183]    056C:                                       skip:
+[ 184]    056C: FE C0                                 inc al
+[ 185]    056E: FE CA                                 dec dl
+[ 186]        :                                       
+[ 187]    0570: E3 02                                 jcxz exi_loop
+[ 188]    0572: E2 E4                                 loop flip_loop
+[ 189]        :                                       
+[ 190]    0574:                                       exi_loop:
+[ 191]        :                                       
+[ 192]    0574: 5B                                    pop bx
+[ 193]    0575: 59                                    pop cx
+[ 194]    0576: 5A                                    pop dx
+[ 195]    0577: 58                                    pop ax
+[ 196]        :                                       
+[ 197]    0578: C3                                    RET
+[ 198]        :                                       ; return back to loop
+[ 199]        :                                       
+[ 200]    0579:                                       search_buff:                 ; search for information about the elements (amount of symbols, lower case, higher case, letters)
+[ 201]        :                                       
+[ 202]    0579: BF 10 02                              mov DI, offset numbers_in_binary    ; get the numbers_in_binary array address
+[ 203]        :                                       
+[ 204]    057C: 8B 45 01                              mov ax, [DI + 1]         ; get the symbol amount
+[ 205]    057F: 03 C1                                 add ax, cx               ; add the value with register cx to find how many symbols the file has now
+[ 206]    0581: 3B C1                                 cmp ax, cx
+[ 207]    0583: 7D 04                                 jnl number_not_higher_than_max
+[ 208]    0585: 33 C0                                 xor ax, ax
+[ 209]    0587: F7 D0                                 not ax
+[ 210]    0589:                                       number_not_higher_than_max:
+[ 211]    0589: 89 45 01                              mov [DI + 1], ax         ; save the value back in the numbers_in_binary array
+[ 212]        :                                       
+[ 213]    058C: 33 C0                                 xor ax, ax               ; reset register ax.
+[ 214]    058E: 33 D2                                 xor dx, dx               ; if dx register is set to one, then it is checking a word, otherwise, there is a special symbol
+[ 215]        :                                       
+[ 216]    0590: 33 D2                                 xor dx, dx
+[ 217]    0592: 8A 15                                 mov dl, [DI]             ; the info about previous check, if the program is checking the buffer first time, then this value is set to 0
+[ 218]        :                                       
+[ 219]    0594: BE 10 00                              mov SI, offset buff      ; the address of the buffer
+[ 220]        :                                       
+[ 221]    0597:                                       j:                       ; loop until register CX is equal to zero
+[ 222]        :                                       
+[ 223]    0597: B0 41                                 mov al, 65               ; the letter 'A'
+[ 224]    0599: 8A 24                                 mov ah, [SI]             ; move the first value in the buffer to the register ah
+[ 225]    059B: 3A E0                                 cmp ah, al               ; if previously there was a space but now there is a letter, then it is a new word.
+[ 226]    059D: 72 26                                 jnae not_letter          ; if value is less than 65, then it is definetely not a letter
+[ 227]        :                                       
+[ 228]    059F: B0 5A                                 mov al, 90               ; the letter 'Z'
+[ 229]    05A1: 3A E0                                 cmp ah, al
+[ 230]    05A3: 72 0E                                 jb higher_case           ; if the letter is higher case, then jump to the higher_case pointer, otherwise, the program needs to check if it is lower case letter
+[ 231]        :                                       
+[ 232]    05A5: B0 61                                 mov al, 97               ; the letter 'a'
+[ 233]    05A7: 3A E0                                 cmp ah, al
+[ 234]    05A9: 72 1A                                 jnae not_letter          ; if the value is not above or equal, then it is a symbol between higher and lower case letters
+[ 235]        :                                       
+[ 236]    05AB: B0 7A                                 mov al, 122              ; the letter 'z'
+[ 237]    05AD: 3A E0                                 cmp ah, al
+[ 238]    05AF: 72 0B                                 jb lower_case            ; if the letter is lower case, then jump to the lower_case pointer, otherwise, it is not a letter
+[ 239]        :                                       
+[ 240]    05B1: EB 12                                 jmp not_letter
+[ 241]        :                                       
+[ 242]    05B3:                                       higher_case:             ; save how much higher case letters there are in the numbers_in_binary array
+[ 243]    05B3: 8B 45 07                              mov ax, [DI + 7]
+[ 244]    05B6: 40                                    inc ax
+[ 245]    05B7: 89 45 07                              mov [DI + 7], ax
+[ 246]    05BA: EB 28                                 jmp check_new_word
+[ 247]        :                                       
+[ 248]    05BC:                                       lower_case:              ; save how much lower case letters there are in the numbers_in_binary array
+[ 249]    05BC: 8B 45 05                              mov ax, [DI + 5]
+[ 250]    05BF: 40                                    inc ax
+[ 251]    05C0: 89 45 05                              mov [DI + 5], ax
+[ 252]        :                                       
+[ 253]    05C3: EB 1F                                 jmp check_new_word
+[ 254]        :                                       
+[ 255]    05C5:                                       not_letter:              ; if it is not letter, check if it is a space or new line
+[ 256]    05C5: B0 09                                 mov al, 9                ; tab
+[ 257]    05C7: 3A E0                                 cmp ah, al
+[ 258]    05C9: 74 14                                 je special_symbol
+[ 259]    05CB: B0 0A                                 mov al, 10               ; newl
+[ 260]    05CD: 3A E0                                 cmp ah, al
+[ 261]    05CF: 74 0E                                 je special_symbol
+[ 262]    05D1: B0 0D                                 mov al, 13               ; create
+[ 263]    05D3: 3A E0                                 cmp ah, al
+[ 264]    05D5: 74 08                                 je special_symbol
+[ 265]    05D7: B0 20                                 mov al, 32               ; space
+[ 266]    05D9: 3A E0                                 cmp ah, al
+[ 267]    05DB: 74 02                                 je special_symbol
+[ 268]    05DD: EB 15                                 jmp exit_check           ; if it is not a special symbol, then skip the rest of the checking
+[ 269]        :                                       
+[ 270]    05DF:                                       special_symbol:          ; if it is a special symbol, set register dx to zero
+[ 271]    05DF: BA 00 00                              mov dx, 0                ; it is a special symbol, do nothing
+[ 272]    05E2: EB 10                                 jmp exit_check
+[ 273]        :                                       
+[ 274]    05E4:                                       check_new_word:          ; check if the current symbol is the beggining of a new word
+[ 275]    05E4: B8 01 00                              mov ax, 1
+[ 276]    05E7: 3B C2                                 cmp ax, dx
+[ 277]    05E9: 74 09                                 je exit_check            ; if previously the program was checking a word too, then it is not a new word
+[ 278]        :                                       
+[ 279]    05EB: 8B D0                                 mov dx, ax               ; set dx to one to indicate that it is a new word
+[ 280]    05ED: 8B 45 03                              mov ax, [DI + 3]         ; word counter
+[ 281]    05F0: 40                                    inc ax
+[ 282]    05F1: 89 45 03                              mov [DI + 3], ax         ; save word counts
+[ 283]        :                                       
+[ 284]    05F4:                                       exit_check:              ; skip checking symbol
+[ 285]    05F4: 46                                    inc SI                   ; lastly increment SI to check the next element in the buffer
+[ 286]    05F5: E2 A0                                 loop j
+[ 287]        :                                       
+[ 288]    05F7: 88 15                                 mov [DI], dl             ; save the info if the program was checing word or special symbol for the next time
+[ 289]    05F9: C3                                    RET
+[ 290]        :                                       end start
+[ 291]        :                                       
+[ 292]        :                                       
+ 
+===================================================================================================
+ 
+EXE HEADER - bytes from 0000 to 01FF inclusive.
+
+0000: 4D      -   exe signature (M)
+0001: 5A      -   exe signature (Z)
+0002: FA      -   bytes on last page (l.byte)
+0003: 01      -   bytes on last page (h.byte)
+0004: 04      -   512 byte pages in file (l.byte)
+0005: 00      -   512 byte pages in file (h.byte)
+0006: 01      -   relocations (l.byte)
+0007: 00      -   relocations (h.byte)
+0008: 20      -   paragraphs in header (l.byte)
+0009: 00      -   paragraphs in header (h.byte)
+000A: 00      -   minimum memory (l.byte)
+000B: 00      -   minimum memory (h.byte)
+000C: FF      -   maximum memory (l.byte)
+000D: FF      -   maximum memory (h.byte)
+000E: 00      -   SS - stack segment (l.byte)
+000F: 00      -   SS - stack segment (h.byte)
+0010: 00      -   SP - stack pointer (l.byte)
+0011: 01      -   SP - stack pointer (h.byte)
+0012: 7D      -   check sum (l.byte)
+0013: 73      -   check sum (h.byte)
+0014: 00      -   IP - instruction pointer (l.byte)
+0015: 00      -   IP - instruction pointer (h.byte)
+0016: 47      -   CS - code segment (l.byte)
+0017: 00      -   CS - code segment (h.byte)
+0018: 1E      -   relocation table adress (l.byte)
+0019: 00      -   relocation table adress (h.byte)
+001A: 00      -   overlay number (l.byte)
+001B: 00      -   overlay number (h.byte)
+001C: 01      -   signature (l.byte)
+001D: 00      -   signature (h.byte)
+001E: 01      -   relocation table - offset inside segment (l.byte)
+001F: 00      -   relocation table - offset inside segment (h.byte)
+0020: 47      -   relocation table - segment anchor (l.byte)
+0021: 00      -   relocation table - segment anchor (h.byte)
+0022 to 01FF  -   reserved relocation area  (00) 
+
+
+
+
+===================================================================================================

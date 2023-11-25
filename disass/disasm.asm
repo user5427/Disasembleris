@@ -32,6 +32,9 @@
     mod_ db 0
     reg_ db 0
     address_ db 0, 0
+    adr_offset db 0
+
+    number_in_ASCII db 0, 255 dup(?)
 
 lots_of_names:
     add_n db "ADD", 24h
@@ -624,7 +627,7 @@ effective_address:
 
 
     not_first_column:
-    
+
 
     end_checking_address_reg:
 RET
@@ -738,6 +741,104 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     
 RET
 
+convert_to_decimal:             ; takes number in the adr_offset
+    push ax
+    push dx
+    push cx
+    push bx
+    
+    xor dx, dx
+    mov dl, adr_offset
+    mov DI, offset number_in_ASCII               
+    
+    xor cx, cx
+    mov ax, dx
+    mov bl, [DI]                ; the lenght of numbers_in_binary
+
+    ASCII_values_loop:   
+    inc bl
+    push bx
+    
+    cmp ah, 0
+    jne large_number
+    
+    xor dx, dx
+    mov dl, 10
+    div dl
+    add ah, 48                  ; fix the ASCII stuff, this is value 
+    mov dl, ah   
+    xor ah, ah                  ; reset ah so it does not break division
+    jmp save_number
+ 
+    large_number:       
+    xor dx, dx
+    mov bx, 10
+    div bx
+    add dl, 48
+    
+    save_number:
+    pop bx
+    mov [DI + bx], dl           ; move the location of the symbol to our symbol array, similar to array[i] = location      
+    
+    
+    xor dx, dx                  ; this one is used for comparing two values
+    cmp ax, dx
+    jle exit_loop               ; if the number is 0 after division, exit the loop
+
+    jmp ASCII_values_loop       ; continue the loop if the number is not 0 for further divisions
+
+    exit_loop:
+        
+    mov dl, bl                  ; save a copy
+    mov ax, [DI]                ; save the previous last position             
+    mov ah, 0                   ; remove the senior byte
+    mov [DI], bl                ; save the bx value
+    add al, 1                   ; get the begining of element
+    
+    mov cl, dl
+    sub cl, al                  ; get how many times to loop
+    
+    flip_loop:                  ; change the number from 4321 to its real value 1234                              
+                                ; al - the left element
+                                ; dl - the right element                    
+    mov bl, al
+    mov ah, [DI + bx]           ; get the left element
+    mov bl, dl
+    mov dh, [DI + bx]           ; get the right element  
+    cmp ah, dh                  ; compare these two values
+    je skip                     ; if they are the same, skip then
+    
+    mov bl, al                  ; flip the two numbers in the array
+    mov [DI + bx], dh   
+    mov bl, dl
+    mov [DI + bx], ah
+    
+    skip:
+    inc al
+    dec dl
+    
+    jcxz exi_loop     
+    loop flip_loop    
+ 
+    exi_loop:
+
+    ; add the $ symbol to number
+    mov DI, offset ASCII_values_loop
+    mov bx, [DI] ; the length of number
+    mov al, 24h
+    mov [DI + bx], al ; move the $ symbol
+    
+    mov ptr_, DI
+    add ptr_, 1
+    call write_to_line
+
+    pop bx
+    pop cx
+    pop dx
+    pop ax
+    
+RET
+                      
 
 check_byte:
     xor ax, ax

@@ -25,6 +25,7 @@
     file_end db 0            ; is set to 1 when file end is reached
     next_byte db 0           
     next_byte_available db 0 
+    second_byte_used db 1    ; a quick way to tell the function that it should renew the current and following byte values. May only be used when the next_byte value was used
 
     sr_ db 0
     w_ db 0
@@ -32,6 +33,7 @@
     reg_ db 0
     adress_ db 0, 0
 
+lots_of_names:
     add_n db "ADD", 24h
     push_n db "PUSH", 24h
     pop_n db "POP", 24h
@@ -175,7 +177,7 @@
     di_n db "DI", 24h
     bp_n db "BP", 24h
     sp_n db "SP", 24h
-
+;
 
 .code
 ORG 100h
@@ -227,7 +229,7 @@ loop_over_bytes:
 
     loop_bytes:                ; do this until the end of file
     
-    call read_bytes              ; returns byte to byte_ from buffer
+    call read_bytes            ; returns byte to byte_ from buffer
     call check_byte            ; check the command
 
     jmp loop_bytes
@@ -246,19 +248,30 @@ RET
 
 read_bytes:
     push ax
-    ;call get_byte
+    push cx
+    cmp second_byte_used, 1
+    jne skip_double_reading
+    mov cx, 2
+    skip_double_reading:
+    mov cx, 1
+    
+
+    get_bytes_loop:
 
     mov next_byte_available, 0
-    cmp file_end, 1
-    je end_of_file_reached
-    mov al, byte_
-    call get_byte
-    mov ah, byte_
-    mov next_byte, ah
+
+    mov al, next_byte
     mov byte_, al
+
+    call get_byte
+    cmp file_end, 1
+    je end_of_file_reached:
     mov next_byte_available, 1
 
+    loop get_bytes_loop
+
     end_of_file_reached:
+    pop cx
     pop ax
 RET
 
@@ -281,7 +294,7 @@ get_byte:
     mov SI, offset buff
 
     mov al, [SI + 1]
-    mov byte_, al
+    mov next_byte, al
     inc index
 
     jmp skip_file_end_indicator

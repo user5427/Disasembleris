@@ -236,15 +236,6 @@ loop_over_bytes:
 
 RET
 
-read_buffer:
-    mov dx, offset buff      ; the start adress of the array "buff"
-    xor cx, cx               ; just in case
-    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
-    mov bx, fh_in            ; bx- the input file handle
-    mov cx, 200              ; cx - number of bytes to read
-    int 21h                  ;
-    JC error                 ; if there are errors, stop the program
-RET
 
 read_bytes:
     push ax
@@ -259,13 +250,11 @@ read_bytes:
     get_bytes_loop:
 
     mov next_byte_available, 0
-
     mov al, next_byte
     mov byte_, al
-
     call get_byte
     cmp file_end, 1
-    je end_of_file_reached:
+    je end_of_file_reached
     mov next_byte_available, 1
 
     loop get_bytes_loop
@@ -309,6 +298,17 @@ get_byte:
     pop ax
 
 RET
+
+read_buffer:
+    mov dx, offset buff      ; the start adress of the array "buff"
+    xor cx, cx               ; just in case
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, fh_in            ; bx- the input file handle
+    mov cx, 200              ; cx - number of bytes to read
+    int 21h                  ;
+    JC error                 ; if there are errors, stop the program
+RET
+
 
 write_to_buff: ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
     push ax
@@ -381,6 +381,7 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     pop ax
 RET
 
+
 add_space_line:
     mov bx, offset line
     mov [bx + line_length], ' '
@@ -393,6 +394,7 @@ add_comma_line:
     inc line_length
     call add_space_line
 RET
+
 
 find_write_register:
     push ax
@@ -478,6 +480,69 @@ find_write_register:
     ;<------------>
     not_word_size_regiters:
 
+    cmp reg_, 0
+    jne not_al
+    mov ax, offset al_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_al:
+
+    cmp reg_, 1
+    jne not_cl
+    mov ax, offset cl_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_cl:
+    
+    cmp reg_, 2
+    jne not_dl
+    mov ax, offset dl_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_dl:
+
+    cmp reg_, 3
+    jne not_bl
+    mov ax, offset bl_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_bl:
+
+    cmp reg_, 4
+    jne not_ah
+    mov ax, offset ah_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_ah:
+    
+    cmp reg_, 5
+    jne not_ch
+    mov ax, offset ch_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_ch:
+
+    cmp reg_, 6
+    jne not_dh
+    mov ax, offset dh_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_dh:
+
+    cmp reg_, 7
+    jne not_bh
+    mov ax, offset bh_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_bh:
 
     ;<--------------->
     not_simple_registers:
@@ -555,8 +620,10 @@ number_to_hex:
     push cx
     push dx
 
-    mov al, byte_      ; in reality al is actually --00
-    mov ah, next_byte  ; while ah is for 00--
+    mov SI, offset adress_
+
+    mov al, [SI]      ; in reality al is actually --00
+    mov ah, [SI + 1]  ; while ah is for 00--
 
     mov cl, ah
     shr cl, 4
@@ -597,6 +664,7 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     inc line_length
     
 RET
+
 
 check_byte:
     xor ax, ax

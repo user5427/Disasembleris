@@ -3,26 +3,183 @@
 ;.stack 100h
 .data
 
+    endl db 0dh, 0ah, 24h
+
     fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db 127 dup(?)
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
 
-    buff db 200h dup(?)      ; the buffer which will be used to read the input file later
-    index db -1              ; index used to get byte from buffer and remember last location
-    file_end db 0            ; is set to 1 when file end is reached
-    byte_ db 8 dup(?)        ; used to get a byte from buffer
+    buff db 200 dup(?)      ; the buffer which will be used to read the input file later
+    read_symbols db 0
 
-    write_buff db 200h (?)
+    write_buff db 200 dup(?)
     write_index db 0
+    line db 50 dup(?)        ; line buffer, used so the code is not as crazy
+    line_length db 0         ; line length
+    ptr_ dw 0
 
-    decoded_IP dw 0 0        ; jeigu noresim panaudoti
+    index db 0               ; index used to get byte from buffer and remember last location
+    byte_ db 0               ; used to get a byte from buffer
+    file_end db 0            ; is set to 1 when file end is reached
+    next_byte db 0           
+    next_byte_available db 0 
+
+    sr_ db 0
+    w_ db 0
+    mod_ db 0
+    reg_ db 0
+    adress_ db 0, 0
+
+    add_n db "ADD", 24h
+    push_n db "PUSH", 24h
+    pop_n db "POP", 24h
+    or_n db "OR", 24h
+    adc_n db "ADC", 24h
+    sbb_n db "SBB", 24h
+    and_n db "AND", 24h
+    daa_n db "DAA", 24h
+    sub_n db "SUB", 24h
+    das_n db "DAS", 24h
+    xor_n db "XOR", 24h
+    aaa_n db "AAA", 24h
+    cmp_n db "CMP", 24h
+    aas_n db "AAS", 24h
+    inc_n db "INC", 24h
+    dec_n db "DEC", 24h
+    jo_n db "JO", 24h
+    jno_n db "JNO", 24h
+    jnae_n db "JNAE", 24h
+    jb_n db "JB", 24h
+    jc_n db "JC", 24h
+    jae_n db "JAE", 24h
+    jnb_n db "JNB", 24h
+    jnc_n db "JNC", 24h
+    je_n db "JE", 24h
+    jz_n db "JZ", 24h
+    jne_n db "JNE", 24h
+    jnz_n db "JNZ", 24h
+    jbe_n db "JBE", 24h
+    jna_n db "JNA", 24h
+    ja_n db "JA", 24h
+    jnbe_n db "JNBE", 24h
+    js_n db "JS", 24h
+    jns_n db "JNS", 24h
+    jp_n db "JP", 24h
+    jpe_n db "JPE", 24h
+    jnp_n db "JNP", 24h
+    jpo_n db "JPO", 24h
+    jl_n db "JL", 24h
+    jnge_n db "JNGE", 24h
+    jge_n db "JGE", 24h
+    jnl_n db "JNL", 24h
+    jle_n db "JLE", 24h
+    jng_n db "JNG", 24h
+    jg_n db "JG", 24h
+    jnle_n db "JNLE", 24h
+    test_n db "TEST", 24h
+    xchg_n db "XCHG", 24h
+    lea_n db "LEA", 24h
+    cbv_n db "CBV", 24h
+    cwd_n db "CWD", 24h
+    call_n db "CALL", 24h
+    wait_n db "WAIT", 24h
+    pushf_n db "PUSHF", 24h
+    popf_n db "POPF", 24h
+    sahf_n db "SAHF", 24h
+    lahf_n db "LAHF", 24h
+    movsb_n db "MOVSB", 24h
+    movsw_n db "MOVSW", 24h
+    cmpsb_n db "CMPSB", 24h
+    cmpsw_n db "CMPSW", 24h
+    stosb_n db "STOSB", 24h
+    stosw_n db "STOSW", 24h
+    lodsb_n db "LODSB", 24h
+    lodsw_n db "LODSW", 24h
+    scasb_n db "SCASB", 24h
+    scasw_n db "SCASW", 24h
+    ret_n db "RET", 24h
+    retn_n db "RETN", 24h
+    les_n db "LES", 24h
+    lds_n db "LDS", 24h
+    retf_n db "RETF", 24h
+    int_3_n db "INT 3", 24h
+    int_n db "INT", 24h
+    into_n db "INTO", 24h
+    iret_n db "IRET", 24h
+    rol_n db "ROL", 24h
+    ror_n db "ROR", 24h
+    rcl_n db "RCL", 24h
+    rcr_n db "RCR", 24h
+    shl_n db "SHL", 24h
+    sal_n db "SAL", 24h
+    shr_n db "SHR", 24h
+    sar_n db "SAR", 24h
+    aam_n db "AAM", 24h
+    aad_n db "AAD", 24h
+    xlat_n db "XLAT", 24h
+    esc_n db "ESC", 24h
+    loopne_n db "LOOPNE", 24h
+    loopnz_n db "LOOPNZ", 24h
+    loope_n db "LOOPE", 24h
+    loopz_n db "LOOPZ", 24h
+    loop_n db "LOOP", 24h
+    jcxz_n db "JCXZ", 24h
+    in_n db "IN", 24h
+    out_n db "OUT", 24h
+    jmp_n db "JMP", 24h
+    lock_n db "LOCK", 24h
+    repnz_n db "REPNZ", 24h
+    repne_n db "REPNE", 24h
+    rep_n db "REP", 24h
+    repz_n db "REPZ", 24h
+    repe_n db "REPE", 24h
+    hlt_n db "HLT", 24h
+    cmc_n db "CMC", 24h
+    not_n db "NOT", 24h
+    neg_n db "NEG", 24h
+    mul_n db "MUL", 24h
+    imul_n db "IMUL", 24h
+    div_n db "DIV", 24h
+    idiv_n db "IDIV", 24h
+    clc_n db "CLC", 24h
+    stc_n db "STC", 24h
+    cli_n db "CLI", 24h
+    sti_n db "STI", 24h
+    cld_n db "CLD", 24h
+    std_n db "STD", 24h
+
+    ; registrai
+    ax_n db "AX", 24h
+    al_n db "AL", 24h
+    ah_n db "AH", 24h
+    bx_n db "BX", 24h
+    bl_n db "BL", 24h
+    bh_n db "BH", 24h
+    cx_n db "CX", 24h
+    cl_n db "CL", 24h
+    ch_n db "CH", 24h
+    dx_n db "DX", 24h
+    dl_n db "DL", 24h
+    dh_n db "DH", 24h
+
+    ; segmento registrai
+    es_n db "ES", 24h
+    cs_n db "CS", 24h
+    ss_n db "SS", 24h
+    ds_n db "DS", 24h
+
+    ; kiti registrai
+    si_n db "SI", 24h
+    di_n db "DI", 24h
+    bp_n db "BP", 24h
+    sp_n db "SP", 24h
+
 
 .code
 ORG 100h
 start:
-    
     call read_argument
     call open_file 
     call loop_over_bytes     
@@ -70,7 +227,7 @@ loop_over_bytes:
 
     loop_bytes:                ; do this until the end of file
     
-    call get_byte              ; returns byte to byte_ from buffer
+    call read_bytes              ; returns byte to byte_ from buffer
     call check_byte            ; check the command
 
     jmp loop_bytes
@@ -82,9 +239,27 @@ read_buffer:
     xor cx, cx               ; just in case
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
     mov bx, fh_in            ; bx- the input file handle
-    mov cx, 00A0h            ; cx - number of bytes to read
+    mov cx, 200              ; cx - number of bytes to read
     int 21h                  ;
     JC error                 ; if there are errors, stop the program
+RET
+
+read_bytes:
+    push ax
+    ;call get_byte
+
+    mov next_byte_available, 0
+    cmp file_end, 1
+    je end_of_file_reached
+    mov al, byte_
+    call get_byte
+    mov ah, byte_
+    mov next_byte, ah
+    mov byte_, al
+    mov next_byte_available, 1
+
+    end_of_file_reached:
+    pop ax
 RET
 
 get_byte:
@@ -93,34 +268,24 @@ get_byte:
     push cx
     push dx
 
-    cmp index, -1
-    jne skip_first_time_reading
-    mov index, 0
-    call read_buffer
-    skip_first_time_reading:
-
-    cmp index, 160
+    mov al, read_symbols
+    cmp index, al
     jnae skip_reading
-    mov index, 0
+    mov index, 0                ; reset index
     call read_buffer
+    mov read_symbols, cl
     skip_reading:
 
     jcxz file_end_reached
 
     mov SI, offset buff
-    mov DI, offset byte_
-    mov cx, 8
 
-    okay:
-    mov al, [SI + index]
-    mov [DI], al
-    inc SI
-    inc DI
-    loop okay
+    mov al, [SI + 1]
+    mov byte_, al
+    inc index
 
-    add index, 8
-    
     jmp skip_file_end_indicator
+
     file_end_reached:
     mov file_end, 1
     skip_file_end_indicator:
@@ -132,23 +297,307 @@ get_byte:
 
 RET
 
-write_to_file ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
+write_to_buff: ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
+    push ax
+    push bx
+    push cx
+    push dx
 
+    xor ax, ax
+    mov al, write_index
+    add al, line_length
+    cmp al, 197
+
+    jnae skip_writing_to_file
+    call write_to_file
+    mov write_index, 0
+    skip_writing_to_file:
+
+    mov SI, offset line
+    mov DI, offset write_buff
+    xor cx, cx
+    mov cl, line_length
+
+    exchange_bytes:
+    mov al, [SI]
+    mov [DI + write_index], al
+    inc write_index
+    inc SI
+    loop exchange_bytes
+    mov line_length, 0
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+
+write_to_file:
+    mov ax, 4000h
+    mov bx, fh_out
+    xor cx, cx
+    mov cl, write_index
+    mov dx, offset write_buff
+    int 21h
+RET
+
+write_to_line: ; takes a pointer and writes its contents to line, yes very simple
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov SI, ptr_
+    mov DI, offset line
+
+    copy_values:
+    mov al, [SI]
+    cmp al, 24h
+    je exit_copy_loop
+
+    mov [DI + line_length], al
+    inc line_length
+    inc SI
+
+    jmp copy_values
+    exit_copy_loop:
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+
+add_space_line:
+    mov bx, offset line
+    mov [bx + line_length], ' '
+    inc line_length
+RET
+
+add_comma_line:
+    mov bx, offset line
+    mov [bx + line_length], ','
+    inc line_length
+    call add_space_line
+RET
+
+find_write_register:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov al, mod_
+    cmp al, 3
+    jne not_simple_registers
+    ;<--if(mod==11)-->
+
+    mov ah, w_
+    cmp ah, 1
+    jne not_word_size_regiters
+    ;<--if(w==1)-->
+
+    cmp reg_, 0
+    jne not_ax
+    mov ax, offset ax_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_ax:
+
+    cmp reg_, 1
+    jne not_cx
+    mov ax, offset cx_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_cx:
+    
+    cmp reg_, 2
+    jne not_dx
+    mov ax, offset dx_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_dx:
+
+    cmp reg_, 3
+    jne not_bx
+    mov ax, offset bx_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_bx:
+
+    cmp reg_, 4
+    jne not_sp
+    mov ax, offset sp_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_sp:
+    
+    cmp reg_, 5
+    jne not_bp
+    mov ax, offset bp_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_bp:
+
+    cmp reg_, 6
+    jne not_si
+    mov ax, offset si_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_si:
+
+    cmp reg_, 7
+    jne not_di
+    mov ax, offset di_n
+    mov ptr_, ax
+    call write_to_line
+    jmp end_checking_registers
+    not_di:
+    
+    
+    ;<------------>
+    not_word_size_regiters:
+
+
+    ;<--------------->
+    not_simple_registers:
+
+    end_checking_registers:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+RET
+
+find_write_seg_register:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov al, sr_
+    cmp al, 0
+    jne skip_es
+    ;<--if-->
+    mov ax, offset es_n
+    mov ptr_, ax
+    call write_to_line
+    jmp done_checking_seg
+    ;<------>  
+    skip_es:
+
+
+    cmp al, 1
+    jne skip_cs
+    ;<--if-->
+    mov ax, offset cs_n
+    mov ptr_, ax
+    call write_to_line
+    jmp done_checking_seg
+    ;<------>      
+    skip_cs:
+
+    
+    cmp al, 2
+    jne skip_ss
+    ;<--if-->
+    mov ax, offset ss_n
+    mov ptr_, ax
+    call write_to_line
+    jmp done_checking_seg
+    ;<------>      
+    skip_ss:
+
+
+    cmp al, 3
+    jne skip_ds
+    ;<--if-->
+    mov ax, offset ds_n
+    mov ptr_, ax
+    call write_to_line
+    jmp done_checking_seg
+    ;<------>  
+    skip_ds:
+
+
+    done_checking_seg:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+RET
+
+number_to_hex:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov al, byte_      ; in reality al is actually --00
+    mov ah, next_byte  ; while ah is for 00--
+
+    mov cl, ah
+    shr cl, 4
+    call convert_half_byte_to_HEX
+    mov cl, ah
+    shl cl, 4
+    shr cl, 4
+    call convert_half_byte_to_HEX
+
+    mov cl, al
+    shr cl, 4
+    call convert_half_byte_to_HEX
+    mov cl, al
+    shl cl, 4
+    shr cl, 4
+    call convert_half_byte_to_HEX
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+
+RET
+
+convert_half_byte_to_HEX: ; takes register 'cl' as input
+    cmp cl, 9
+    jbe number_
+    add cl, 55
+    jmp write_symbol
+
+    number_:
+    add cl, 48
+
+    write_symbol:
+    mov bx, offset line
+    mov [bx + line_length], cl
+    inc line_length
+    
 RET
 
 check_byte:
     xor ax, ax
-
+    
     mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
-    shr al, 2 ;  0000 00dw -> 0000 0000
+    shr al, 2 ;  0000 00dw -> --00 0000
     cmp al, 0 
     jne not_1 
 
     not_1:
 
     mov al, byte_ ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
-    shr al, 1 ; 0000 010w -> 0000 0010
-    shl al, 1 ; 000 0010 -> 0000 0100
+    shr al, 1 ; 0000 010w -> -000 0010
+    shl al, 1 ; 000 0010 -> 0000 010-
     cmp al, 4 
     jne not_2 
 
@@ -278,18 +727,24 @@ check_byte:
 
     mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
 
+    
+    mov al, next_byte_available
+    cmp al, 1
+    jne skip_two_bytes_commands_1                           ;00     ;000
     mov al, byte_ ; shit it needs two bytes ->>>> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
+    mov ah, next_byte
+    shr al, 2 ; -- 1000 00
+    shl al, 2 ; 1000 00 --
+    shl ah, 2 ; 000 r/m ---
+    shr ah, 5 ; ----- 000
+    shl ah, 3 ; -- 000 ---
+    cmp al, 128
+    jne skip_two_bytes_commands_1
+    cmp ah, 0
+    jne skip_two_bytes_commands_1
 
+    skip_two_bytes_commands_1:
 RET
-
-
-
-
-; ignore everything below, it is pointless
-
-    ;mov ah, 9
-    ;mov dx, offset fn_in
-    ;int 21h
 
     mov ax, 4c00h           ; end the program
     int 21h  

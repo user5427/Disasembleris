@@ -5,6 +5,7 @@
 
     endl db 0dh, 0ah, 24h
 
+    argument db 127 dup(?)
     fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db 127 dup(?)
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
@@ -186,10 +187,11 @@ lots_of_names:
 ORG 100h
 start:
     call read_argument
-    call open_file 
+    ; find the inputfile, output file
+    call open_input_file 
     call loop_over_bytes     
 
-    mov ax, 4c01h
+    mov ax, 4c00h
     int 21h 
 
 ; -- The end.
@@ -205,7 +207,7 @@ read_argument:
     mov cl, es:[80h]         ; the length of the argument?
     mov si, 82h                 ;We can start from 82h, since 81h              ; the start of the argument? will always contain a space bar
     dec cl                      ;We need to adjust C so that it truthfully represents the character amount
-    mov di, offset fn_in     ; move the adress of file name to register dx
+    mov di, offset argument     ; move the adress of file name to register dx
     jcxz error
 
     SKAITYTI:           
@@ -217,7 +219,7 @@ read_argument:
 
 RET
 
-open_file:
+open_input_file:
     mov ax, 3d00h            ; open existing file in read mode only
     mov dx, offset fn_in     ; return file handle to register AX
     inc dx                   ; ignore the whitespace at start
@@ -379,7 +381,30 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     pop bx
     pop ax
 RET
+end_line: ; add endl to line
+    push ax
+    push bx
+    push cx
+    push dx
+    
+    mov SI, offset endl
+    mov DI, offset line
+    mov bx, offset line_length
+    add DI, bx
 
+    mov cx, 3
+    copy_endl:
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    loop copy_endl
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
 
 add_space_line:
     mov bx, offset line
@@ -543,6 +568,7 @@ find_write_register:
 
     ;<--------------->
     not_simple_registers:
+    call effective_address
 
     end_checking_registers:
     pop dx
@@ -551,12 +577,9 @@ find_write_register:
     pop ax
 
 RET
-
 effective_address:
     call add_left_bracket
-
-    cmp mod_, 0
-    jne not_first_column
+    
 
     cmp reg_, 0
     jne not_BX_SI
@@ -567,6 +590,7 @@ effective_address:
     call write_to_line
     jmp end_checking_address_reg
     not_BX_SI:
+
 
     cmp reg_, 1
     jne not_BX_DI
@@ -614,11 +638,18 @@ effective_address:
 
     cmp reg_, 6
     jne not_address
+    cmp mod_, 0
+    jne second_column_BP_offset
     call address_to_hex
+    jmp end_checking_address_reg
+
+    second_column_BP_offset:
+    mov ptr_, offset bp_n
+    call write_to_line
     jmp end_checking_address_reg
     not_address:
 
-    cmp reg_, 6
+    cmp reg_, 7
     jne bx_as_address
     mov ptr_, offset bx_n
     call write_to_line
@@ -626,12 +657,15 @@ effective_address:
     bx_as_address:
 
 
-    not_first_column:
-
-
     end_checking_address_reg:
-RET
+    cmp mod_, 0
+    je skip_adding_offset
+    call add_plus
+    call convert_to_decimal
 
+    skip_adding_offset:
+    call add_right_bracket
+RET
 find_write_seg_register:
     push ax
     push bx
@@ -740,7 +774,6 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     inc line_length
     
 RET
-
 convert_to_decimal:             ; takes number in the adr_offset
     push ax
     push dx
@@ -983,8 +1016,7 @@ check_byte:
     mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
 
     
-    mov al, next_byte_available
-    cmp al, 1
+    cmp next_byte_available, 1
     jne skip_two_bytes_commands_1                           ;00     ;000
     mov al, byte_ ; shit it needs two bytes ->>>> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
     mov ah, next_byte
@@ -1000,9 +1032,6 @@ check_byte:
 
     skip_two_bytes_commands_1:
 RET
-
-    mov ax, 4c00h           ; end the program
-    int 21h  
 
 end start
 

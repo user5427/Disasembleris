@@ -31,7 +31,7 @@
     w_ db 0
     mod_ db 0
     reg_ db 0
-    adress_ db 0, 0
+    address_ db 0, 0
 
 lots_of_names:
     add_n db "ADD", 24h
@@ -263,7 +263,6 @@ read_bytes:
     pop cx
     pop ax
 RET
-
 get_byte:
     push ax
     push bx
@@ -298,7 +297,6 @@ get_byte:
     pop ax
 
 RET
-
 read_buffer:
     mov dx, offset buff      ; the start adress of the array "buff"
     xor cx, cx               ; just in case
@@ -344,7 +342,6 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     pop bx
     pop ax
 RET
-
 write_to_file:
     mov ax, 4000h
     mov bx, fh_out
@@ -353,7 +350,6 @@ write_to_file:
     mov dx, offset write_buff
     int 21h
 RET
-
 write_to_line: ; takes a pointer and writes its contents to line, yes very simple
     push ax
     push bx
@@ -387,7 +383,21 @@ add_space_line:
     mov [bx + line_length], ' '
     inc line_length
 RET
-
+add_left_bracket:
+    mov bx, offset line
+    mov [bx + line_length], '['
+    inc line_length
+RET
+add_right_bracket:
+    mov bx, offset line
+    mov [bx + line_length], ']'
+    inc line_length
+RET
+add_plus:
+    mov bx, offset line
+    mov [bx + line_length], '+'
+    inc line_length
+RET
 add_comma_line:
     mov bx, offset line
     mov [bx + line_length], ','
@@ -414,64 +424,56 @@ find_write_register:
 
     cmp reg_, 0
     jne not_ax
-    mov ax, offset ax_n
-    mov ptr_, ax
+    mov ptr_, offset ax_n
     call write_to_line
     jmp end_checking_registers
     not_ax:
 
     cmp reg_, 1
     jne not_cx
-    mov ax, offset cx_n
-    mov ptr_, ax
+    mov ptr_, offset cx_n
     call write_to_line
     jmp end_checking_registers
     not_cx:
     
     cmp reg_, 2
     jne not_dx
-    mov ax, offset dx_n
-    mov ptr_, ax
+    mov ptr_, offset dx_n
     call write_to_line
     jmp end_checking_registers
     not_dx:
 
     cmp reg_, 3
     jne not_bx
-    mov ax, offset bx_n
-    mov ptr_, ax
+    mov ptr_, offset bx_n
     call write_to_line
     jmp end_checking_registers
     not_bx:
 
     cmp reg_, 4
     jne not_sp
-    mov ax, offset sp_n
-    mov ptr_, ax
+    mov ptr_, offset sp_n
     call write_to_line
     jmp end_checking_registers
     not_sp:
     
     cmp reg_, 5
     jne not_bp
-    mov ax, offset bp_n
-    mov ptr_, ax
+    mov ptr_, offset bp_n
     call write_to_line
     jmp end_checking_registers
     not_bp:
 
     cmp reg_, 6
     jne not_si
-    mov ax, offset si_n
-    mov ptr_, ax
+    mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_registers
     not_si:
 
     cmp reg_, 7
     jne not_di
-    mov ax, offset di_n
-    mov ptr_, ax
+    mov ptr_, offset di_n
     call write_to_line
     jmp end_checking_registers
     not_di:
@@ -482,64 +484,56 @@ find_write_register:
 
     cmp reg_, 0
     jne not_al
-    mov ax, offset al_n
-    mov ptr_, ax
+    mov ptr_, offset al_n
     call write_to_line
     jmp end_checking_registers
     not_al:
 
     cmp reg_, 1
     jne not_cl
-    mov ax, offset cl_n
-    mov ptr_, ax
+    mov ptr_, offset cl_n
     call write_to_line
     jmp end_checking_registers
     not_cl:
     
     cmp reg_, 2
     jne not_dl
-    mov ax, offset dl_n
-    mov ptr_, ax
+    mov ptr_, offset dl_n
     call write_to_line
     jmp end_checking_registers
     not_dl:
 
     cmp reg_, 3
     jne not_bl
-    mov ax, offset bl_n
-    mov ptr_, ax
+    mov ptr_, offset bl_n
     call write_to_line
     jmp end_checking_registers
     not_bl:
 
     cmp reg_, 4
     jne not_ah
-    mov ax, offset ah_n
-    mov ptr_, ax
+    mov ptr_, offset ah_n
     call write_to_line
     jmp end_checking_registers
     not_ah:
     
     cmp reg_, 5
     jne not_ch
-    mov ax, offset ch_n
-    mov ptr_, ax
+    mov ptr_, offset ch_n
     call write_to_line
     jmp end_checking_registers
     not_ch:
 
     cmp reg_, 6
     jne not_dh
-    mov ax, offset dh_n
-    mov ptr_, ax
+    mov ptr_, offset dh_n
     call write_to_line
     jmp end_checking_registers
     not_dh:
 
     cmp reg_, 7
     jne not_bh
-    mov ax, offset bh_n
-    mov ptr_, ax
+    mov ptr_, offset bh_n
     call write_to_line
     jmp end_checking_registers
     not_bh:
@@ -553,6 +547,86 @@ find_write_register:
     pop bx
     pop ax
 
+RET
+
+effective_address:
+    call add_left_bracket
+
+    cmp mod_, 0
+    jne not_first_column
+
+    cmp reg_, 0
+    jne not_BX_SI
+    mov ptr_, offset bx_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BX_SI:
+
+    cmp reg_, 1
+    jne not_BX_DI
+    mov ptr_, offset bx_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BX_DI:
+
+    cmp reg_, 2
+    jne not_BP_SI
+    mov ptr_, offset bp_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BP_SI:
+
+    cmp reg_, 3
+    jne not_BP_DI
+    mov ptr_, offset bp_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BP_DI:
+
+    cmp reg_, 4
+    jne not_SI_address
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_SI_address:
+
+    cmp reg_, 5
+    jne not_DI_address
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_DI_address:
+
+    cmp reg_, 6
+    jne not_address
+    call address_to_hex
+    jmp end_checking_address_reg
+    not_address:
+
+    cmp reg_, 6
+    jne bx_as_address
+    mov ptr_, offset bx_n
+    call write_to_line
+    jmp end_checking_address_reg
+    bx_as_address:
+
+
+    not_first_column:
+    
+
+    end_checking_address_reg:
 RET
 
 find_write_seg_register:
@@ -614,13 +688,13 @@ find_write_seg_register:
 
 RET
 
-number_to_hex:
+address_to_hex:
     push ax
     push bx
     push cx
     push dx
 
-    mov SI, offset adress_
+    mov SI, offset address_
 
     mov al, [SI]      ; in reality al is actually --00
     mov ah, [SI + 1]  ; while ah is for 00--
@@ -648,7 +722,6 @@ number_to_hex:
 
 
 RET
-
 convert_half_byte_to_HEX: ; takes register 'cl' as input
     cmp cl, 9
     jbe number_

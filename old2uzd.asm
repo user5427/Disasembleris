@@ -4,21 +4,22 @@
     col_sp db ": "
     spac db 20h, 24h
     endl db 0dh, 0ah, 24h
-    words dw 0
+    words dw 0, 0
     file_name db 12 dup(0)
     file dw 0
-    symbol dw  0
-    upper_case dw  0
-    lower_case dw  0
+    symbol dw  0, 0
+    upper_case dw 0, 0
+    lower_case dw 0, 0
     counter db 0
     sector db 512 dup(0)
-    number db 0, 0, 0, 0, 0, 24h   ; gal cia problema?
+    number db 0, 0, 0, 0, 0, 0, 0, 24h   ; gal cia problema?
     ten dw 000ah
 .code
 start:
 ;breakina ant 2560
-    push @data  ;s: data
+    push @data  ;s: daga
     pop ds      ;s: 0
+
     mov si, 82h
     xor cx, cx
     mov cl, es:[80h]
@@ -37,7 +38,9 @@ start:
         cmp cl, 0
         je testi
         jmp jump
+
         testi:
+
         call switch ;;; infinite loopas galimai cia (yup hopefully sufixintas)
 
         mov ax, 4000h
@@ -215,10 +218,24 @@ start:
             mov dx, offset sector
             int 21h
             mov cx, ax
-            jcxz enda   ;good jumpas
+            jcxz endabc   ;good jumpas
+            jmp con
+            endabc:
+            jmp enda
+            con:
             push si ;s: si cx dx cx bx ax
             mov si, offset sector
-           
+            jmp loop2
+
+            overflow:
+            jnc return
+            dec bx
+            mov ax, [bx]
+            add ax, 1
+            mov [bx], ax
+            inc bx
+            return:
+            ret
             loop2:
                 push ax ;s:ax si cx dx cx bx ax
                 mov bl, [si]
@@ -228,7 +245,8 @@ start:
                 mov bx, offset words
                 inc bx
                 mov ax, [bx]
-                inc ax
+                add ax, 1
+                call overflow
                 mov [bx], ax
                 pop bx  ;s: ax si cx dx cx bx ax
 
@@ -240,28 +258,21 @@ start:
                 push bx ;s: bx ax si cx dx cx bx ax
                 xor bx, bx
                 mov bx, offset symbol
-                inc bx
                 mov ax, [bx]
-                inc ax
-                jno not_overflown
-                dec bx
-                mov ax, [bx]
-                inc bx
-                xor ax, ax
-                not_overflown:
-                mov [bx], ax
-                not_overflown
+                add ax, 1
+                call overflow
                 mov [bx], ax
                 pop bx  ;s: ax si cx dx cx bx ax
+
                 cmp bl, 41h
                 jb continue ;toks pat stack kaip kituose continue jumpuose virsuje
                 cmp bl, 5ah
                 ja lower
                 push bx ;s: bx ax si cx dx cx bx ax
                 mov bx, offset upper_case
-                inc bx
                 mov ax, [bx]
-                inc ax
+                add ax, 1
+                call overflow
                 mov [bx], ax
                 pop bx  ;s: ax si cx dx cx bx ax
                 jmp continue
@@ -272,9 +283,9 @@ start:
                     ja continue
                     push bx ; s: bx ax si cx dx cx bx ax
                     mov bx, offset lower_case
-                    inc bx
                     mov ax, [bx]
-                    inc ax
+                    add ax, 1
+                    call overflow
                     mov [bx], ax
                     pop bx  ;s: ax si cx dx cx bx ax
                 continue:
@@ -296,21 +307,18 @@ start:
     pop bx  ;s: ax
     pop ax  ;s: 0
     ret  
-    error:
-
-        mov ax, 4c01h
-        int 21h
     enda:
         pop cx  ;s: dx cx bx ax
         pop dx  ;s: cx bx ax
         pop cx  ;s: bx ax
         pop bx  ;s: ax
         pop ax  ;s: 0
-        ret    
+        ret  
+    error:
 
-    
-
-
+        mov ax, 4c01h
+        int 21h
+      
     to_num:
         ;ax laiko skaiciu
         push bx ;s: bx
@@ -318,9 +326,10 @@ start:
         push dx ;s: dx cx bx
         push di ;s: di dx cx bx 
         mov di, offset number
-        add di, 4
+        add di, 6
         loopas:
             xor dx, dx
+            xor cx, cx
             mov cx, 0ah
             div cx
             add dl, 30h

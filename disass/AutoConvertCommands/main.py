@@ -90,22 +90,50 @@ new_lines = []
 for line in lines:
     new_line = []
     for byte in line:
-        new_byte = ""
-        binary_number = 0
-        shift_left = 0
-        shift_right = 0
+
+        new_byte = []
+        non_numbers_ = []
+
+        index = 0
+        start_index = 0
+        len1 = 0
+        not_number = 0
+
         for symbol in byte:
-            if (symbol == 0 or symbol == 1) and binary_number == 0:
-                binary_number = 1
+            if not(symbol == '0' or symbol == '1'):
+                if not not_number:
+                    not_number = 1
+                    start_index = index
+                    len1 += 1
+                elif not_number:
+                    len1 += 1
+            else:
+                not_number = 0
+                if len1 > 0:
+                    non_numbers_.append(start_index)
+                    non_numbers_.append(len1)
+                    new_byte.append(non_numbers_[:])
+                    non_numbers_.clear()
 
-            if (not(symbol == 0 or symbol == 1)) and binary_number == 1:
-                shift_right += 1
-            elif (not(symbol == 0 or symbol == 1)) and binary_number == 0:
-                shift_left += 0
+                    len1 = 0
+
+            index += 1
+
+        if len1 > 0:
+            non_numbers_.append(start_index)
+            non_numbers_.append(len1)
+            new_byte.append(non_numbers_[:])
+            non_numbers_.clear()
+
+        new_line.append(new_byte[:])
+        print(byte, new_byte)
+
+    new_lines.append(new_line[:])
 
 
 
-print(lines)
+
+
 
 
 

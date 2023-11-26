@@ -1151,6 +1151,8 @@ check_double_byte_commands:
     cmp ah, 0
     jne skip_two_bytes_commands_1
 
+    skip_two_bytes_commands_1:
+
 RET
 
 end start

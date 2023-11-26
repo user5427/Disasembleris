@@ -119,14 +119,15 @@ for line in lines:
 
             index += 1
 
-        if len1 > 0:
+        if len1 > 0 or non_numbers_.__len__() == 0:
             non_numbers_.append(start_index)
             non_numbers_.append(len1)
             new_byte.append(non_numbers_[:])
             non_numbers_.clear()
-
+            
+        new_byte.append(byte)
         new_line.append(new_byte[:])
-        print(byte, new_byte)
+        print(new_byte)
 
     new_lines.append(new_line[:])
 

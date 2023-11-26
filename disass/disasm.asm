@@ -248,9 +248,10 @@ read_bytes:
     cmp second_byte_used, 1
     jne skip_double_reading
     mov cx, 2
+    jmp skip_reseting_cx
     skip_double_reading:
     mov cx, 1
-    
+    skip_reseting_cx:
 
     get_bytes_loop:
 

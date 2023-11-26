@@ -235,7 +235,7 @@ loop_over_bytes:
     loop_bytes:                ; do this until the end of file
     
     call read_bytes            ; returns byte to byte_ from buffer
-    call check_byte            ; check the command
+    call check_commands   ; check the command
 
     jmp loop_bytes
 
@@ -873,7 +873,7 @@ convert_to_decimal:             ; takes number in the adr_offset
 RET
                       
 
-check_byte:
+check_commands:
     xor ax, ax
     
     mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
@@ -1015,9 +1015,130 @@ check_byte:
 
     mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
 
+    mov al, byte_ ; 1000 010w mod reg r/m [poslinkis] – TEST registras ? registras/atmintis
     
+    mov al, byte_ ; 1000 011w mod reg r/m [poslinkis] – XCHG registras <> registras/atmintis
+
+    mov al, byte_ ; 1000 10dw mod reg r/m [poslinkis] – MOV registras <> registras/atmintis
+
+    mov al, byte_ ; 1000 1101 mod reg r/m [poslinkis] – LEA registras < atmintis
+
+    mov al, byte_ ; 1001 0000 – NOP; XCHG ax, ax
+
+    mov al, byte_ ; 1001 0reg – XCHG registras <> ax
+
+    mov al, byte_ ; 1001 1000 – CBW
+
+    mov al, byte_ ; 1001 1001 – CWD
+
+    mov al, byte_ ; 1001 1010 ajb avb srjb srvb – CALL žymė (išorinis tiesioginis)
+
+    mov al, byte_ ; 1001 1011 – WAIT
+
+    mov al, byte_ ; 1001 1100 – PUSHF
+
+    mov al, byte_ ; 1001 1101 – POPF
+
+    mov al, byte_ ; 1001 1110 – SAHF
+
+    mov al, byte_ ; 1001 1111 – LAHF
+
+    mov al, byte_ ; 1010 000w ajb avb – MOV akumuliatorius < atmintis
+
+    mov al, byte_ ; 1010 001w ajb avb – MOV atmintis < akumuliatorius
+
+    mov al, byte_ ; 1010 010w – MOVSB; MOVSW
+
+    mov al, byte_ ; 1010 011w – CMPSB; CMPSW
+    
+    mov al, byte_ ; 1010 100w bojb [bovb] – TEST akumuliatorius ? betarpiškas operandas
+
+    mov al, byte_ ; 1010 101w – STOSB; STOSW
+
+    mov al, byte_ ; 1010 110w – LODSB; LODSW
+
+    mov al, byte_ ; 1010 111w – SCASB; SCASW
+
+    mov al, byte_ ; 1011 wreg bojb [bovb] – MOV registras < betarpiškas operandas
+
+    mov al, byte_ ; 1100 0010 bojb bovb – RET betarpiškas operandas; RETN betarpiškas operandas
+
+    mov al, byte_ ; 1100 0011 – RET; RETN
+
+    mov al, byte_ ; 1100 0100 mod reg r/m [poslinkis] – LES registras  atmintis
+
+    mov al, byte_ ; 1100 0101 mod reg r/m [poslinkis] – LDS registras  atmintis
+
+    mov al, byte_ ; 1100 1010 bojb bovb – RETF betarpiškas operandas
+
+    mov al, byte_ ; 1100 1011 – RETF
+
+    mov al, byte_ ; 1100 1100 – INT 3
+
+    mov al, byte_ ; 1100 1101 numeris – INT numeris
+
+    mov al, byte_ ; 1100 1110 – INTO
+
+    mov al, byte_ ; 1100 1111 – IRET
+
+    mov al, byte_ ; 1101 0111 – XLAT
+
+    mov al, byte_ ; 1101 1xxx mod yyy r/m [poslinkis] – ESC komanda, registras/atmintis
+
+    mov al, byte_ ; 1110 0000 poslinkis – LOOPNE žymė; LOOPNZ žymė
+
+    mov al, byte_ ; 1110 0001 poslinkis – LOOPE žymė; LOOPZ žymė
+
+    mov al, byte_ ; 1110 0010 poslinkis – LOOP žymė
+
+    mov al, byte_ ; 1110 0011 poslinkis – JCXZ žymė
+
+    mov al, byte_ ; 1110 010w portas – IN akumuliatorius  portas
+
+    mov al, byte_ ; 1110 011w portas – OUT akumuliatorius  portas
+
+    mov al, byte_ ; 1110 1000 pjb pvb – CALL žymė (vidinis tiesioginis)
+
+    mov al, byte_ ; 1110 1001 pjb pvb – JMP žymė (vidinis tiesioginis)
+
+    mov al, byte_ ; 1110 1010 ajb avb srjb srvb – JMP žymė (išorinis tiesioginis)
+
+    mov al, byte_ ; 1110 1011 poslinkis – JMP žymė (vidinis artimas)
+
+    mov al, byte_ ; 1110 110w – IN akumuliatorius  dx portas
+
+    mov al, byte_ ; 1110 111w – OUT akumuliatorius  dx portas
+
+    mov al, byte_ ; 1111 0000 – LOCK
+
+    mov al, byte_ ; 1111 0010 – REPNZ; REPNE
+
+    mov al, byte_ ; 1111 0011 – REP; REPZ; REPE
+
+    mov al, byte_ ; 1111 0100 – HLT
+
+    mov al, byte_ ; 1111 0101 – CMC
+
+    mov al, byte_ ; 1111 1000 – CLC
+
+    mov al, byte_ ; 1111 1001 – STC
+    
+    mov al, byte_ ; 1111 1010 – CLI
+
+    mov al, byte_ ; 1111 1011 – STI
+    
+    mov al, byte_ ; 1111 1100 – CLD
+
+    mov al, byte_ ; 1111 1101 – STD
+
     cmp next_byte_available, 1
-    jne skip_two_bytes_commands_1                           ;00     ;000
+    jne skip_two_bytes_commands
+    call check_double_byte_commands
+    skip_two_bytes_commands:
+RET
+
+check_double_byte_commands:
+                                                           ;00     ;000
     mov al, byte_ ; shit it needs two bytes ->>>> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
     mov ah, next_byte
     shr al, 2 ; -- 1000 00
@@ -1030,7 +1151,6 @@ check_byte:
     cmp ah, 0
     jne skip_two_bytes_commands_1
 
-    skip_two_bytes_commands_1:
 RET
 
 end start

@@ -3,8 +3,6 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-from textwrap import wrap
-
 
 def separate_commands(text):
     lines = []
@@ -13,8 +11,6 @@ def separate_commands(text):
         lines.append(line)
 
     return lines
-
-
 def separate_command_words(lines):
     new_lines = []
     for line_ in lines:
@@ -22,8 +18,6 @@ def separate_command_words(lines):
         new_lines.append(line_)
 
     return new_lines
-
-
 def change_word_names(lines):
     bad_names = ["mod", "[poslinkis]", "poslinkis", "[bovb]"]
     corrected_names = ["md", "poslinki", "poslinki", "bovb"]
@@ -41,8 +35,6 @@ def change_word_names(lines):
         new_lines.append(line_)
 
     return new_lines
-
-
 def make_bytes(lines):
     new_lines = []
     for line in lines:
@@ -66,6 +58,20 @@ def make_bytes(lines):
         new_lines.append(new_line)
 
     return new_lines
+def join_subbytes(lines):
+    new_lines = []
+    for line in lines:
+        new_line = []
+        for bytes in line:
+            new_byte = ""
+            for sub_bytes in bytes:
+                new_byte += sub_bytes
+
+            new_line.append(new_byte)
+            new_lines.append(new_line)
+
+    return new_lines
+
 
 
 file = open("commands.txt", "r")
@@ -78,6 +84,24 @@ lines = separate_command_words(lines)
 lines = change_word_names(lines)
 # now i will just copy 8 symbols to make a byte
 lines = make_bytes(lines)
+lines = join_subbytes(lines)
+
+new_lines = []
+for line in lines:
+    new_line = []
+    for byte in line:
+        new_byte = ""
+        binary_number = 0
+        shift_left = 0
+        shift_right = 0
+        for symbol in byte:
+            if (symbol == 0 or symbol == 1) and binary_number == 0:
+                binary_number = 1
+
+            if (not(symbol == 0 or symbol == 1)) and binary_number == 1:
+                shift_right += 1
+            elif (not(symbol == 0 or symbol == 1)) and binary_number == 0:
+                shift_left += 0
 
 
 

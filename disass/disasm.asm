@@ -892,1980 +892,265 @@ RET
 check_commands:
     xor ax, ax
     
-    ;[[[6, 2], '000000dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 000000dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 0
-jne not_0
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_0:
-
-
-;[[[7, 1], '0000010w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0000010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 2
-jne not_1
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_1:
-
-
-;[[[3, 2], '000sr110']]
-;---the byte: 000sr110 ---
-mov al, next_byte
-shr al, 5
-shl al, 5
-mov ah, next_byte
-shl ah, 5
-shr ah, 5
-add al, ah
-cmp al, 6
-jne not_2
-mov second_byte_used, 1
-call read_bytes
-not_2:
-
-
-;[[[3, 2], '000sr111']]
-;---the byte: 000sr111 ---
-mov al, next_byte
-shr al, 5
-shl al, 5
-mov ah, next_byte
-shl ah, 5
-shr ah, 5
-add al, ah
-cmp al, 7
-jne not_3
-mov second_byte_used, 1
-call read_bytes
-not_3:
-
-
-;[[[6, 2], '000010dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 000010dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 2
-jne not_4
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_4:
-
-
-;[[[7, 1], '0000110w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0000110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 6
-jne not_5
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_5:
-
-
-;[[[6, 2], '000100dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 000100dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 4
-jne not_6
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_6:
-
-
-;[[[7, 1], '0001010w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0001010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 10
-jne not_7
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_7:
-
-
-;[[[6, 2], '000110dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 000110dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 6
-jne not_8
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_8:
-
-
-;[[[7, 1], '0001110w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0001110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 14
-jne not_9
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_9:
-
-
-;[[[6, 2], '001000dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 001000dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 8
-jne not_10
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_10:
-
-
-;[[[7, 1], '0010010w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0010010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 18
-jne not_11
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_11:
-
-
-;[[[3, 2], '001sr110']]
-;---the byte: 001sr110 ---
-mov al, next_byte
-shr al, 5
-shl al, 5
-mov ah, next_byte
-shl ah, 5
-shr ah, 5
-add al, ah
-cmp al, 38
-jne not_12
-mov second_byte_used, 1
-call read_bytes
-not_12:
-
-
-;[[[0, 0], '00100111']]
-;---the byte: 00100111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 39
-jne not_13
-mov second_byte_used, 1
-call read_bytes
-not_13:
-
-
-;[[[6, 2], '001010dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 001010dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 10
-jne not_14
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_14:
-
-
-;[[[7, 1], '0010110w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0010110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 22
-jne not_15
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_15:
-
-
-;[[[0, 0], '00101111']]
-;---the byte: 00101111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 47
-jne not_16
-mov second_byte_used, 1
-call read_bytes
-not_16:
-
-
-;[[[6, 2], '001100dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 001100dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 12
-jne not_17
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_17:
-
-
-;[[[7, 1], '0011010w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0011010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 26
-jne not_18
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_18:
-
-
-;[[[0, 0], '00110111']]
-;---the byte: 00110111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 55
-jne not_19
-mov second_byte_used, 1
-call read_bytes
-not_19:
-
-
-;[[[6, 2], '001110dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 001110dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 14
-jne not_20
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_20:
-
-
-;[[[7, 1], '0011110w'], [[0, 8], 'bojbbovb']]
-;---the byte: 0011110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 30
-jne not_21
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_21:
-
-
-;[[[0, 0], '00111111']]
-;---the byte: 00111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 63
-jne not_22
-mov second_byte_used, 1
-call read_bytes
-not_22:
-
-
-;[[[5, 3], '01000reg']]
-;---the byte: 01000reg ---
-mov al, next_byte
-shr al, 3
-cmp al, 8
-jne not_23
-mov second_byte_used, 1
-call read_bytes
-not_23:
-
-
-;[[[5, 3], '01001reg']]
-;---the byte: 01001reg ---
-mov al, next_byte
-shr al, 3
-cmp al, 9
-jne not_24
-mov second_byte_used, 1
-call read_bytes
-not_24:
-
-
-;[[[5, 3], '01010reg']]
-;---the byte: 01010reg ---
-mov al, next_byte
-shr al, 3
-cmp al, 10
-jne not_25
-mov second_byte_used, 1
-call read_bytes
-not_25:
-
-
-;[[[5, 3], '01011reg']]
-;---the byte: 01011reg ---
-mov al, next_byte
-shr al, 3
-cmp al, 11
-jne not_26
-mov second_byte_used, 1
-call read_bytes
-not_26:
-
-
-;[[[0, 0], '01110000'], [[0, 8], 'poslinki']]
-;---the byte: 01110000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 112
-jne not_27
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_27:
-
-
-;[[[0, 0], '01110001'], [[0, 8], 'poslinki']]
-;---the byte: 01110001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 113
-jne not_28
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_28:
-
-
-;[[[0, 0], '01110010'], [[0, 8], 'poslinki']]
-;---the byte: 01110010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 114
-jne not_29
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_29:
-
-
-;[[[0, 0], '01110011'], [[0, 8], 'poslinki']]
-;---the byte: 01110011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 115
-jne not_30
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_30:
-
-
-;[[[0, 0], '01110100'], [[0, 8], 'poslinki']]
-;---the byte: 01110100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 116
-jne not_31
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_31:
-
-
-;[[[0, 0], '01110101'], [[0, 8], 'poslinki']]
-;---the byte: 01110101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 117
-jne not_32
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_32:
-
-
-;[[[0, 0], '01110110'], [[0, 8], 'poslinki']]
-;---the byte: 01110110 ---
-mov al, next_byte
-shl al, 0
-cmp al, 118
-jne not_33
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_33:
-
-
-;[[[0, 0], '01110111'], [[0, 8], 'poslinki']]
-;---the byte: 01110111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 119
-jne not_34
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_34:
-
-
-;[[[0, 0], '01111000'], [[0, 8], 'poslinki']]
-;---the byte: 01111000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 120
-jne not_35
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_35:
-
-
-;[[[0, 0], '01111001'], [[0, 8], 'poslinki']]
-;---the byte: 01111001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 121
-jne not_36
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_36:
-
-
-;[[[0, 0], '01111010'], [[0, 8], 'poslinki']]
-;---the byte: 01111010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 122
-jne not_37
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_37:
-
-
-;[[[0, 0], '01111011'], [[0, 8], 'poslinki']]
-;---the byte: 01111011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 123
-jne not_38
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_38:
-
-
-;[[[0, 0], '01111100'], [[0, 8], 'poslinki']]
-;---the byte: 01111100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 124
-jne not_39
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_39:
-
-
-;[[[0, 0], '01111101'], [[0, 8], 'poslinki']]
-;---the byte: 01111101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 125
-jne not_40
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_40:
-
-
-;[[[0, 0], '01111110'], [[0, 8], 'poslinki']]
-;---the byte: 01111110 ---
-mov al, next_byte
-shl al, 0
-cmp al, 126
-jne not_41
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_41:
-
-
-;[[[0, 0], '01111111'], [[0, 8], 'poslinki']]
-;---the byte: 01111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 127
-jne not_42
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_42:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_43
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_43
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_43:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md001r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_44
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md001r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 1
-jne not_44
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_44:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md010r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_45
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md010r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 2
-jne not_45
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_45:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md011r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_46
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md011r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 3
-jne not_46
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_46:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md100r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_47
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md100r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 4
-jne not_47
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_47:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md101r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_48
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md101r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 5
-jne not_48
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_48:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md110r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_49
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md110r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 6
-jne not_49
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_49:
-
-
-;[[[6, 2], '100000sw'], [[0, 2], [5, 3], 'md111r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 100000sw ---
-mov al, next_byte
-shr al, 2
-cmp al, 32
-jne not_50
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md111r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 7
-jne not_50
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_50:
-
-
-;[[[7, 1], '1000010w'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 1000010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 66
-jne not_51
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_51:
-
-
-;[[[7, 1], '1000011w'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 1000011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 67
-jne not_52
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_52:
-
-
-;[[[6, 2], '100010dw'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 100010dw ---
-mov al, next_byte
-shr al, 2
-cmp al, 34
-jne not_53
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_53:
-
-
-;[[[6, 1], '100011d0'], [[0, 2], [3, 5], 'md0srr/m'], [[0, 8], 'poslinki']]
-;---the byte: 100011d0 ---
-mov al, next_byte
-shr al, 2
-shl al, 2
-mov ah, next_byte
-shl ah, 7
-shr ah, 7
-add al, ah
-cmp al, 140
-jne not_54
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md0srr/m ---
-mov al, byte_
-shl al, 2
-shr al, 7
-cmp al, 0
-jne not_54
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_54:
-
-
-;[[[0, 0], '10001101'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 10001101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 141
-jne not_55
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_55:
-
-
-;[[[0, 0], '10001111'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki']]
-;---the byte: 10001111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 143
-jne not_56
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_56
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_56:
-
-
-;[[[0, 0], '10010000']]
-;---the byte: 10010000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 144
-jne not_57
-mov second_byte_used, 1
-call read_bytes
-not_57:
-
-
-;[[[5, 3], '10010reg']]
-;---the byte: 10010reg ---
-mov al, next_byte
-shr al, 3
-cmp al, 18
-jne not_58
-mov second_byte_used, 1
-call read_bytes
-not_58:
-
-
-;[[[0, 0], '10011000']]
-;---the byte: 10011000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 152
-jne not_59
-mov second_byte_used, 1
-call read_bytes
-not_59:
-
-
-;[[[0, 0], '10011001']]
-;---the byte: 10011001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 153
-jne not_60
-mov second_byte_used, 1
-call read_bytes
-not_60:
-
-
-;[[[0, 0], '10011010'], [[0, 6], 'ajbavb'], [[0, 8], 'srjbsrvb']]
-;---the byte: 10011010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 154
-jne not_61
-mov second_byte_used, 1
-call read_bytes
-;---the byte: ajbavb ---
-call read_bytes
-;---the byte: srjbsrvb ---
-call read_bytes
-not_61:
-
-
-;[[[0, 0], '10011011']]
-;---the byte: 10011011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 155
-jne not_62
-mov second_byte_used, 1
-call read_bytes
-not_62:
-
-
-;[[[0, 0], '10011100']]
-;---the byte: 10011100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 156
-jne not_63
-mov second_byte_used, 1
-call read_bytes
-not_63:
-
-
-;[[[0, 0], '10011101']]
-;---the byte: 10011101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 157
-jne not_64
-mov second_byte_used, 1
-call read_bytes
-not_64:
-
-
-;[[[0, 0], '10011110']]
-;---the byte: 10011110 ---
-mov al, next_byte
-shl al, 0
-cmp al, 158
-jne not_65
-mov second_byte_used, 1
-call read_bytes
-not_65:
-
-
-;[[[0, 0], '10011111']]
-;---the byte: 10011111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 159
-jne not_66
-mov second_byte_used, 1
-call read_bytes
-not_66:
-
-
-;[[[7, 1], '1010000w'], [[0, 6], 'ajbavb']]
-;---the byte: 1010000w ---
-mov al, next_byte
-shr al, 1
-cmp al, 80
-jne not_67
-mov second_byte_used, 1
-call read_bytes
-;---the byte: ajbavb ---
-call read_bytes
-not_67:
-
-
-;[[[7, 1], '1010001w'], [[0, 6], 'ajbavb']]
-;---the byte: 1010001w ---
-mov al, next_byte
-shr al, 1
-cmp al, 81
-jne not_68
-mov second_byte_used, 1
-call read_bytes
-;---the byte: ajbavb ---
-call read_bytes
-not_68:
-
-
-;[[[7, 1], '1010010w']]
-;---the byte: 1010010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 82
-jne not_69
-mov second_byte_used, 1
-call read_bytes
-not_69:
-
-
-;[[[7, 1], '1010011w']]
-;---the byte: 1010011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 83
-jne not_70
-mov second_byte_used, 1
-call read_bytes
-not_70:
-
-
-;[[[7, 1], '1010100w'], [[0, 8], 'bojbbovb']]
-;---the byte: 1010100w ---
-mov al, next_byte
-shr al, 1
-cmp al, 84
-jne not_71
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_71:
-
-
-;[[[7, 1], '1010101w']]
-;---the byte: 1010101w ---
-mov al, next_byte
-shr al, 1
-cmp al, 85
-jne not_72
-mov second_byte_used, 1
-call read_bytes
-not_72:
-
-
-;[[[7, 1], '1010110w']]
-;---the byte: 1010110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 86
-jne not_73
-mov second_byte_used, 1
-call read_bytes
-not_73:
-
-
-;[[[7, 1], '1010111w']]
-;---the byte: 1010111w ---
-mov al, next_byte
-shr al, 1
-cmp al, 87
-jne not_74
-mov second_byte_used, 1
-call read_bytes
-not_74:
-
-
-;[[[4, 4], '1011wreg'], [[0, 8], 'bojbbovb']]
-;---the byte: 1011wreg ---
-mov al, next_byte
-shr al, 4
-cmp al, 11
-jne not_75
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_75:
-
-
-;[[[0, 0], '11000010'], [[0, 8], 'bojbbovb']]
-;---the byte: 11000010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 194
-jne not_76
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_76:
-
-
-;[[[0, 0], '11000011']]
-;---the byte: 11000011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 195
-jne not_77
-mov second_byte_used, 1
-call read_bytes
-not_77:
-
-
-;[[[0, 0], '11000100'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 11000100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 196
-jne not_78
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_78:
-
-
-;[[[0, 0], '11000101'], [[0, 8], 'mdregr/m'], [[0, 8], 'poslinki']]
-;---the byte: 11000101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 197
-jne not_79
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdregr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_79:
-
-
-;[[[7, 1], '1100011w'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 1100011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 99
-jne not_80
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_80
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_80:
-
-
-;[[[0, 0], '11001010'], [[0, 8], 'bojbbovb']]
-;---the byte: 11001010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 202
-jne not_81
-mov second_byte_used, 1
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_81:
-
-
-;[[[0, 0], '11001011']]
-;---the byte: 11001011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 203
-jne not_82
-mov second_byte_used, 1
-call read_bytes
-not_82:
-
-
-;[[[0, 0], '11001100']]
-;---the byte: 11001100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 204
-jne not_83
-mov second_byte_used, 1
-call read_bytes
-not_83:
-
-
-;[[[0, 0], '11001101'], [[0, 7], 'numeris']]
-;---the byte: 11001101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 205
-jne not_84
-mov second_byte_used, 1
-call read_bytes
-;---the byte: numeris ---
-call read_bytes
-not_84:
-
-
-;[[[0, 0], '11001110']]
-;---the byte: 11001110 ---
-mov al, next_byte
-shl al, 0
-cmp al, 206
-jne not_85
-mov second_byte_used, 1
-call read_bytes
-not_85:
-
-
-;[[[0, 0], '11001111']]
-;---the byte: 11001111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 207
-jne not_86
-mov second_byte_used, 1
-call read_bytes
-not_86:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_87
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_87
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_87:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md001r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_88
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md001r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 1
-jne not_88
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_88:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md010r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_89
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md010r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 2
-jne not_89
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_89:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md011r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_90
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md011r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 3
-jne not_90
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_90:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md100r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_91
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md100r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 4
-jne not_91
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_91:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md101r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_92
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md101r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 5
-jne not_92
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_92:
-
-
-;[[[6, 2], '110100vw'], [[0, 2], [5, 3], 'md111r/m'], [[0, 8], 'poslinki']]
-;---the byte: 110100vw ---
-mov al, next_byte
-shr al, 2
-cmp al, 52
-jne not_93
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md111r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 7
-jne not_93
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_93:
-
-
-;[[[0, 0], '11010100'], [[0, 0], '00001010']]
-;---the byte: 11010100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 212
-jne not_94
-mov second_byte_used, 1
-call read_bytes
-;---the byte: 00001010 ---
-mov al, byte_
-shl al, 0
-cmp al, 10
-jne not_94
-call read_bytes
-not_94:
-
-
-;[[[0, 0], '11010101'], [[0, 0], '00001010']]
-;---the byte: 11010101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 213
-jne not_95
-mov second_byte_used, 1
-call read_bytes
-;---the byte: 00001010 ---
-mov al, byte_
-shl al, 0
-cmp al, 10
-jne not_95
-call read_bytes
-not_95:
-
-
-;[[[0, 0], '11010111']]
-;---the byte: 11010111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 215
-jne not_96
-mov second_byte_used, 1
-call read_bytes
-not_96:
-
-
-;[[[5, 3], '11011xxx'], [[0, 8], 'mdyyyr/m'], [[0, 8], 'poslinki']]
-;---the byte: 11011xxx ---
-mov al, next_byte
-shr al, 3
-cmp al, 27
-jne not_97
-mov second_byte_used, 1
-call read_bytes
-;---the byte: mdyyyr/m ---
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_97:
-
-
-;[[[0, 0], '11100000'], [[0, 8], 'poslinki']]
-;---the byte: 11100000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 224
-jne not_98
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_98:
-
-
-;[[[0, 0], '11100001'], [[0, 8], 'poslinki']]
-;---the byte: 11100001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 225
-jne not_99
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_99:
-
-
-;[[[0, 0], '11100010'], [[0, 8], 'poslinki']]
-;---the byte: 11100010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 226
-jne not_100
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_100:
-
-
-;[[[0, 0], '11100011'], [[0, 8], 'poslinki']]
-;---the byte: 11100011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 227
-jne not_101
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_101:
-
-
-;[[[7, 1], '1110010w'], [[0, 8], 'portas--']]
-;---the byte: 1110010w ---
-mov al, next_byte
-shr al, 1
-cmp al, 114
-jne not_102
-mov second_byte_used, 1
-call read_bytes
-;---the byte: portas-- ---
-call read_bytes
-not_102:
-
-
-;[[[7, 1], '1110011w'], [[0, 8], 'portas--']]
-;---the byte: 1110011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 115
-jne not_103
-mov second_byte_used, 1
-call read_bytes
-;---the byte: portas-- ---
-call read_bytes
-not_103:
-
-
-;[[[0, 0], '11101000'], [[0, 6], 'pjbpvb']]
-;---the byte: 11101000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 232
-jne not_104
-mov second_byte_used, 1
-call read_bytes
-;---the byte: pjbpvb ---
-call read_bytes
-not_104:
-
-
-;[[[0, 0], '11101001'], [[0, 6], 'pjbpvb']]
-;---the byte: 11101001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 233
-jne not_105
-mov second_byte_used, 1
-call read_bytes
-;---the byte: pjbpvb ---
-call read_bytes
-not_105:
-
-
-;[[[0, 0], '11101010'], [[0, 6], 'ajbavb'], [[0, 8], 'srjbsrvb']]
-;---the byte: 11101010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 234
-jne not_106
-mov second_byte_used, 1
-call read_bytes
-;---the byte: ajbavb ---
-call read_bytes
-;---the byte: srjbsrvb ---
-call read_bytes
-not_106:
-
-
-;[[[0, 0], '11101011'], [[0, 8], 'poslinki']]
-;---the byte: 11101011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 235
-jne not_107
-mov second_byte_used, 1
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_107:
-
-
-;[[[7, 1], '1110110w']]
-;---the byte: 1110110w ---
-mov al, next_byte
-shr al, 1
-cmp al, 118
-jne not_108
-mov second_byte_used, 1
-call read_bytes
-not_108:
-
-
-;[[[7, 1], '1110111w']]
-;---the byte: 1110111w ---
-mov al, next_byte
-shr al, 1
-cmp al, 119
-jne not_109
-mov second_byte_used, 1
-call read_bytes
-not_109:
-
-
-;[[[0, 0], '11110000']]
-;---the byte: 11110000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 240
-jne not_110
-mov second_byte_used, 1
-call read_bytes
-not_110:
-
-
-;[[[0, 0], '11110010']]
-;---the byte: 11110010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 242
-jne not_111
-mov second_byte_used, 1
-call read_bytes
-not_111:
-
-
-;[[[0, 0], '11110011']]
-;---the byte: 11110011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 243
-jne not_112
-mov second_byte_used, 1
-call read_bytes
-not_112:
-
-
-;[[[0, 0], '11110100']]
-;---the byte: 11110100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 244
-jne not_113
-mov second_byte_used, 1
-call read_bytes
-not_113:
-
-
-;[[[0, 0], '11110101']]
-;---the byte: 11110101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 245
-jne not_114
-mov second_byte_used, 1
-call read_bytes
-not_114:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki'], [[0, 8], 'bojbbovb']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_115
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_115
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-;---the byte: bojbbovb ---
-call read_bytes
-not_115:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md010r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_116
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md010r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 2
-jne not_116
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_116:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md011r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_117
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md011r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 3
-jne not_117
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_117:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md100r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_118
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md100r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 4
-jne not_118
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_118:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md101r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_119
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md101r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 5
-jne not_119
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_119:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md110r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_120
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md110r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 6
-jne not_120
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_120:
-
-
-;[[[7, 1], '1111011w'], [[0, 2], [5, 3], 'md111r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111011w ---
-mov al, next_byte
-shr al, 1
-cmp al, 123
-jne not_121
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md111r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 7
-jne not_121
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_121:
-
-
-;[[[0, 0], '11111000']]
-;---the byte: 11111000 ---
-mov al, next_byte
-shl al, 0
-cmp al, 248
-jne not_122
-mov second_byte_used, 1
-call read_bytes
-not_122:
-
-
-;[[[0, 0], '11111001']]
-;---the byte: 11111001 ---
-mov al, next_byte
-shl al, 0
-cmp al, 249
-jne not_123
-mov second_byte_used, 1
-call read_bytes
-not_123:
-
-
-;[[[0, 0], '11111010']]
-;---the byte: 11111010 ---
-mov al, next_byte
-shl al, 0
-cmp al, 250
-jne not_124
-mov second_byte_used, 1
-call read_bytes
-not_124:
-
-
-;[[[0, 0], '11111011']]
-;---the byte: 11111011 ---
-mov al, next_byte
-shl al, 0
-cmp al, 251
-jne not_125
-mov second_byte_used, 1
-call read_bytes
-not_125:
-
-
-;[[[0, 0], '11111100']]
-;---the byte: 11111100 ---
-mov al, next_byte
-shl al, 0
-cmp al, 252
-jne not_126
-mov second_byte_used, 1
-call read_bytes
-not_126:
-
-
-;[[[0, 0], '11111101']]
-;---the byte: 11111101 ---
-mov al, next_byte
-shl al, 0
-cmp al, 253
-jne not_127
-mov second_byte_used, 1
-call read_bytes
-not_127:
-
-
-;[[[7, 1], '1111111w'], [[0, 2], [5, 3], 'md000r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111111w ---
-mov al, next_byte
-shr al, 1
-cmp al, 127
-jne not_128
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md000r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 0
-jne not_128
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_128:
-
-
-;[[[7, 1], '1111111w'], [[0, 2], [5, 3], 'md001r/m'], [[0, 8], 'poslinki']]
-;---the byte: 1111111w ---
-mov al, next_byte
-shr al, 1
-cmp al, 127
-jne not_129
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md001r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 1
-jne not_129
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_129:
-
-
-;[[[0, 0], '11111111'], [[0, 2], [5, 3], 'md010r/m'], [[0, 8], 'poslinki']]
-;---the byte: 11111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 255
-jne not_130
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md010r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 2
-jne not_130
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_130:
-
-
-;[[[0, 0], '11111111'], [[0, 2], [5, 3], 'md011r/m'], [[0, 8], 'poslinki']]
-;---the byte: 11111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 255
-jne not_131
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md011r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 3
-jne not_131
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_131:
-
-
-;[[[0, 0], '11111111'], [[0, 2], [5, 3], 'md100r/m'], [[0, 8], 'poslinki']]
-;---the byte: 11111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 255
-jne not_132
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md100r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 4
-jne not_132
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_132:
-
-
-;[[[0, 0], '11111111'], [[0, 2], [5, 3], 'md101r/m'], [[0, 8], 'poslinki']]
-;---the byte: 11111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 255
-jne not_133
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md101r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 5
-jne not_133
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_133:
-
-
-;[[[0, 0], '11111111'], [[0, 2], [5, 3], 'md110r/m'], [[0, 8], 'poslinki']]
-;---the byte: 11111111 ---
-mov al, next_byte
-shl al, 0
-cmp al, 255
-jne not_134
-mov second_byte_used, 1
-call read_bytes
-;---the byte: md110r/m ---
-mov al, byte_
-shl al, 2
-shr al, 5
-cmp al, 6
-jne not_134
-call read_bytes
-;---the byte: poslinki ---
-call read_bytes
-not_134:
+    mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    shr al, 2 ;  0000 00dw -> --00 0000
+    cmp al, 0 
+    jne not_1 
 
+    not_1:
 
+    mov al, byte_ ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
+    shr al, 1 ; 0000 010w -> -000 0010
+    shl al, 1 ; 000 0010 -> 0000 010-
+    cmp al, 4 
+    jne not_2 
 
+    not_2:
+
+    mov al, byte_ ; 000sr 110 – PUSH segmento registras 
+    shr al, 5 ; 000sr 110 -> 0000 0000   00sr 0110
+    mov ah, byte_
+    shl ah, 5 ; 000sr 110 -> 1100 0000
+    shr ah, 5 ; 1100 0000 -> 0000 0110
+    add al, ah ; 0000 0000 + 0000 0100 -> 0000 0110
+    cmp al, 6 ; check 0000 0110
+    jne not_3
+    
+    not_3:
+    
+    mov al, byte_ ; 000sr 111 – POP segmento registras
+    shr al, 5 ; 000sr 111 -> 0000 0000
+    mov ah, byte_
+    shl ah, 5 ; 000sr 111 -> 1110 0000
+    shr ah, 5 ; 1110 0000 -> 0000 0111
+    add al, ah ; 0000 0000 + 0000 0111 -> 0000 0111
+    cmp al, 7 ; check 111
+    jne not_4
+
+    not_4:
+
+    mov al, byte_ ; 0000 10dw mod reg r/m [poslinkis] – OR registras V registras/atmintis
+    shr al, 2 ; 0000 10dw -> 0000 0010
+    shl al, 2 ; 0000 0010 -> 0000 1000
+    cmp al, 8
+    jne not_5
+
+    not_5:
+
+    mov al, byte_ ; 0000 110w bojb [bovb] – OR akumuliatorius V betarpiškas operandas
+    shr al, 1 ; 0000 110w -> 0000 0110
+    shl al, 1 ; 0000 0110 -> 0000 1100
+    cmp al, 12
+    jne not_6
+
+    not_6:
+
+    mov al, byte_ ; 0001 00dw mod reg r/m [poslinkis] – ADC registras += registras/axtmintis
+    shr al, 2 ; 0001 00dw -> 0000 0100
+    shl al, 2 ; 0000 0100 -> 0001 0000
+    cmp al, 16
+    jne not_7
+
+    not_7:
+
+    mov al, byte_ ; 0001 010w bojb [bovb] – ADC akumuliatorius += betarpiškas operandas
+    shr al, 1 ; 0001 010w -> 0000 1010
+    shl al, 1 ; 0000 1010 -> 0001 0100
+    cmp al, 20
+    jne not_8
+
+    not_8:
+
+    mov al, byte_ ; 0001 10dw mod reg r/m [poslinkis] – SBB registras -= registras/atmintis
+
+    mov al, byte_ ; 0001 110w bojb [bovb] – SBB akumuliatorius -= betarpiškas operandas
+
+    mov al, byte_ ; 0010 00dw mod reg r/m [poslinkis] – AND registras & registras/atmintis
+
+    mov al, byte_ ; 0010 010w bojb [bovb] – AND akumuliatorius & betarpiškas operandas
+
+    mov al, byte_ ; 001sr 110 – segmento registro keitimo prefiksas
+
+    mov al, byte_ ; 0010 0111 – DAA
+
+    mov al, byte_ ; 0010 10dw mod reg r/m [poslinkis] – SUB registras -= registras/atmintis
+
+    mov al, byte_ ; 0010 110w bojb [bovb] – SUB akumuliatorius -= betarpiškas operandas
+
+    mov al, byte_ ; 0010 1111 – DAS
+
+    mov al, byte_ ; 0011 00dw mod reg r/m [poslinkis] – XOR registras | registras/atmintis
+
+    mov al, byte_ ; 0011 010w bojb [bovb] – XOR akumuliatorius | betarpiškas operandas
+
+    mov al, byte_ ; 0011 0111 – AAA
+
+    mov al, byte_ ; 0011 10dw mod reg r/m [poslinkis] – CMP registras ~ registras/atmintis
+
+    mov al, byte_ ; 0011 110w bojb [bovb] – CMP akumuliatorius ~ betarpiškas operandas
+
+    mov al, byte_ ; 0011 1111 – AAS
+
+    mov al, byte_ ; 0100 0reg – INC registras (žodinis)
+
+    mov al, byte_ ; 0100 1reg – DEC registras (žodinis)
+
+    mov al, byte_ ; 0101 0reg – PUSH registras (žodinis)
+
+    mov al, byte_ ; 0101 1reg – POP registras (žodinis)
+
+    mov al, byte_ ; 0111 0000 poslinkis – JO žymė
+
+    mov al, byte_ ; 0111 0001 poslinkis – JNO žymė
+
+    mov al, byte_ ; 0111 0010 poslinkis – JNAE žymė; JB žymė; JC žymė
+
+    mov al, byte_ ; 0111 0011 poslinkis – JAE žymė; JNB žymė; JNC žymė
+    
+    mov al, byte_ ; 0111 0100 poslinkis – JE žymė; JZ žymė
+
+    mov al, byte_ ; 0111 0101 poslinkis – JNE žymė; JNZ žymė
+
+    mov al, byte_ ; 0111 0110 poslinkis – JBE žymė; JNA žymė
+
+    mov al, byte_ ; 0111 0111 poslinkis – JA žymė; JNBE žymė
+
+    mov al, byte_ ; 0111 1000 poslinkis – JS žymė
+
+    mov al, byte_ ; 0111 1001 poslinkis – JNS žymė
+
+    mov al, byte_ ; 0111 1010 poslinkis – JP žymė; JPE žymė
+
+    mov al, byte_ ; 0111 1011 poslinkis – JNP žymė; JPO žymė
+
+    mov al, byte_ ; 0111 1100 poslinkis – JL žymė; JNGE žymė
+
+    mov al, byte_ ; 0111 1101 poslinkis – JGE žymė; JNL žymė
+
+    mov al, byte_ ; 0111 1110 poslinkis – JLE žymė; JNG žymė
+
+    mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
+
+    mov al, byte_ ; 1000 010w mod reg r/m [poslinkis] – TEST registras ? registras/atmintis
+    
+    mov al, byte_ ; 1000 011w mod reg r/m [poslinkis] – XCHG registras <> registras/atmintis
+
+    mov al, byte_ ; 1000 10dw mod reg r/m [poslinkis] – MOV registras <> registras/atmintis
+
+    mov al, byte_ ; 1000 1101 mod reg r/m [poslinkis] – LEA registras < atmintis
+
+    mov al, byte_ ; 1001 0000 – NOP; XCHG ax, ax
+
+    mov al, byte_ ; 1001 0reg – XCHG registras <> ax
+
+    mov al, byte_ ; 1001 1000 – CBW
+
+    mov al, byte_ ; 1001 1001 – CWD
+
+    mov al, byte_ ; 1001 1010 ajb avb srjb srvb – CALL žymė (išorinis tiesioginis)
+
+    mov al, byte_ ; 1001 1011 – WAIT
+
+    mov al, byte_ ; 1001 1100 – PUSHF
+
+    mov al, byte_ ; 1001 1101 – POPF
+
+    mov al, byte_ ; 1001 1110 – SAHF
+
+    mov al, byte_ ; 1001 1111 – LAHF
+
+    mov al, byte_ ; 1010 000w ajb avb – MOV akumuliatorius < atmintis
+
+    mov al, byte_ ; 1010 001w ajb avb – MOV atmintis < akumuliatorius
+
+    mov al, byte_ ; 1010 010w – MOVSB; MOVSW
+
+    mov al, byte_ ; 1010 011w – CMPSB; CMPSW
+    
+    mov al, byte_ ; 1010 100w bojb [bovb] – TEST akumuliatorius ? betarpiškas operandas
+
+    mov al, byte_ ; 1010 101w – STOSB; STOSW
+
+    mov al, byte_ ; 1010 110w – LODSB; LODSW
+
+    mov al, byte_ ; 1010 111w – SCASB; SCASW
+
+    mov al, byte_ ; 1011 wreg bojb [bovb] – MOV registras < betarpiškas operandas
+
+    mov al, byte_ ; 1100 0010 bojb bovb – RET betarpiškas operandas; RETN betarpiškas operandas
+
+    mov al, byte_ ; 1100 0011 – RET; RETN
+
+    mov al, byte_ ; 1100 0100 mod reg r/m [poslinkis] – LES registras  atmintis
+
+    mov al, byte_ ; 1100 0101 mod reg r/m [poslinkis] – LDS registras  atmintis
+
+    mov al, byte_ ; 1100 1010 bojb bovb – RETF betarpiškas operandas
+
+    mov al, byte_ ; 1100 1011 – RETF
+
+    mov al, byte_ ; 1100 1100 – INT 3
+
+    mov al, byte_ ; 1100 1101 numeris – INT numeris
+
+    mov al, byte_ ; 1100 1110 – INTO
+
+    mov al, byte_ ; 1100 1111 – IRET
+
+    mov al, byte_ ; 1101 0111 – XLAT
+
+    mov al, byte_ ; 1101 1xxx mod yyy r/m [poslinkis] – ESC komanda, registras/atmintis
+
+    mov al, byte_ ; 1110 0000 poslinkis – LOOPNE žymė; LOOPNZ žymė
+
+    mov al, byte_ ; 1110 0001 poslinkis – LOOPE žymė; LOOPZ žymė
+
+    mov al, byte_ ; 1110 0010 poslinkis – LOOP žymė
+
+    mov al, byte_ ; 1110 0011 poslinkis – JCXZ žymė
+
+    mov al, byte_ ; 1110 010w portas – IN akumuliatorius  portas
+
+    mov al, byte_ ; 1110 011w portas – OUT akumuliatorius  portas
+
+    mov al, byte_ ; 1110 1000 pjb pvb – CALL žymė (vidinis tiesioginis)
+
+    mov al, byte_ ; 1110 1001 pjb pvb – JMP žymė (vidinis tiesioginis)
+
+    mov al, byte_ ; 1110 1010 ajb avb srjb srvb – JMP žymė (išorinis tiesioginis)
+
+    mov al, byte_ ; 1110 1011 poslinkis – JMP žymė (vidinis artimas)
+
+    mov al, byte_ ; 1110 110w – IN akumuliatorius  dx portas
+
+    mov al, byte_ ; 1110 111w – OUT akumuliatorius  dx portas
+
+    mov al, byte_ ; 1111 0000 – LOCK
+
+    mov al, byte_ ; 1111 0010 – REPNZ; REPNE
+
+    mov al, byte_ ; 1111 0011 – REP; REPZ; REPE
+
+    mov al, byte_ ; 1111 0100 – HLT
+
+    mov al, byte_ ; 1111 0101 – CMC
+
+    mov al, byte_ ; 1111 1000 – CLC
+
+    mov al, byte_ ; 1111 1001 – STC
+    
+    mov al, byte_ ; 1111 1010 – CLI
+
+    mov al, byte_ ; 1111 1011 – STI
+    
+    mov al, byte_ ; 1111 1100 – CLD
+
+    mov al, byte_ ; 1111 1101 – STD
+
+    cmp next_byte_available, 1
+    jne skip_two_bytes_commands
+    call check_double_byte_commands
+    skip_two_bytes_commands:
 RET
 
 check_double_byte_commands:

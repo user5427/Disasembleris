@@ -33,7 +33,7 @@
     mod_ db 0
     reg_ db 0
     address_ db 0, 0
-    adr_offset db 0
+    binary_number db 0
 
     number_in_ASCII db 0, 255 dup(?)
 
@@ -323,7 +323,7 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     xor ax, ax
     mov al, write_index
     add al, line_length
-    cmp al, 197
+    cmp al, 200
 
     jnae skip_writing_to_file
     call write_to_file
@@ -401,6 +401,21 @@ end_line: ; add endl to line
     inc DI
     loop copy_endl
 
+    call write_to_buff
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+force_write_to_file:
+    push ax
+    push bx
+    push cx
+    push dx
+    call end_line
+    call write_to_file ; this function does not have push or pop so it can mess up register values
+    mov write_index, 0
     pop dx
     pop cx
     pop bx
@@ -662,7 +677,7 @@ effective_address:
     cmp mod_, 0
     je skip_adding_offset
     call add_plus
-    call convert_to_decimal
+    call address_to_hex
 
     skip_adding_offset:
     call add_right_bracket
@@ -782,7 +797,7 @@ convert_to_decimal:             ; takes number in the adr_offset
     push bx
     
     xor dx, dx
-    mov dl, adr_offset
+    mov dl, binary_number
     mov DI, offset number_in_ASCII               
     
     xor cx, cx
@@ -893,7 +908,7 @@ check_commands:
     not_2:
 
     mov al, byte_ ; 000sr 110 – PUSH segmento registras 
-    shr al, 5 ; 000sr 110 -> 0000 0000
+    shr al, 5 ; 000sr 110 -> 0000 0000   00sr 0110
     mov ah, byte_
     shl ah, 5 ; 000sr 110 -> 1100 0000
     shr ah, 5 ; 1100 0000 -> 0000 0110

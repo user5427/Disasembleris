@@ -137,7 +137,7 @@ names = file_2.read()
 names = names.strip().split('\n')
 names = separate_commands(names, 'n')
 
-def binary_to_string(string):
+def binary_to_number(string):
     lenght_of_num = len(string)
     number = 0
     for symbol in string:
@@ -145,49 +145,75 @@ def binary_to_string(string):
         number += int(symbol) * pow(2, lenght_of_num)
 
     return number
+def byte_commands(byte, byte_name):
+    output_lines = []
+    output_lines.append("mov al, " + byte_name)
+    compensate_for_shift = 0
+    binary_number = byte[len(byte) - 1]
+    print_compare = 0
+    for command in byte[:-1]:  # remove the actual command with :-1
+        command_sum = command[0] + command[1]
+        index = command[0]
+        length = command[1]
+
+        if index == 0 and length < 8:  # the word is at the start of the command
+            output_lines.append("shl al, " + str(length))
+            binary_number = binary_number[length:]
+            compensate_for_shift += length
+            print_compare = 1
+        elif command_sum == 8 and length < 8:  # the word is at the end of the command
+            output_lines.append("shr al, " + str(length + compensate_for_shift))
+            binary_number = binary_number[:-length]
+            print_compare = 1
+        elif index > 0 and length < 8:  # the word is somewhere in the middle of the command
+            output_lines.append("shr al, " + str(8 - index))
+            output_lines.append("shl al, " + str(8 - index))
+            output_lines.append("mov ah, " + byte_name)
+            output_lines.append("shl ah, " + str(index + length))
+            output_lines.append("shr ah, " + str(index + length))
+            output_lines.append("add al, ah")
+            print_compare = 1
+            binary_number = re.sub(r"[a-zA-Z]", "0", binary_number)
+
+    if print_compare == 1:
+        number = binary_to_number(binary_number)
+        output_lines.append("cmp al, " + str(number))
+        output_lines.append("jne not_" + str(command_number))
+
+    return output_lines
+def num_there(s):
+    return any(i.isdigit() for i in s)
+
 
 output_lines = [] # this does not have anything in common with lines or names
 command_number = 0
 for line in lines:
     output_lines.append(";" + str(line))
+
+    use_two_bytes = -1
     for byte in line:
         output_lines.append(";---the byte: " + byte[len(byte) - 1] + " ---")
-        output_lines.append("mov al, byte_")
 
-        compensate_for_shift = 0
-        binary_number = byte[len(byte) - 1]
-        print_compare = 0
-        for command in byte[:-1]:
-            command_sum = command[0] + command[1]
-            index = command[0]
-            length = command[1]
+        if num_there(byte[len(byte) - 1]):
+            if use_two_bytes == 0:
+                use_two_bytes = 0
+                output_lines += byte_commands(byte, "byte_")
+            else:
+                use_two_bytes = 1
+                output_lines += byte_commands(byte, "next_byte")
 
-            if index == 0 and length < 8: # the word is at the start of the command
-                output_lines.append("shl al, " + str(length))
-                binary_number = binary_number[length:]
-                compensate_for_shift += length
-                print_compare = 1
-            elif command_sum == 8 and length < 8: # the word is at the end of the command
-                output_lines.append("shr al, " + str(length + compensate_for_shift))
-                binary_number = binary_number[:-length]
-                print_compare = 1
-            elif index > 0 and length < 8: # the word is somewhere in the middle of the command
-                output_lines.append("shr al, " + str(8-index))
-                output_lines.append("shl al, " + str(8-index))
-                output_lines.append("mov ah, byte_")
-                output_lines.append("shl ah, " + str(index + length))
-                output_lines.append("shr ah, " + str(index + length))
-                output_lines.append("add al, ah")
-                print_compare = 1
-                binary_number = re.sub(r"[a-zA-Z]", "0", binary_number)
-
-        if print_compare == 1:
-            number = binary_to_string(binary_number)
-            output_lines.append("cmp al, " + str(number))
-            output_lines.append("jne not_" + str(command_number))
+        if use_two_bytes == 0:
+            output_lines.append("call read_bytes")
+        elif use_two_bytes == 1:
+            use_two_bytes = 0
+            output_lines.append("mov second_byte_used, 1")
+            output_lines.append("call read_bytes")
 
 
-    output_lines.append("not_" + str(command_number))
+
+
+
+    output_lines.append("not_" + str(command_number) + ":")
     output_lines.append('\n')
     command_number += 1
 

@@ -36,7 +36,7 @@
     mod_ db 0
     reg_ db 0
     r_m_ db 0
-    address_ db 0, 0
+    double_byte_number db 0, 0
     binary_number db 0
 
     number_in_ASCII db 0, 255 dup(?)
@@ -456,6 +456,7 @@ add_comma_line:
 RET
 
 
+; the thing below do not work right
 find_write_register:
     push ax
     push bx
@@ -662,7 +663,7 @@ effective_address:
     jne not_address
     cmp mod_, 0
     jne second_column_BP_offset
-    call address_to_hex
+    call double_byte_number_to_hex
     jmp end_checking_address_reg
 
     second_column_BP_offset:
@@ -681,11 +682,11 @@ effective_address:
 
     end_checking_address_reg:
     cmp mod_, 0
-    je skip_adding_offset
+    je skip_adding_poslinkis
     call add_plus
-    call address_to_hex
+    call number_to_hex
 
-    skip_adding_offset:
+    skip_adding_poslinkis:
     call add_right_bracket
 RET
 find_write_seg_register:
@@ -746,6 +747,7 @@ find_write_seg_register:
     pop ax
 
 RET
+; the thing above do not work right
 
 number_to_hex:
     push ax
@@ -772,13 +774,13 @@ number_to_hex:
     pop bx
     pop ax
 RET
-address_to_hex:
+double_byte_number_to_hex:
     push ax
     push bx
     push cx
     push dx
 
-    mov SI, offset address_
+    mov SI, offset double_byte_number
 
     mov al, [SI]      ; in reality al is actually --00
     mov ah, [SI + 1]  ; while ah is for 00--

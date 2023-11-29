@@ -131,15 +131,12 @@ for line in cm_val_file_lines:
     new_line = line.strip().split('|')
     temp = new_line[0]
     old_var_names.append(temp.strip().split(' '))
-
-    cm_val_line = new_line[1]
-    cm_val_line = cm_val_line.strip().split(' ')
-    new_var_names.append(cm_val_line[0])
-    new_cm_val_lines.append(cm_val_line)
+    if len(new_line) > 1:
+        cm_val_line = new_line[1]
+        cm_val_line = cm_val_line.strip().split(' ')
+        new_var_names.append(cm_val_line[0])
+        new_cm_val_lines.append(cm_val_line)
 cm_val_file_lines = new_cm_val_lines
-
-print(old_var_names)
-print(new_var_names)
 
 file = open("commands.txt", "r")
 text = file.read()
@@ -159,6 +156,15 @@ names = file_2.read()
 names = names.strip().split('\n')
 names = separate_commands(names, ' ')
 
+file = open("commands.txt", "r")
+command_names = file.read()
+command_names = command_names.strip().split('\n')
+new_command_names = []
+for line in command_names:
+    line = line.split("â")
+    if len(line) > 1:
+        new_command_names.append(line)
+command_names = new_command_names
 
 def binary_to_number(string):
     lenght_of_num = len(string)
@@ -224,8 +230,8 @@ def decode_special_variable(start, length, db_var):
 output_lines = [] # this does not have anything in common with lines or names
 command_number = 0
 for line in lines:
-    output_lines.append(";" + str(line))
-
+    #output_lines.append(f";--> {str(line)} --<")
+    output_lines.append(f";--> {command_names[command_number]} <--")
     # do the command detection
     use_two_bytes = 2
     for byte in line:
@@ -247,12 +253,19 @@ for line in lines:
     commands = []
     for byte in line:
         byte_string = byte[len(byte) - 1]
-        element_in_list = 0
 
+        element_in_list = 0
+        no_read_bytes = 0
         for cm_val in cm_val_file_lines:
             special_variable = cm_val[0]
             move_to_db = cm_val[1]
+
             if special_variable in byte_string:
+                if move_to_db == "#":
+                    output_lines.append(f";--> The variable '{special_variable}' cannot be decode by this function <--")
+                    no_read_bytes = 1
+                    break
+
                 output_lines.append(f";--> The variable '{special_variable}' in reformed byte: '{byte_string}' <--")
                 start = byte_string.index(special_variable)
                 length = len(special_variable)
@@ -269,7 +282,8 @@ for line in lines:
                     output_lines.append(";--> Failed to find. Missing global variable. <--")
 
         element_in_list += 1
-        output_lines.append("call read_bytes")
+        if no_read_bytes == 0:
+            output_lines.append("call read_bytes")
 
     # execute functions based on what variables were used
     for command in commands:
@@ -282,12 +296,6 @@ for line in lines:
 f = open("output.txt", "w")
 for line in output_lines:
     f.write(line + '\n')
-
-
-
-
-
-
 
 
 

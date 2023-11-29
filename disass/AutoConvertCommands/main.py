@@ -5,7 +5,6 @@
 # Author: tari9925
 
 import re
-from dataclasses import dataclass
 
 def separate_commands(text, seperator):
     lines = []
@@ -188,10 +187,10 @@ def num_there(s):
 def decode_special_variable(start, length, db_var):
     output_lines = []
     if start == 0 and length < 8:  # the word is at the start of the command
-        output_lines.append("shl al, " + str(8 - length))
-    elif start + length == 8 and length < 8:  # the word is at the end of the command
         output_lines.append("shr al, " + str(8 - length))
+    elif start + length == 8 and length < 8:  # the word is at the end of the command
         output_lines.append("shl al, " + str(8 - length))
+        output_lines.append("shr al, " + str(8 - length))
     elif start > 0 and length < 8:  # the word is somewhere in the middle of the command
         output_lines.append("shl al, " + str(start))
         output_lines.append("shr al, " + str(8 - length))
@@ -199,7 +198,15 @@ def decode_special_variable(start, length, db_var):
     output_lines.append(f"mov {db_var}, al")
     return output_lines
 
+variables_file = open("variables.txt", "r")
+cm_val_file_lines = variables_file.read()
+cm_val_file_lines = cm_val_file_lines.split('\n')
+new_cm_val_lines = []
+for line in cm_val_file_lines:
+    new_line = line.strip().split(' ')
+    new_cm_val_lines.append(new_line)
 
+cm_val_file_lines = new_cm_val_lines
 
 output_lines = [] # this does not have anything in common with lines or names
 command_number = 0
@@ -223,44 +230,39 @@ for line in lines:
     output_lines.append(f"mov ptr_, offset {names[command_number]}")
     output_lines.append("call write_to_line")
 
+    commands = []
     for byte in line:
         byte_string = byte[len(byte) - 1]
-        full_byte_required = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        special_variables = ["md", "reg", "r/m", "poslinki", "bovb", "bojb", "portas--", "xxx", "yyy", "ajb-", "avb-", "pjb-", "pvb-", "numeris-", "dxportas", "srjb", "srvb", "wreg", "d", "s", "v", "w", "sr"]
-        move_to_db = ["mod_", "reg_", "r_m_", "binary_number", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "d", "s", "w_", "sr"]
-        command_to_run = ["find_write_register", "find_write_register", "find_write_register", "convert_to_decimal", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "find_write_register", "-"]
-
-        commands = []
         element_in_list = 0
-        for variable in special_variables:
-            if variable in byte_string:
-                output_lines.append(f";---the variable {variable} in reformed byte: " + byte_string + " ---")
-                start = byte_string.index(variable)
-                length = len(variable)
-                # remove the variable from byte to avoid decoding problems with one symbol variables like 's' 'w' 'd'
-                replacement_value = ""
+
+        for cm_val in cm_val_file_lines:
+            special_variable = cm_val[0]
+            move_to_db = cm_val[1]
+            command_to_run = cm_val[2]
+            full_byte_required = cm_val[3]
+            if special_variable in byte_string:
+                output_lines.append(f";--> The variable '{special_variable}' in reformed byte: '{byte_string}' <--")
+                start = byte_string.index(special_variable)
+                length = len(special_variable)
+
+                replacement_value = "" # remove the variable from byte to avoid decoding problems with one symbol variables like 's' 'w' 'd'
                 for i in range(0, length):
-                    replacement_value += '-'
-                byte_string = byte_string.replace(variable, replacement_value)
+                    replacement_value += '.'
+                byte_string = byte_string.replace(special_variable, replacement_value)
 
-
-                db_var = move_to_db[element_in_list]
-                if not db_var == '-' and not command_to_run[element_in_list] == '-':
+                if not move_to_db == '-' and not command_to_run == '-':
                     output_lines.append("mov al, byte_")
-                    output_lines += decode_special_variable(start, length, db_var)
-                    if not command_to_run[element_in_list] in commands:
-                        commands.append(command_to_run[element_in_list])
+                    output_lines += decode_special_variable(start, length, move_to_db)
+                    if not (command_to_run in commands):
+                        commands.append(command_to_run)
+                else:
+                    output_lines.append(";--> Failed to find. Missing global variable or function. <--")
 
-            element_in_list += 1
-
-        for command in commands:
-            output_lines.append(f"call {command}")
-
-
-
-
-
+        element_in_list += 1
         output_lines.append("call read_bytes")
+
+    for command in commands:
+        output_lines.append(f"call {command}")
 
     output_lines.append("not_" + str(command_number) + ":")
     output_lines.append('\n')
@@ -268,7 +270,6 @@ for line in lines:
 
 f = open("output.txt", "w")
 for line in output_lines:
-    print(line)
     f.write(line + '\n')
 
 

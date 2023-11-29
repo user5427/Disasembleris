@@ -28,13 +28,12 @@
     next_byte_available db 0 
     second_byte_used db 1    ; a quick way to tell the function that it should renew the current and following byte values. May only be used when the next_byte value was used
 
-    sr_ db 0
     w_ db 0
     s_ db 0
     d_ db 0
     sr_ db 0
     mod_ db 0
-    reg_ db 0
+    r_m_ db 0
     address_ db 0, 0
     binary_number db 0
 
@@ -471,56 +470,56 @@ find_write_register:
     jne not_word_size_regiters
     ;<--if(w==1)-->
 
-    cmp reg_, 0
+    cmp r_m_, 0
     jne not_ax
     mov ptr_, offset ax_n
     call write_to_line
     jmp end_checking_registers
     not_ax:
 
-    cmp reg_, 1
+    cmp r_m_, 1
     jne not_cx
     mov ptr_, offset cx_n
     call write_to_line
     jmp end_checking_registers
     not_cx:
     
-    cmp reg_, 2
+    cmp r_m_, 2
     jne not_dx
     mov ptr_, offset dx_n
     call write_to_line
     jmp end_checking_registers
     not_dx:
 
-    cmp reg_, 3
+    cmp r_m_, 3
     jne not_bx
     mov ptr_, offset bx_n
     call write_to_line
     jmp end_checking_registers
     not_bx:
 
-    cmp reg_, 4
+    cmp r_m_, 4
     jne not_sp
     mov ptr_, offset sp_n
     call write_to_line
     jmp end_checking_registers
     not_sp:
     
-    cmp reg_, 5
+    cmp r_m_, 5
     jne not_bp
     mov ptr_, offset bp_n
     call write_to_line
     jmp end_checking_registers
     not_bp:
 
-    cmp reg_, 6
+    cmp r_m_, 6
     jne not_si
     mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_registers
     not_si:
 
-    cmp reg_, 7
+    cmp r_m_, 7
     jne not_di
     mov ptr_, offset di_n
     call write_to_line
@@ -531,56 +530,56 @@ find_write_register:
     ;<------------>
     not_word_size_regiters:
 
-    cmp reg_, 0
+    cmp r_m_, 0
     jne not_al
     mov ptr_, offset al_n
     call write_to_line
     jmp end_checking_registers
     not_al:
 
-    cmp reg_, 1
+    cmp r_m_, 1
     jne not_cl
     mov ptr_, offset cl_n
     call write_to_line
     jmp end_checking_registers
     not_cl:
     
-    cmp reg_, 2
+    cmp r_m_, 2
     jne not_dl
     mov ptr_, offset dl_n
     call write_to_line
     jmp end_checking_registers
     not_dl:
 
-    cmp reg_, 3
+    cmp r_m_, 3
     jne not_bl
     mov ptr_, offset bl_n
     call write_to_line
     jmp end_checking_registers
     not_bl:
 
-    cmp reg_, 4
+    cmp r_m_, 4
     jne not_ah
     mov ptr_, offset ah_n
     call write_to_line
     jmp end_checking_registers
     not_ah:
     
-    cmp reg_, 5
+    cmp r_m_, 5
     jne not_ch
     mov ptr_, offset ch_n
     call write_to_line
     jmp end_checking_registers
     not_ch:
 
-    cmp reg_, 6
+    cmp r_m_, 6
     jne not_dh
     mov ptr_, offset dh_n
     call write_to_line
     jmp end_checking_registers
     not_dh:
 
-    cmp reg_, 7
+    cmp r_m_, 7
     jne not_bh
     mov ptr_, offset bh_n
     call write_to_line
@@ -602,7 +601,7 @@ effective_address:
     call add_left_bracket
     
 
-    cmp reg_, 0
+    cmp r_m_, 0
     jne not_BX_SI
     mov ptr_, offset bx_n
     call write_to_line
@@ -613,7 +612,7 @@ effective_address:
     not_BX_SI:
 
 
-    cmp reg_, 1
+    cmp r_m_, 1
     jne not_BX_DI
     mov ptr_, offset bx_n
     call write_to_line
@@ -623,7 +622,7 @@ effective_address:
     jmp end_checking_address_reg
     not_BX_DI:
 
-    cmp reg_, 2
+    cmp r_m_, 2
     jne not_BP_SI
     mov ptr_, offset bp_n
     call write_to_line
@@ -633,7 +632,7 @@ effective_address:
     jmp end_checking_address_reg
     not_BP_SI:
 
-    cmp reg_, 3
+    cmp r_m_, 3
     jne not_BP_DI
     mov ptr_, offset bp_n
     call write_to_line
@@ -643,21 +642,21 @@ effective_address:
     jmp end_checking_address_reg
     not_BP_DI:
 
-    cmp reg_, 4
+    cmp r_m_, 4
     jne not_SI_address
     mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_address_reg
     not_SI_address:
 
-    cmp reg_, 5
+    cmp r_m_, 5
     jne not_DI_address
     mov ptr_, offset di_n
     call write_to_line
     jmp end_checking_address_reg
     not_DI_address:
 
-    cmp reg_, 6
+    cmp r_m_, 6
     jne not_address
     cmp mod_, 0
     jne second_column_BP_offset
@@ -670,7 +669,7 @@ effective_address:
     jmp end_checking_address_reg
     not_address:
 
-    cmp reg_, 7
+    cmp r_m_, 7
     jne bx_as_address
     mov ptr_, offset bx_n
     call write_to_line

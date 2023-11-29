@@ -21,16 +21,17 @@ def separate_command_words(lines):
 
     return new_lines
 def change_word_names(lines):
-    bad_names = ["mod", "[poslinkis]", "poslinkis", "[bovb]", "portas", "ajb", "avb", "pjb", "pvb", "numeris", "dx portas"]
-    corrected_names = ["md", "poslinki", "poslinki", "bovb", "portas--", "ajb-", "avb-", "pjb-", "pvb-", "numeris-", "dxportas"]
+    bad_names = old_var_names
+    corrected_names = new_var_names
     new_lines = []
     for line in lines:
         line_ = []
         for word in line:
 
             for i in range(0, len(bad_names)):
-                if bad_names[i] == word:
-                    word = corrected_names[i]
+                for bad_name in bad_names[i]:
+                    if bad_name == word:
+                        word = corrected_names[i]
 
             line_.append(word)
 
@@ -119,6 +120,27 @@ def find_non_numbers(lines):
         new_lines.append(new_line[:])
     return new_lines
 
+
+variables_file = open("variables.txt", "r")
+cm_val_file_lines = variables_file.read()
+cm_val_file_lines = cm_val_file_lines.split('\n')
+new_cm_val_lines = []
+old_var_names = []
+new_var_names = []
+for line in cm_val_file_lines:
+    new_line = line.strip().split('|')
+    temp = new_line[0]
+    old_var_names.append(temp.strip().split(' '))
+
+    cm_val_line = new_line[1]
+    cm_val_line = cm_val_line.strip().split(' ')
+    new_var_names.append(cm_val_line[0])
+    new_cm_val_lines.append(cm_val_line)
+cm_val_file_lines = new_cm_val_lines
+
+print(old_var_names)
+print(new_var_names)
+
 file = open("commands.txt", "r")
 text = file.read()
 text = text.strip().split('\n')
@@ -136,6 +158,7 @@ file_2 = open("names.txt")
 names = file_2.read()
 names = names.strip().split('\n')
 names = separate_commands(names, ' ')
+
 
 def binary_to_number(string):
     lenght_of_num = len(string)
@@ -183,7 +206,6 @@ def byte_commands(byte, byte_name):
     return output_lines
 def num_there(s):
     return any(i.isdigit() for i in s)
-
 def decode_special_variable(start, length, db_var):
     output_lines = []
     if start == 0 and length < 8:  # the word is at the start of the command
@@ -198,15 +220,6 @@ def decode_special_variable(start, length, db_var):
     output_lines.append(f"mov {db_var}, al")
     return output_lines
 
-variables_file = open("variables.txt", "r")
-cm_val_file_lines = variables_file.read()
-cm_val_file_lines = cm_val_file_lines.split('\n')
-new_cm_val_lines = []
-for line in cm_val_file_lines:
-    new_line = line.strip().split(' ')
-    new_cm_val_lines.append(new_line)
-
-cm_val_file_lines = new_cm_val_lines
 
 output_lines = [] # this does not have anything in common with lines or names
 command_number = 0
@@ -230,6 +243,7 @@ for line in lines:
     output_lines.append(f"mov ptr_, offset {names[command_number]}")
     output_lines.append("call write_to_line")
 
+    # do the variable detection
     commands = []
     for byte in line:
         byte_string = byte[len(byte) - 1]
@@ -238,8 +252,6 @@ for line in lines:
         for cm_val in cm_val_file_lines:
             special_variable = cm_val[0]
             move_to_db = cm_val[1]
-            command_to_run = cm_val[2]
-            full_byte_required = cm_val[3]
             if special_variable in byte_string:
                 output_lines.append(f";--> The variable '{special_variable}' in reformed byte: '{byte_string}' <--")
                 start = byte_string.index(special_variable)
@@ -250,17 +262,16 @@ for line in lines:
                     replacement_value += '.'
                 byte_string = byte_string.replace(special_variable, replacement_value)
 
-                if not move_to_db == '-' and not command_to_run == '-':
+                if not move_to_db == '-':
                     output_lines.append("mov al, byte_")
                     output_lines += decode_special_variable(start, length, move_to_db)
-                    if not (command_to_run in commands):
-                        commands.append(command_to_run)
                 else:
-                    output_lines.append(";--> Failed to find. Missing global variable or function. <--")
+                    output_lines.append(";--> Failed to find. Missing global variable. <--")
 
         element_in_list += 1
         output_lines.append("call read_bytes")
 
+    # execute functions based on what variables were used
     for command in commands:
         output_lines.append(f"call {command}")
 

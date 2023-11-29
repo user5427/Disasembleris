@@ -31,8 +31,10 @@
     w_ db 0
     s_ db 0
     d_ db 0
+    v_ db 0
     sr_ db 0
     mod_ db 0
+    reg_ db 0
     r_m_ db 0
     address_ db 0, 0
     binary_number db 0
@@ -470,56 +472,56 @@ find_write_register:
     jne not_word_size_regiters
     ;<--if(w==1)-->
 
-    cmp r_m_, 0
+    cmp reg_, 0
     jne not_ax
     mov ptr_, offset ax_n
     call write_to_line
     jmp end_checking_registers
     not_ax:
 
-    cmp r_m_, 1
+    cmp reg_, 1
     jne not_cx
     mov ptr_, offset cx_n
     call write_to_line
     jmp end_checking_registers
     not_cx:
     
-    cmp r_m_, 2
+    cmp reg_, 2
     jne not_dx
     mov ptr_, offset dx_n
     call write_to_line
     jmp end_checking_registers
     not_dx:
 
-    cmp r_m_, 3
+    cmp reg_, 3
     jne not_bx
     mov ptr_, offset bx_n
     call write_to_line
     jmp end_checking_registers
     not_bx:
 
-    cmp r_m_, 4
+    cmp reg_, 4
     jne not_sp
     mov ptr_, offset sp_n
     call write_to_line
     jmp end_checking_registers
     not_sp:
     
-    cmp r_m_, 5
+    cmp reg_, 5
     jne not_bp
     mov ptr_, offset bp_n
     call write_to_line
     jmp end_checking_registers
     not_bp:
 
-    cmp r_m_, 6
+    cmp reg_, 6
     jne not_si
     mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_registers
     not_si:
 
-    cmp r_m_, 7
+    cmp reg_, 7
     jne not_di
     mov ptr_, offset di_n
     call write_to_line
@@ -530,56 +532,56 @@ find_write_register:
     ;<------------>
     not_word_size_regiters:
 
-    cmp r_m_, 0
+    cmp reg_, 0
     jne not_al
     mov ptr_, offset al_n
     call write_to_line
     jmp end_checking_registers
     not_al:
 
-    cmp r_m_, 1
+    cmp reg_, 1
     jne not_cl
     mov ptr_, offset cl_n
     call write_to_line
     jmp end_checking_registers
     not_cl:
     
-    cmp r_m_, 2
+    cmp reg_, 2
     jne not_dl
     mov ptr_, offset dl_n
     call write_to_line
     jmp end_checking_registers
     not_dl:
 
-    cmp r_m_, 3
+    cmp reg_, 3
     jne not_bl
     mov ptr_, offset bl_n
     call write_to_line
     jmp end_checking_registers
     not_bl:
 
-    cmp r_m_, 4
+    cmp reg_, 4
     jne not_ah
     mov ptr_, offset ah_n
     call write_to_line
     jmp end_checking_registers
     not_ah:
     
-    cmp r_m_, 5
+    cmp reg_, 5
     jne not_ch
     mov ptr_, offset ch_n
     call write_to_line
     jmp end_checking_registers
     not_ch:
 
-    cmp r_m_, 6
+    cmp reg_, 6
     jne not_dh
     mov ptr_, offset dh_n
     call write_to_line
     jmp end_checking_registers
     not_dh:
 
-    cmp r_m_, 7
+    cmp reg_, 7
     jne not_bh
     mov ptr_, offset bh_n
     call write_to_line
@@ -601,7 +603,7 @@ effective_address:
     call add_left_bracket
     
 
-    cmp r_m_, 0
+    cmp reg_, 0
     jne not_BX_SI
     mov ptr_, offset bx_n
     call write_to_line
@@ -612,7 +614,7 @@ effective_address:
     not_BX_SI:
 
 
-    cmp r_m_, 1
+    cmp reg_, 1
     jne not_BX_DI
     mov ptr_, offset bx_n
     call write_to_line
@@ -622,7 +624,7 @@ effective_address:
     jmp end_checking_address_reg
     not_BX_DI:
 
-    cmp r_m_, 2
+    cmp reg_, 2
     jne not_BP_SI
     mov ptr_, offset bp_n
     call write_to_line
@@ -632,7 +634,7 @@ effective_address:
     jmp end_checking_address_reg
     not_BP_SI:
 
-    cmp r_m_, 3
+    cmp reg_, 3
     jne not_BP_DI
     mov ptr_, offset bp_n
     call write_to_line
@@ -642,21 +644,21 @@ effective_address:
     jmp end_checking_address_reg
     not_BP_DI:
 
-    cmp r_m_, 4
+    cmp reg_, 4
     jne not_SI_address
     mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_address_reg
     not_SI_address:
 
-    cmp r_m_, 5
+    cmp reg_, 5
     jne not_DI_address
     mov ptr_, offset di_n
     call write_to_line
     jmp end_checking_address_reg
     not_DI_address:
 
-    cmp r_m_, 6
+    cmp reg_, 6
     jne not_address
     cmp mod_, 0
     jne second_column_BP_offset
@@ -669,7 +671,7 @@ effective_address:
     jmp end_checking_address_reg
     not_address:
 
-    cmp r_m_, 7
+    cmp reg_, 7
     jne bx_as_address
     mov ptr_, offset bx_n
     call write_to_line
@@ -745,6 +747,31 @@ find_write_seg_register:
 
 RET
 
+number_to_hex:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov al, binary_number
+
+    mov cl, al
+    shr cl, 4
+    call convert_half_byte_to_HEX
+    mov cl, al
+    shl cl, 4
+    shr cl, 4
+    call convert_half_byte_to_HEX
+
+    mov bx, offset line
+    mov [bx + line_length], 'h'
+    inc line_length
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
 address_to_hex:
     push ax
     push bx
@@ -771,6 +798,10 @@ address_to_hex:
     shl cl, 4
     shr cl, 4
     call convert_half_byte_to_HEX
+
+    mov bx, offset line
+    mov [bx + line_length], 'h'
+    inc line_length
 
     pop dx
     pop cx
@@ -896,7 +927,7 @@ RET
 check_commands:
     xor ax, ax
     
-    mov al, byte_ ; 0000 00dw mod reg r/m [poslinkis] – ADD registras += registras/atmintis
+    mov al, byte_ ; 0000 00dw mod reg_ r/m [poslinkis] – ADD registras += registras/atmintis
     shr al, 2 ;  0000 00dw -> --00 0000
     cmp al, 0 
     jne not_1 
@@ -933,7 +964,7 @@ check_commands:
 
     not_4:
 
-    mov al, byte_ ; 0000 10dw mod reg r/m [poslinkis] – OR registras V registras/atmintis
+    mov al, byte_ ; 0000 10dw mod reg_ r/m [poslinkis] – OR registras V registras/atmintis
     shr al, 2 ; 0000 10dw -> 0000 0010
     shl al, 2 ; 0000 0010 -> 0000 1000
     cmp al, 8
@@ -949,7 +980,7 @@ check_commands:
 
     not_6:
 
-    mov al, byte_ ; 0001 00dw mod reg r/m [poslinkis] – ADC registras += registras/axtmintis
+    mov al, byte_ ; 0001 00dw mod reg_ r/m [poslinkis] – ADC registras += registras/axtmintis
     shr al, 2 ; 0001 00dw -> 0000 0100
     shl al, 2 ; 0000 0100 -> 0001 0000
     cmp al, 16
@@ -965,11 +996,11 @@ check_commands:
 
     not_8:
 
-    mov al, byte_ ; 0001 10dw mod reg r/m [poslinkis] – SBB registras -= registras/atmintis
+    mov al, byte_ ; 0001 10dw mod reg_ r/m [poslinkis] – SBB registras -= registras/atmintis
 
     mov al, byte_ ; 0001 110w bojb [bovb] – SBB akumuliatorius -= betarpiškas operandas
 
-    mov al, byte_ ; 0010 00dw mod reg r/m [poslinkis] – AND registras & registras/atmintis
+    mov al, byte_ ; 0010 00dw mod reg_ r/m [poslinkis] – AND registras & registras/atmintis
 
     mov al, byte_ ; 0010 010w bojb [bovb] – AND akumuliatorius & betarpiškas operandas
 
@@ -977,19 +1008,19 @@ check_commands:
 
     mov al, byte_ ; 0010 0111 – DAA
 
-    mov al, byte_ ; 0010 10dw mod reg r/m [poslinkis] – SUB registras -= registras/atmintis
+    mov al, byte_ ; 0010 10dw mod reg_ r/m [poslinkis] – SUB registras -= registras/atmintis
 
     mov al, byte_ ; 0010 110w bojb [bovb] – SUB akumuliatorius -= betarpiškas operandas
 
     mov al, byte_ ; 0010 1111 – DAS
 
-    mov al, byte_ ; 0011 00dw mod reg r/m [poslinkis] – XOR registras | registras/atmintis
+    mov al, byte_ ; 0011 00dw mod reg_ r/m [poslinkis] – XOR registras | registras/atmintis
 
     mov al, byte_ ; 0011 010w bojb [bovb] – XOR akumuliatorius | betarpiškas operandas
 
     mov al, byte_ ; 0011 0111 – AAA
 
-    mov al, byte_ ; 0011 10dw mod reg r/m [poslinkis] – CMP registras ~ registras/atmintis
+    mov al, byte_ ; 0011 10dw mod reg_ r/m [poslinkis] – CMP registras ~ registras/atmintis
 
     mov al, byte_ ; 0011 110w bojb [bovb] – CMP akumuliatorius ~ betarpiškas operandas
 
@@ -1035,13 +1066,13 @@ check_commands:
 
     mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
 
-    mov al, byte_ ; 1000 010w mod reg r/m [poslinkis] – TEST registras ? registras/atmintis
+    mov al, byte_ ; 1000 010w mod reg_ r/m [poslinkis] – TEST registras ? registras/atmintis
     
-    mov al, byte_ ; 1000 011w mod reg r/m [poslinkis] – XCHG registras <> registras/atmintis
+    mov al, byte_ ; 1000 011w mod reg_ r/m [poslinkis] – XCHG registras <> registras/atmintis
 
-    mov al, byte_ ; 1000 10dw mod reg r/m [poslinkis] – MOV registras <> registras/atmintis
+    mov al, byte_ ; 1000 10dw mod reg_ r/m [poslinkis] – MOV registras <> registras/atmintis
 
-    mov al, byte_ ; 1000 1101 mod reg r/m [poslinkis] – LEA registras < atmintis
+    mov al, byte_ ; 1000 1101 mod reg_ r/m [poslinkis] – LEA registras < atmintis
 
     mov al, byte_ ; 1001 0000 – NOP; XCHG ax, ax
 
@@ -1085,9 +1116,9 @@ check_commands:
 
     mov al, byte_ ; 1100 0011 – RET; RETN
 
-    mov al, byte_ ; 1100 0100 mod reg r/m [poslinkis] – LES registras  atmintis
+    mov al, byte_ ; 1100 0100 mod reg_ r/m [poslinkis] – LES registras  atmintis
 
-    mov al, byte_ ; 1100 0101 mod reg r/m [poslinkis] – LDS registras  atmintis
+    mov al, byte_ ; 1100 0101 mod reg_ r/m [poslinkis] – LDS registras  atmintis
 
     mov al, byte_ ; 1100 1010 bojb bovb – RETF betarpiškas operandas
 

@@ -5,6 +5,7 @@
 # Author: tari9925
 
 import re
+from dataclasses import dataclass
 
 def separate_commands(text, seperator):
     lines = []
@@ -224,8 +225,9 @@ for line in lines:
 
     for byte in line:
         byte_string = byte[len(byte) - 1]
+        full_byte_required = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         special_variables = ["md", "reg", "r/m", "poslinki", "bovb", "bojb", "portas--", "xxx", "yyy", "ajb-", "avb-", "pjb-", "pvb-", "numeris-", "dxportas", "srjb", "srvb", "wreg", "d", "s", "v", "w", "sr"]
-        move_to_db = ["mod_", "reg_", "reg_", "binary_number", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "d", "s", "w_", "sr"]
+        move_to_db = ["mod_", "reg_", "r_m_", "binary_number", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "d", "s", "w_", "sr"]
         command_to_run = ["find_write_register", "find_write_register", "find_write_register", "convert_to_decimal", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "find_write_register", "-"]
 
         commands = []

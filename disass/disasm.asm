@@ -30,6 +30,9 @@
 
     sr_ db 0
     w_ db 0
+    s_ db 0
+    d_ db 0
+    sr_ db 0
     mod_ db 0
     reg_ db 0
     address_ db 0, 0
@@ -38,6 +41,8 @@
     number_in_ASCII db 0, 255 dup(?)
 
 lots_of_names:
+    wtf_n db "WTF", 24h
+
     add_n db "ADD", 24h
     push_n db "PUSH", 24h
     pop_n db "POP", 24h
@@ -790,7 +795,7 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     inc line_length
     
 RET
-convert_to_decimal:             ; takes number in the adr_offset
+convert_to_decimal:             ; takes number in the binary_number
     push ax
     push dx
     push cx

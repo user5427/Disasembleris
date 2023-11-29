@@ -21,8 +21,8 @@ def separate_command_words(lines):
 
     return new_lines
 def change_word_names(lines):
-    bad_names = ["mod", "[poslinkis]", "poslinkis", "[bovb]", "portas"]
-    corrected_names = ["md", "poslinki", "poslinki", "bovb", "portas--"]
+    bad_names = ["mod", "[poslinkis]", "poslinkis", "[bovb]", "portas", "ajb", "avb", "pjb", "pvb", "numeris", "dx portas"]
+    corrected_names = ["md", "poslinki", "poslinki", "bovb", "portas--", "ajb-", "avb-", "pjb-", "pvb-", "numeris-", "dxportas"]
     new_lines = []
     for line in lines:
         line_ = []
@@ -135,7 +135,7 @@ lines = find_non_numbers(lines)
 file_2 = open("names.txt")
 names = file_2.read()
 names = names.strip().split('\n')
-names = separate_commands(names, 'n')
+names = separate_commands(names, ' ')
 
 def binary_to_number(string):
     lenght_of_num = len(string)
@@ -184,34 +184,81 @@ def byte_commands(byte, byte_name):
 def num_there(s):
     return any(i.isdigit() for i in s)
 
+def decode_special_variable(start, length, db_var):
+    output_lines = []
+    if start == 0 and length < 8:  # the word is at the start of the command
+        output_lines.append("shl al, " + str(8 - length))
+    elif start + length == 8 and length < 8:  # the word is at the end of the command
+        output_lines.append("shr al, " + str(8 - length))
+        output_lines.append("shl al, " + str(8 - length))
+    elif start > 0 and length < 8:  # the word is somewhere in the middle of the command
+        output_lines.append("shl al, " + str(start))
+        output_lines.append("shr al, " + str(8 - length))
+
+    output_lines.append(f"mov {db_var}, al")
+    return output_lines
+
+
 
 output_lines = [] # this does not have anything in common with lines or names
 command_number = 0
 for line in lines:
     output_lines.append(";" + str(line))
 
-    use_two_bytes = -1
+    # do the command detection
+    use_two_bytes = 2
     for byte in line:
-        output_lines.append(";---the byte: " + byte[len(byte) - 1] + " ---")
-
         if num_there(byte[len(byte) - 1]):
-            if use_two_bytes == 0:
+            output_lines.append(";---the byte: " + byte[len(byte) - 1] + " ---")
+            if use_two_bytes == 2:
                 use_two_bytes = 0
                 output_lines += byte_commands(byte, "byte_")
             else:
                 use_two_bytes = 1
+                output_lines.append("cmp next_byte_available, 1")
+                output_lines.append("jne not_" + str(command_number))
                 output_lines += byte_commands(byte, "next_byte")
 
-        if use_two_bytes == 0:
-            output_lines.append("call read_bytes")
-        elif use_two_bytes == 1:
-            use_two_bytes = 0
-            output_lines.append("mov second_byte_used, 1")
-            output_lines.append("call read_bytes")
+    output_lines.append(f"mov ptr_, offset {names[command_number]}")
+    output_lines.append("call write_to_line")
+
+    for byte in line:
+        byte_string = byte[len(byte) - 1]
+        special_variables = ["md", "reg", "r/m", "poslinki", "bovb", "bojb", "portas--", "xxx", "yyy", "ajb-", "avb-", "pjb-", "pvb-", "numeris-", "dxportas", "srjb", "srvb", "wreg", "d", "s", "v", "w", "sr"]
+        move_to_db = ["mod_", "reg_", "reg_", "binary_number", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "d", "s", "w_", "sr"]
+        command_to_run = ["find_write_register", "find_write_register", "find_write_register", "convert_to_decimal", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "find_write_register", "-"]
+
+        commands = []
+        element_in_list = 0
+        for variable in special_variables:
+            if variable in byte_string:
+                output_lines.append(f";---the variable {variable} in reformed byte: " + byte_string + " ---")
+                start = byte_string.index(variable)
+                length = len(variable)
+                # remove the variable from byte to avoid decoding problems with one symbol variables like 's' 'w' 'd'
+                replacement_value = ""
+                for i in range(0, length):
+                    replacement_value += '-'
+                byte_string = byte_string.replace(variable, replacement_value)
+
+
+                db_var = move_to_db[element_in_list]
+                if not db_var == '-' and not command_to_run[element_in_list] == '-':
+                    output_lines.append("mov al, byte_")
+                    output_lines += decode_special_variable(start, length, db_var)
+                    if not command_to_run[element_in_list] in commands:
+                        commands.append(command_to_run[element_in_list])
+
+            element_in_list += 1
+
+        for command in commands:
+            output_lines.append(f"call {command}")
 
 
 
 
+
+        output_lines.append("call read_bytes")
 
     output_lines.append("not_" + str(command_number) + ":")
     output_lines.append('\n')

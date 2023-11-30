@@ -5,6 +5,7 @@
 # Author: tari9925
 
 
-import Command_detection
+import Disasm_commands
 
-Command_detection.command_detection("output.txt")
+Disasm_commands.command_detection("output.txt")
+Disasm_commands.function_detection("functions_found.txt")

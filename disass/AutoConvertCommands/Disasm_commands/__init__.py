@@ -159,7 +159,11 @@ def command_detection(output_file):
     file_2 = open("Files/names.txt")
     names = file_2.read()
     names = names.strip().split('\n')
-    names = separate_commands(names, ' ')
+    new_names = []
+    for name in names:
+        name = name.strip().split(' ')
+        name = name[:2]
+        new_names.append(name)
 
     file = open("Files/commands.txt", "r")
     command_names = file.read()
@@ -239,11 +243,19 @@ def command_detection(output_file):
     for line in lines:
         # output_lines.append(f";--> {str(line)} --<")
         output_lines.append(f";--> {command_names[command_number]} <--")
+
         # do the command detection
         use_two_bytes = 2
+        print_word_type_command = 0
         for byte in line:
+            temp_byte = re.sub(r'[0-9]+', "", byte[len(byte) - 1]).strip()
+            if len(temp_byte) == 1 and "w" in temp_byte:
+                print_word_type_command = 1
+            else:
+                print_word_type_command = 0
+
             if num_there(byte[len(byte) - 1]):
-                output_lines.append(";---the byte: " + byte[len(byte) - 1] + " ---")
+                output_lines.append(";--> The byte: " + byte[len(byte) - 1] + " <--")
                 if use_two_bytes == 2:
                     use_two_bytes = 0
                     output_lines += byte_commands(byte, "byte_")
@@ -253,11 +265,11 @@ def command_detection(output_file):
                     output_lines.append("jne not_" + str(command_number))
                     output_lines += byte_commands(byte, "next_byte")
 
-        output_lines.append(f"mov ptr_, offset {names[command_number]}")
-        output_lines.append("call write_to_line")
+        if print_word_type_command == 0:
+            output_lines.append(f"mov ptr_, offset {new_names[command_number][0]}")
+            output_lines.append("call write_to_line")
 
         # do the variable detection
-        commands = []
         for byte in line:
             byte_string = byte[len(byte) - 1]
 
@@ -270,7 +282,7 @@ def command_detection(output_file):
                 if special_variable in byte_string:
                     if move_to_db == "#":
                         output_lines.append(
-                            f";--> The variable '{special_variable}' cannot be decode by this function <--")
+                            f";--> The variable '{special_variable}' cannot be decoded by this function <--")
                         no_read_bytes = 1
                         break
 
@@ -293,6 +305,18 @@ def command_detection(output_file):
             if no_read_bytes == 0:
                 output_lines.append("call read_bytes")
 
+        if print_word_type_command == 1:
+            output_lines.append(";--> Two names found <--")
+            output_lines.append("cmp w_, 1")
+            output_lines.append(f"je other_name_{command_number}")
+            output_lines.append(f"mov ptr_, offset {new_names[command_number][0]}")
+            output_lines.append(f"jmp simple_name_{command_number}")
+            output_lines.append(f"other_name_{command_number}:")
+            output_lines.append(f"mov ptr_, offset {new_names[command_number][1]}")
+            output_lines.append(f"simple_name_{command_number}:")
+            output_lines.append("call write_to_line")
+
+        commands = []
         # execute functions based on what variables were used
         for command in commands:
             output_lines.append(f"call {command}")
@@ -306,3 +330,25 @@ def command_detection(output_file):
         f.write(line + '\n')
 
     # See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+def function_detection(output_file):
+    file = open("Files/commands.txt", "r")
+    lines = file.read()
+    lines = lines.strip().split('\n')
+
+    new_lines = []
+    for line in lines:
+        line = line.strip().split('â')[0].strip()
+        line = re.sub(r'[0-9]+', "", line).strip()
+        new_lines.append(line)
+
+    lines = new_lines
+    new_lines = []
+    for line in lines:
+        if not (line in new_lines):
+            new_lines.append(line)
+    lines = new_lines
+
+    output_f = open(output_file, "w")
+    for line in lines:
+        output_f.write(line + "\n")

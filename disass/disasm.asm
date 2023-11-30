@@ -36,13 +36,15 @@
     mod_ db 0
     reg_ db 0
     r_m_ db 0
+
     double_byte_number db 0, 0
     binary_number db 0
-
     number_in_ASCII db 0, 255 dup(?)
+    register_index db 0
 
+    
 lots_of_names:
-    wtf_n db "WTF", 24h
+    wtf_n db ";unknown", 24h
 
     add_n db "ADD", 24h
     push_n db "PUSH", 24h
@@ -456,299 +458,6 @@ add_comma_line:
 RET
 
 
-; the thing below do not work right
-find_write_register:
-    push ax
-    push bx
-    push cx
-    push dx
-
-    mov al, mod_
-    cmp al, 3
-    jne not_simple_registers
-    ;<--if(mod==11)-->
-
-    mov ah, w_
-    cmp ah, 1
-    jne not_word_size_regiters
-    ;<--if(w==1)-->
-
-    cmp reg_, 0
-    jne not_ax
-    mov ptr_, offset ax_n
-    call write_to_line
-    jmp end_checking_registers
-    not_ax:
-
-    cmp reg_, 1
-    jne not_cx
-    mov ptr_, offset cx_n
-    call write_to_line
-    jmp end_checking_registers
-    not_cx:
-    
-    cmp reg_, 2
-    jne not_dx
-    mov ptr_, offset dx_n
-    call write_to_line
-    jmp end_checking_registers
-    not_dx:
-
-    cmp reg_, 3
-    jne not_bx
-    mov ptr_, offset bx_n
-    call write_to_line
-    jmp end_checking_registers
-    not_bx:
-
-    cmp reg_, 4
-    jne not_sp
-    mov ptr_, offset sp_n
-    call write_to_line
-    jmp end_checking_registers
-    not_sp:
-    
-    cmp reg_, 5
-    jne not_bp
-    mov ptr_, offset bp_n
-    call write_to_line
-    jmp end_checking_registers
-    not_bp:
-
-    cmp reg_, 6
-    jne not_si
-    mov ptr_, offset si_n
-    call write_to_line
-    jmp end_checking_registers
-    not_si:
-
-    cmp reg_, 7
-    jne not_di
-    mov ptr_, offset di_n
-    call write_to_line
-    jmp end_checking_registers
-    not_di:
-    
-    
-    ;<------------>
-    not_word_size_regiters:
-
-    cmp reg_, 0
-    jne not_al
-    mov ptr_, offset al_n
-    call write_to_line
-    jmp end_checking_registers
-    not_al:
-
-    cmp reg_, 1
-    jne not_cl
-    mov ptr_, offset cl_n
-    call write_to_line
-    jmp end_checking_registers
-    not_cl:
-    
-    cmp reg_, 2
-    jne not_dl
-    mov ptr_, offset dl_n
-    call write_to_line
-    jmp end_checking_registers
-    not_dl:
-
-    cmp reg_, 3
-    jne not_bl
-    mov ptr_, offset bl_n
-    call write_to_line
-    jmp end_checking_registers
-    not_bl:
-
-    cmp reg_, 4
-    jne not_ah
-    mov ptr_, offset ah_n
-    call write_to_line
-    jmp end_checking_registers
-    not_ah:
-    
-    cmp reg_, 5
-    jne not_ch
-    mov ptr_, offset ch_n
-    call write_to_line
-    jmp end_checking_registers
-    not_ch:
-
-    cmp reg_, 6
-    jne not_dh
-    mov ptr_, offset dh_n
-    call write_to_line
-    jmp end_checking_registers
-    not_dh:
-
-    cmp reg_, 7
-    jne not_bh
-    mov ptr_, offset bh_n
-    call write_to_line
-    jmp end_checking_registers
-    not_bh:
-
-    ;<--------------->
-    not_simple_registers:
-    call effective_address
-
-    end_checking_registers:
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-
-RET
-effective_address:
-    call add_left_bracket
-    
-
-    cmp reg_, 0
-    jne not_BX_SI
-    mov ptr_, offset bx_n
-    call write_to_line
-    call add_plus
-    mov ptr_, offset si_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_BX_SI:
-
-
-    cmp reg_, 1
-    jne not_BX_DI
-    mov ptr_, offset bx_n
-    call write_to_line
-    call add_plus
-    mov ptr_, offset di_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_BX_DI:
-
-    cmp reg_, 2
-    jne not_BP_SI
-    mov ptr_, offset bp_n
-    call write_to_line
-    call add_plus
-    mov ptr_, offset si_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_BP_SI:
-
-    cmp reg_, 3
-    jne not_BP_DI
-    mov ptr_, offset bp_n
-    call write_to_line
-    call add_plus
-    mov ptr_, offset di_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_BP_DI:
-
-    cmp reg_, 4
-    jne not_SI_address
-    mov ptr_, offset si_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_SI_address:
-
-    cmp reg_, 5
-    jne not_DI_address
-    mov ptr_, offset di_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_DI_address:
-
-    cmp reg_, 6
-    jne not_address
-    cmp mod_, 0
-    jne second_column_BP_offset
-    call double_byte_number_to_hex
-    jmp end_checking_address_reg
-
-    second_column_BP_offset:
-    mov ptr_, offset bp_n
-    call write_to_line
-    jmp end_checking_address_reg
-    not_address:
-
-    cmp reg_, 7
-    jne bx_as_address
-    mov ptr_, offset bx_n
-    call write_to_line
-    jmp end_checking_address_reg
-    bx_as_address:
-
-
-    end_checking_address_reg:
-    cmp mod_, 0
-    je skip_adding_poslinkis
-    call add_plus
-    call number_to_hex
-
-    skip_adding_poslinkis:
-    call add_right_bracket
-RET
-find_write_seg_register:
-    push ax
-    push bx
-    push cx
-    push dx
-
-    mov al, sr_
-    cmp al, 0
-    jne skip_es
-    ;<--if-->
-    mov ax, offset es_n
-    mov ptr_, ax
-    call write_to_line
-    jmp done_checking_seg
-    ;<------>  
-    skip_es:
-
-
-    cmp al, 1
-    jne skip_cs
-    ;<--if-->
-    mov ax, offset cs_n
-    mov ptr_, ax
-    call write_to_line
-    jmp done_checking_seg
-    ;<------>      
-    skip_cs:
-
-    
-    cmp al, 2
-    jne skip_ss
-    ;<--if-->
-    mov ax, offset ss_n
-    mov ptr_, ax
-    call write_to_line
-    jmp done_checking_seg
-    ;<------>      
-    skip_ss:
-
-
-    cmp al, 3
-    jne skip_ds
-    ;<--if-->
-    mov ax, offset ds_n
-    mov ptr_, ax
-    call write_to_line
-    jmp done_checking_seg
-    ;<------>  
-    skip_ds:
-
-
-    done_checking_seg:
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-
-RET
-; the thing above do not work right
-
 number_to_hex:
     push ax
     push bx
@@ -827,14 +536,17 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     inc line_length
     
 RET
-convert_to_decimal:             ; takes number in the binary_number
+convert_to_decimal:       ; takes number in the binary_number
     push ax
     push dx
     push cx
     push bx
     
     xor dx, dx
-    mov dl, binary_number
+    mov SI, offset double_byte_number
+    mov dl, [SI]      ; in reality al is actually --00
+    mov dh, [SI + 1]  ; while ah is for 00--
+
     mov DI, offset number_in_ASCII               
     
     xor cx, cx
@@ -924,7 +636,459 @@ convert_to_decimal:             ; takes number in the binary_number
     pop ax
     
 RET
+
+
+find_word_register: ; use register_index as input
+    ; 000 AX
+    ; 001 CX
+    ; 010 DX
+    ; 011 BX
+    ; 100 SP
+    ; 101 BP
+    ; 110 SI
+    ; 111 DI
+
+    push ax
+    push bx
+    push cx
+    push dx
+
+    cmp register_index, 0 ; 000 AX
+    jne not_ax
+    mov ptr_, offset ax_n
+    call write_to_line
+    jmp end_checking_registers
+    not_ax:
+
+    cmp register_index, 1 ; 001 CX
+    jne not_cx
+    mov ptr_, offset cx_n
+    call write_to_line
+    jmp end_checking_registers
+    not_cx:
+
+    cmp register_index, 2 ; 010 DX
+    jne not_dx
+    mov ptr_, offset dx_n
+    call write_to_line
+    jmp end_checking_registers
+    not_dx:
+
+    cmp register_index, 3 ; 011 BX
+    jne not_bx
+    mov ptr_, offset bx_n
+    call write_to_line
+    jmp end_checking_registers
+    not_bx:
+
+    cmp register_index, 4 ; 100 SP
+    jne not_sp
+    mov ptr_, offset sp_n
+    call write_to_line
+    jmp end_checking_registers
+    not_sp:
+
+    cmp register_index, 5 ; 101 BP
+    jne not_bp
+    mov ptr_, offset bp_n
+    call write_to_line
+    jmp end_checking_registers
+    not_bp:
+
+    cmp register_index, 6 ; 110 SI
+    jne not_si
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_registers
+    not_si:
+
+    cmp register_index, 7 ; 111 DI
+    jne not_di
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_registers
+    not_di:
+
+    end_checking_registers:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+find_byte_register: ; use register_index as input
+    ; 000 AL
+    ; 001 CL
+    ; 010 DL
+    ; 011 BL
+    ; 100 AH
+    ; 101 CH
+    ; 110 DH
+    ; 111 BH
+
+    push ax
+    push bx
+    push cx
+    push dx
+
+    cmp register_index, 0 ; 000 AL
+    jne not_al
+    mov ptr_, offset al_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_al:
+
+    cmp register_index, 1 ; 001 CL
+    jne not_cl
+    mov ptr_, offset cl_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_cl:
+
+    cmp register_index, 2 ; 010 DL
+    jne not_dl
+    mov ptr_, offset dl_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_dl:
+
+    cmp register_index, 3 ; 011 BL
+    jne not_bl
+    mov ptr_, offset bl_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_bl:
+
+    cmp register_index, 4 ; 100 AH
+    jne not_ah
+    mov ptr_, offset ah_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_ah:
+
+    cmp register_index, 5 ; 101 CH
+    jne not_ch
+    mov ptr_, offset ch_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_ch:
+
+    cmp register_index, 6 ; 110 DH
+    jne not_dh
+    mov ptr_, offset dh_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_dh:
+
+    cmp register_index, 7 ; 111 BH
+    jne not_bh
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_byte_registers
+    not_bh:
+
+    end_checking_byte_registers:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+find_effective_address_registers: ; use register_index as input, double_byte_number when there is direct address and mod_ for changing between address and BP reg
+    cmp reg_, 0
+    jne not_BX_SI
+    mov ptr_, offset bx_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BX_SI:
+
+
+    cmp reg_, 1
+    jne not_BX_DI
+    mov ptr_, offset bx_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BX_DI:
+
+    cmp reg_, 2
+    jne not_BP_SI
+    mov ptr_, offset bp_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BP_SI:
+
+    cmp reg_, 3
+    jne not_BP_DI
+    mov ptr_, offset bp_n
+    call write_to_line
+    call add_plus
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_BP_DI:
+
+    cmp reg_, 4
+    jne not_SI_address
+    mov ptr_, offset si_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_SI_address:
+
+    cmp reg_, 5
+    jne not_DI_address
+    mov ptr_, offset di_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_DI_address:
+
+    cmp reg_, 6
+    jne not_address
+    cmp mod_, 0
+    jne second_column_BP_offset
+    call double_byte_number_to_hex ; FIXME neveiks, reik double_byte_number skaiciu nurodyti
+    jmp end_checking_address_reg
+
+    second_column_BP_offset:
+    mov ptr_, offset bp_n
+    call write_to_line
+    jmp end_checking_address_reg
+    not_address:
+
+    cmp reg_, 7
+    jne bx_as_address
+    mov ptr_, offset bx_n
+    call write_to_line
+    jmp end_checking_address_reg
+    bx_as_address:
+
+
+    end_checking_address_reg:
+RET
+find_seg_register: ; use register_index as input
+    push ax
+    push bx
+    push cx
+    push dx
+
+    cmp register_index, 0
+    jne skip_es
+    mov ptr_, offset es_n
+    call write_to_line
+    jmp done_checking_seg
+    skip_es:
+
+
+    cmp register_index, 1
+    jne skip_cs
+    mov ptr_, offset cs_n
+    call write_to_line
+    jmp done_checking_seg
+    skip_cs:
+
+    
+    cmp register_index, 2
+    jne skip_ss
+    mov ptr_, offset ss_n
+    call write_to_line
+    jmp done_checking_seg
+    skip_ss:
+
+
+    cmp register_index, 3
+    jne skip_ds
+    mov ptr_, offset ds_n
+    call write_to_line
+    jmp done_checking_seg 
+    skip_ds:
+
+
+    done_checking_seg:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+RET
+; mod_ = 01 for one byte poslinkis, 10 for two byte poslinkis
+find_poslinkis: ; use mod_ as input, uses read_bytes function
+    push ax
+    push bx
+    push cx
+    push dx
+
+    cmp mod_, 1
+    je one_byte_poslinkis
+    cmp mod_, 2
+    je two_byte_poslinkis
+    jmp exit_poslinkis_function
+
+    one_byte_poslinkis:
+    call read_bytes
+    mov al, byte_
+    mov binary_number, al
+    call number_to_hex
+    jmp exit_poslinkis_function
+
+    two_byte_poslinkis:
+    call read_bytes
+    mov al, byte_
+    call read_bytes
+    mov ah, byte_
+    mov double_byte_number, ax
+    call double_byte_number_to_hex
+    jmp exit_poslinkis_function
+
+    exit_poslinkis_function:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+
                       
+; functions used to decode variables and write text  to line 
+CONVERT_dw_mod_reg_r_m_poslinki:
+
+RET
+
+
+CONVERT_w_bojb_bovb:
+    push ax
+    cmp w_, 1
+    je two_bytes_num
+    cmp w_, 0
+    je one_byte_num
+
+    one_byte_num:
+    call read_bytes
+    mov al, byte_
+    mov double_byte_number, al
+    call convert_to_decimal
+    jmp exit_bojb_function
+
+    two_bytes_num:
+    call read_bytes
+    mov al, byte_
+    call read_bytes
+    mov ah, byte_
+    mov double_byte_number, ax
+    call convert_to_decimal
+    jmp exit_bojb_function
+
+    exit_bojb_function:
+    pop ax
+RET
+
+
+CONVERT_sr: ; write IS, CS, SS, DS with one command
+    push ax
+    mov al, sr_
+    mov register_index, al
+    call find_seg_register
+    pop ax
+RET
+
+CONVER_reg: ; take reg_ variable and convert it to word sized register
+    push ax
+    mov al, reg_
+    mov register_index, al
+    call find_word_register
+    pop ax
+RET
+
+
+CONVERT_poslinkis: ; this one is one byte only!
+    mov mod_, 1 ; using the mod_, tell poslinkis function to only get one byte and convert it to hex number
+    call find_poslinkis
+RET
+
+
+CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
+
+RET
+
+
+CONVERT_w_mod_reg_r_m_poslinkis:
+
+RET
+
+
+CONVERT_d_mod_sr_r_m_poslinkis:
+
+RET
+
+
+CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
+
+RET
+
+
+CONVERT_mod_r_m_poslinkis:
+
+RET
+
+
+CONVERT_ajb_avb_srjb_srvb:
+
+RET
+
+
+CONVERT_w_ajb_avb:
+
+RET
+
+
+CONVERT_wreg_bojb_bovb_:
+
+RET
+
+
+CONVERT_bojb_bovb:
+
+RET
+
+
+CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
+
+RET
+
+
+CONVERT_numeris:
+
+RET
+
+
+CONVERT_vw_mod_r_m_poslinkis:
+
+RET
+
+
+CONVERT_xxx_mod_yyy_r_m_poslinkis:
+
+RET
+
+
+CONVERT_w_portas:
+
+RET
+
+
+CONVERT_pjb_pvb:
+
+RET
+
+
+CONVERT_w_mod_r_m_poslinkis:
+
+RET
+
 
 check_commands:
     xor ax, ax
@@ -1188,24 +1352,6 @@ check_commands:
     jne skip_two_bytes_commands
     call check_double_byte_commands
     skip_two_bytes_commands:
-RET
-
-check_double_byte_commands:
-                                                           ;00     ;000
-    mov al, byte_ ; shit it needs two bytes ->>>> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] – ADD registras/atmintis += betarpiškas operandas
-    mov ah, next_byte
-    shr al, 2 ; -- 1000 00
-    shl al, 2 ; 1000 00 --
-    shl ah, 2 ; 000 r/m ---
-    shr ah, 5 ; ----- 000
-    shl ah, 3 ; -- 000 ---
-    cmp al, 128
-    jne skip_two_bytes_commands_1
-    cmp ah, 0
-    jne skip_two_bytes_commands_1
-
-    skip_two_bytes_commands_1:
-
 RET
 
 end start

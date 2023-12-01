@@ -1,13 +1,13 @@
 .model tiny
-.386                        ; Just to show at what position it has to be
-;.stack 100h
+;.386                        ; Just to show at what position it has to be
+.stack 100h
 .data
 
     endl db 0dh, 0ah, 24h
 
     argument db 127 dup(?)
-    fn_in db 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
-    fn_out db 127 dup(?)
+    fn_in db "hello.com", 24h;127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db "hello.txt", 24h;127 dup(?)
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
@@ -36,6 +36,7 @@
     mod_ db 0
     reg_ db 0
     r_m_ db 0
+    com_num_ db 0
 
     double_byte_number db 0, 0
     binary_number db 0
@@ -45,7 +46,8 @@
     
 lots_of_names:
     wtf_n db ";unknown", 24h
-
+    mov_n db "MOV", 24h
+    nop_n db "NOP", 24h
     add_n db "ADD", 24h
     push_n db "PUSH", 24h
     pop_n db "POP", 24h
@@ -192,9 +194,11 @@ lots_of_names:
 ;
 
 .code
-ORG 100h
+;ORG 100h
 start:
-    call read_argument
+    mov ax, @data
+    mov ds, ax
+    ;call read_argument FIXME
     ; find the inputfile, output file
     call open_input_file 
     call loop_over_bytes     
@@ -208,6 +212,7 @@ error:                  ; output error msg
     mov ah, 9
     mov dx, offset msg
     int 21h
+RET
 ;error
 
 read_argument:
@@ -318,7 +323,7 @@ read_buffer:
     mov bx, fh_in            ; bx- the input file handle
     mov cx, 200              ; cx - number of bytes to read
     int 21h                  ;
-    JC error                 ; if there are errors, stop the program
+    call error                 ; if there are errors, stop the program
 RET
 
 
@@ -457,7 +462,14 @@ add_comma_line:
     call add_space_line
 RET
 
-
+reset_doble_byte_number:
+    push ax
+    mov DI, offset double_byte_number
+    mov al, 0
+    mov [DI], al
+    mov [DI+1], al
+    pop ax
+RET
 number_to_hex:
     push ax
     push bx
@@ -936,12 +948,15 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     call number_to_hex
     jmp exit_poslinkis_function
 
+
     two_byte_poslinkis:
+    mov DI, offset double_byte_number
     call read_bytes
     mov al, byte_
+    mov [DI], al
     call read_bytes
     mov ah, byte_
-    mov double_byte_number, ax
+    mov [DI + 1], ah
     call double_byte_number_to_hex
     jmp exit_poslinkis_function
 
@@ -952,6 +967,37 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     pop ax
 RET
 
+find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'double_byte_number if there is adress'
+    call add_left_bracket
+    call find_effective_address_registers
+    cmp mod_, 0
+    jne skip_poslinkis
+    call add_plus
+    call find_poslinkis
+    skip_poslinkis:
+    call add_right_bracket
+RET
+
+full_reg_detector:   ; takes register_index and w_
+    cmp w_, 1
+    jne not_word_sized_reg
+    call find_word_register
+    jmp skip_one_byte_reg
+    not_word_sized_reg:
+    call find_byte_register
+    skip_one_byte_reg:
+RET
+
+full_r_m_detector: ; takes mod_, w_ and register_index as input
+    cmp mod_, 3
+    jne not_reg
+    call full_reg_detector
+    jmp skip_effective_address
+    not_reg:
+    call find_full_effective_address
+    skip_effective_address:
+
+RET
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
@@ -969,23 +1015,25 @@ CONVERT_w_bojb_bovb:
     one_byte_num:
     call read_bytes
     mov al, byte_
+    call reset_doble_byte_number
     mov double_byte_number, al
     call convert_to_decimal
     jmp exit_bojb_function
 
     two_bytes_num:
+    mov DI, offset double_byte_number
     call read_bytes
     mov al, byte_
+    mov [DI], al
     call read_bytes
     mov ah, byte_
-    mov double_byte_number, ax
+    mov [DI + 1], ah
     call convert_to_decimal
     jmp exit_bojb_function
 
     exit_bojb_function:
     pop ax
 RET
-
 
 CONVERT_sr: ; write IS, CS, SS, DS with one command
     push ax
@@ -995,7 +1043,8 @@ CONVERT_sr: ; write IS, CS, SS, DS with one command
     pop ax
 RET
 
-CONVER_reg: ; take reg_ variable and convert it to word sized register
+
+CONVERT_reg: ; take reg_ variable and convert it to word sized register
     push ax
     mov al, reg_
     mov register_index, al
@@ -1016,6 +1065,15 @@ RET
 
 
 CONVERT_w_mod_reg_r_m_poslinkis:
+    push ax
+    mov al, reg_
+    mov register_index, al
+    call add_space_line
+    call full_reg_detector
+    call add_comma_line
+    call add_space_line
+    call full_r_m_detector
+    pop ax
 
 RET
 
@@ -1061,7 +1119,13 @@ RET
 
 
 CONVERT_numeris:
-
+    push ax
+    xor ax, ax
+    call reset_doble_byte_number
+    mov al, com_num_
+    mov double_byte_number, al
+    call convert_to_decimal
+    pop ax
 RET
 
 
@@ -1092,266 +1156,3446 @@ RET
 
 check_commands:
     xor ax, ax
-    
-    mov al, byte_ ; 0000 00dw mod reg_ r/m [poslinkis] – ADD registras += registras/atmintis
-    shr al, 2 ;  0000 00dw -> --00 0000
-    cmp al, 0 
-    jne not_1 
+       ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
+   ;--> The byte: 000000dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 0
+   je yes_0_0
+   jmp not_0
+   yes_0_0:
+   mov ptr_, offset add_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '000000dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '000000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_0:
+   
+
+   ;--> 0000 010w bojb [bovb] -€“ ADD akumuliatorius += betarpiÅ¡kas operandas <--
+   ;--> The byte: 0000010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 2
+   je yes_1_0
+   jmp not_1
+   yes_1_0:
+   mov ptr_, offset add_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0000010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_1:
+   
+
+   ;--> 000sr 110 -€“ PUSH segmento registras <--
+   ;--> The byte: 000sr110 <--
+   mov al, byte_
+   shr al, 5
+   shl al, 5
+   cmp al, 6
+   je yes_2_0
+   jmp not_2
+   yes_2_0:
+   mov ptr_, offset push_n
+   call write_to_line
+   ;--> The variable 'sr' in reformed byte: '000sr110' <--
+   mov al, byte_
+   shl al, 3
+   shr al, 6
+   mov sr_, al
+   call read_bytes
+   call CONVERT_sr
+   not_2:
+   
+
+   ;--> 000sr 111 -€“ POP segmento registras <--
+   ;--> The byte: 000sr111 <--
+   mov al, byte_
+   shr al, 5
+   shl al, 5
+   cmp al, 7
+   je yes_3_0
+   jmp not_3
+   yes_3_0:
+   mov ptr_, offset pop_n
+   call write_to_line
+   ;--> The variable 'sr' in reformed byte: '000sr111' <--
+   mov al, byte_
+   shl al, 3
+   shr al, 6
+   mov sr_, al
+   call read_bytes
+   call CONVERT_sr
+   not_3:
+   
+
+   ;--> 0000 10dw mod reg r/m [poslinkis] -€“ OR registras V registras/atmintis <--
+   ;--> The byte: 000010dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 2
+   je yes_4_0
+   jmp not_4
+   yes_4_0:
+   mov ptr_, offset or_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '000010dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '000010.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_4:
+   
+
+   ;--> 0000 110w bojb [bovb] -€“ OR akumuliatorius V betarpiÅ¡kas operandas <--
+   ;--> The byte: 0000110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 6
+   je yes_5_0
+   jmp not_5
+   yes_5_0:
+   mov ptr_, offset or_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0000110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_5:
+   
+
+   ;--> 0001 00dw mod reg r/m [poslinkis] -€“ ADC registras += registras/axtmintis <--
+   ;--> The byte: 000100dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 4
+   je yes_6_0
+   jmp not_6
+   yes_6_0:
+   mov ptr_, offset adc_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '000100dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '000100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_6:
+   
+
+   ;--> 0001 010w bojb [bovb] -€“ ADC akumuliatorius += betarpiÅ¡kas operandas <--
+   ;--> The byte: 0001010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 10
+   je yes_7_0
+   jmp not_7
+   yes_7_0:
+   mov ptr_, offset adc_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0001010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_7:
+   
+
+   ;--> 0001 10dw mod reg r/m [poslinkis] -€“ SBB registras -= registras/atmintis <--
+   ;--> The byte: 000110dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 6
+   je yes_8_0
+   jmp not_8
+   yes_8_0:
+   mov ptr_, offset sbb_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '000110dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '000110.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_8:
+   
+
+   ;--> 0001 110w bojb [bovb] -€“ SBB akumuliatorius -= betarpiÅ¡kas operandas <--
+   ;--> The byte: 0001110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 14
+   je yes_9_0
+   jmp not_9
+   yes_9_0:
+   mov ptr_, offset sbb_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0001110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_9:
+   
+
+   ;--> 0010 00dw mod reg r/m [poslinkis] -€“ AND registras & registras/atmintis <--
+   ;--> The byte: 001000dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 8
+   je yes_10_0
+   jmp not_10
+   yes_10_0:
+   mov ptr_, offset and_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '001000dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '001000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_10:
+   
+
+   ;--> 0010 010w bojb [bovb] -€“ AND akumuliatorius & betarpiÅ¡kas operandas <--
+   ;--> The byte: 0010010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 18
+   je yes_11_0
+   jmp not_11
+   yes_11_0:
+   mov ptr_, offset and_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0010010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_11:
+   
+
+   ;--> 001sr 110 -€“ segmento registro keitimo prefiksas <--
+   ;--> The byte: 001sr110 <--
+   mov al, byte_
+   shr al, 5
+   shl al, 5
+   cmp al, 38
+   je yes_12_0
+   jmp not_12
+   yes_12_0:
+   mov ptr_, offset wtf_n
+   call write_to_line
+   ;--> The variable 'sr' in reformed byte: '001sr110' <--
+   mov al, byte_
+   shl al, 3
+   shr al, 6
+   mov sr_, al
+   call read_bytes
+   call CONVERT_sr
+   not_12:
+   
+
+   ;--> 0010 0111 -€“ DAA <--
+   ;--> The byte: 00100111 <--
+   mov al, byte_
+   cmp al, 39
+   je yes_13_0
+   jmp not_13
+   yes_13_0:
+   mov ptr_, offset daa_n
+   call write_to_line
+   call read_bytes
+   not_13:
+   
+
+   ;--> 0010 10dw mod reg r/m [poslinkis] -€“ SUB registras -= registras/atmintis <--
+   ;--> The byte: 001010dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 10
+   je yes_14_0
+   jmp not_14
+   yes_14_0:
+   mov ptr_, offset sub_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '001010dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '001010.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_14:
+   
+
+   ;--> 0010 110w bojb [bovb] -€“ SUB akumuliatorius -= betarpiÅ¡kas operandas <--
+   ;--> The byte: 0010110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 22
+   je yes_15_0
+   jmp not_15
+   yes_15_0:
+   mov ptr_, offset sub_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0010110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_15:
+   
+
+   ;--> 0010 1111 -€“ DAS <--
+   ;--> The byte: 00101111 <--
+   mov al, byte_
+   cmp al, 47
+   je yes_16_0
+   jmp not_16
+   yes_16_0:
+   mov ptr_, offset das_n
+   call write_to_line
+   call read_bytes
+   not_16:
+   
+
+   ;--> 0011 00dw mod reg r/m [poslinkis] -€“ XOR registras | registras/atmintis <--
+   ;--> The byte: 001100dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 12
+   je yes_17_0
+   jmp not_17
+   yes_17_0:
+   mov ptr_, offset xor_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '001100dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '001100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_17:
+   
+
+   ;--> 0011 010w bojb [bovb] -€“ XOR akumuliatorius | betarpiÅ¡kas operandas <--
+   ;--> The byte: 0011010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 26
+   je yes_18_0
+   jmp not_18
+   yes_18_0:
+   mov ptr_, offset xor_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0011010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_18:
+   
+
+   ;--> 0011 0111 -€“ AAA <--
+   ;--> The byte: 00110111 <--
+   mov al, byte_
+   cmp al, 55
+   je yes_19_0
+   jmp not_19
+   yes_19_0:
+   mov ptr_, offset aaa_n
+   call write_to_line
+   call read_bytes
+   not_19:
+   
+
+   ;--> 0011 10dw mod reg r/m [poslinkis] -€“ CMP registras ~ registras/atmintis <--
+   ;--> The byte: 001110dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 14
+   je yes_20_0
+   jmp not_20
+   yes_20_0:
+   mov ptr_, offset cmp_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '001110dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '001110.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_20:
+   
+
+   ;--> 0011 110w bojb [bovb] -€“ CMP akumuliatorius ~ betarpiÅ¡kas operandas <--
+   ;--> The byte: 0011110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 30
+   je yes_21_0
+   jmp not_21
+   yes_21_0:
+   mov ptr_, offset cmp_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '0011110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_21:
+   
+
+   ;--> 0011 1111 -€“ AAS <--
+   ;--> The byte: 00111111 <--
+   mov al, byte_
+   cmp al, 63
+   je yes_22_0
+   jmp not_22
+   yes_22_0:
+   mov ptr_, offset aas_n
+   call write_to_line
+   call read_bytes
+   not_22:
+   
+
+   ;--> 0100 0reg -€“ INC registras (Å¾odinis) <--
+   ;--> The byte: 01000reg <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 8
+   je yes_23_0
+   jmp not_23
+   yes_23_0:
+   mov ptr_, offset inc_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '01000reg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   call read_bytes
+   call CONVERT_reg
+   not_23:
+   
+
+   ;--> 0100 1reg -€“ DEC registras (Å¾odinis) <--
+   ;--> The byte: 01001reg <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 9
+   je yes_24_0
+   jmp not_24
+   yes_24_0:
+   mov ptr_, offset dec_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '01001reg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   call read_bytes
+   call CONVERT_reg
+   not_24:
+   
+
+   ;--> 0101 0reg -€“ PUSH registras (Å¾odinis) <--
+   ;--> The byte: 01010reg <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 10
+   je yes_25_0
+   jmp not_25
+   yes_25_0:
+   mov ptr_, offset push_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '01010reg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   call read_bytes
+   call CONVERT_reg
+   not_25:
+   
+
+   ;--> 0101 1reg -€“ POP registras (Å¾odinis) <--
+   ;--> The byte: 01011reg <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 11
+   je yes_26_0
+   jmp not_26
+   yes_26_0:
+   mov ptr_, offset pop_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '01011reg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   call read_bytes
+   call CONVERT_reg
+   not_26:
+   
+
+   ;--> 0111 0000 poslinkis -€“ JO Å¾ymÄ— <--
+   ;--> The byte: 01110000 <--
+   mov al, byte_
+   cmp al, 112
+   je yes_27_0
+   jmp not_27
+   yes_27_0:
+   mov ptr_, offset jo_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_27:
+   
+
+   ;--> 0111 0001 poslinkis -€“ JNO Å¾ymÄ— <--
+   ;--> The byte: 01110001 <--
+   mov al, byte_
+   cmp al, 113
+   je yes_28_0
+   jmp not_28
+   yes_28_0:
+   mov ptr_, offset jno_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_28:
+   
+
+   ;--> 0111 0010 poslinkis -€“ JNAE Å¾ymÄ—; JB Å¾ymÄ—; JC Å¾ymÄ— <--
+   ;--> The byte: 01110010 <--
+   mov al, byte_
+   cmp al, 114
+   je yes_29_0
+   jmp not_29
+   yes_29_0:
+   mov ptr_, offset jnae_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_29:
+   
+
+   ;--> 0111 0011 poslinkis -€“ JAE Å¾ymÄ—; JNB Å¾ymÄ—; JNC Å¾ymÄ— <--
+   ;--> The byte: 01110011 <--
+   mov al, byte_
+   cmp al, 115
+   je yes_30_0
+   jmp not_30
+   yes_30_0:
+   mov ptr_, offset jae_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_30:
+   
+
+   ;--> 0111 0100 poslinkis -€“ JE Å¾ymÄ—; JZ Å¾ymÄ— <--
+   ;--> The byte: 01110100 <--
+   mov al, byte_
+   cmp al, 116
+   je yes_31_0
+   jmp not_31
+   yes_31_0:
+   mov ptr_, offset je_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_31:
+   
+
+   ;--> 0111 0101 poslinkis -€“ JNE Å¾ymÄ—; JNZ Å¾ymÄ— <--
+   ;--> The byte: 01110101 <--
+   mov al, byte_
+   cmp al, 117
+   je yes_32_0
+   jmp not_32
+   yes_32_0:
+   mov ptr_, offset jne_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_32:
+   
+
+   ;--> 0111 0110 poslinkis -€“ JBE Å¾ymÄ—; JNA Å¾ymÄ— <--
+   ;--> The byte: 01110110 <--
+   mov al, byte_
+   cmp al, 118
+   je yes_33_0
+   jmp not_33
+   yes_33_0:
+   mov ptr_, offset jbe_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_33:
+   
+
+   ;--> 0111 0111 poslinkis -€“ JA Å¾ymÄ—; JNBE Å¾ymÄ— <--
+   ;--> The byte: 01110111 <--
+   mov al, byte_
+   cmp al, 119
+   je yes_34_0
+   jmp not_34
+   yes_34_0:
+   mov ptr_, offset ja_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_34:
+   
+
+   ;--> 0111 1000 poslinkis -€“ JS Å¾ymÄ— <--
+   ;--> The byte: 01111000 <--
+   mov al, byte_
+   cmp al, 120
+   je yes_35_0
+   jmp not_35
+   yes_35_0:
+   mov ptr_, offset js_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_35:
+   
+
+   ;--> 0111 1001 poslinkis -€“ JNS Å¾ymÄ— <--
+   ;--> The byte: 01111001 <--
+   mov al, byte_
+   cmp al, 121
+   je yes_36_0
+   jmp not_36
+   yes_36_0:
+   mov ptr_, offset jns_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_36:
+   
+
+   ;--> 0111 1010 poslinkis -€“ JP Å¾ymÄ—; JPE Å¾ymÄ— <--
+   ;--> The byte: 01111010 <--
+   mov al, byte_
+   cmp al, 122
+   je yes_37_0
+   jmp not_37
+   yes_37_0:
+   mov ptr_, offset jp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_37:
+   
+
+   ;--> 0111 1011 poslinkis -€“ JNP Å¾ymÄ—; JPO Å¾ymÄ— <--
+   ;--> The byte: 01111011 <--
+   mov al, byte_
+   cmp al, 123
+   je yes_38_0
+   jmp not_38
+   yes_38_0:
+   mov ptr_, offset jnp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_38:
+   
+
+   ;--> 0111 1100 poslinkis -€“ JL Å¾ymÄ—; JNGE Å¾ymÄ— <--
+   ;--> The byte: 01111100 <--
+   mov al, byte_
+   cmp al, 124
+   je yes_39_0
+   jmp not_39
+   yes_39_0:
+   mov ptr_, offset jl_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_39:
+   
+
+   ;--> 0111 1101 poslinkis -€“ JGE Å¾ymÄ—; JNL Å¾ymÄ— <--
+   ;--> The byte: 01111101 <--
+   mov al, byte_
+   cmp al, 125
+   je yes_40_0
+   jmp not_40
+   yes_40_0:
+   mov ptr_, offset jge_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_40:
+   
+
+   ;--> 0111 1110 poslinkis -€“ JLE Å¾ymÄ—; JNG Å¾ymÄ— <--
+   ;--> The byte: 01111110 <--
+   mov al, byte_
+   cmp al, 126
+   je yes_41_0
+   jmp not_41
+   yes_41_0:
+   mov ptr_, offset jle_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_41:
+   
+
+   ;--> 0111 1111 poslinkis -€“ JG Å¾ymÄ—; JNLE Å¾ymÄ— <--
+   ;--> The byte: 01111111 <--
+   mov al, byte_
+   cmp al, 127
+   je yes_42_0
+   jmp not_42
+   yes_42_0:
+   mov ptr_, offset jg_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_42:
+   
+
+   ;--> 1000 00sw mod 000 r/m [poslinkis] bojb [bovb] -€“ ADD registras/atmintis += betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_43_0
+   jmp not_43
+   yes_43_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_43_1
+   jmp not_43
+   yes_43_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_43_2
+   jmp not_43
+   yes_43_2:
+   mov ptr_, offset add_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_43:
+   
+
+   ;--> 1000 00sw mod 001 r/m [poslinkis] bojb [bovb] -€“ OR registras/atmintis V betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_44_0
+   jmp not_44
+   yes_44_0:
+   ;--> The byte: md001r/m <--
+   cmp next_byte_available, 1
+   je yes_44_1
+   jmp not_44
+   yes_44_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 1
+   je yes_44_2
+   jmp not_44
+   yes_44_2:
+   mov ptr_, offset or_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md001r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..001r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_44:
+   
+
+   ;--> 1000 00sw mod 010 r/m [poslinkis] bojb [bovb] -€“ ADC registras/atmintis += betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_45_0
+   jmp not_45
+   yes_45_0:
+   ;--> The byte: md010r/m <--
+   cmp next_byte_available, 1
+   je yes_45_1
+   jmp not_45
+   yes_45_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 2
+   je yes_45_2
+   jmp not_45
+   yes_45_2:
+   mov ptr_, offset adc_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md010r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..010r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_45:
+   
+
+   ;--> 1000 00sw mod 011 r/m [poslinkis] bojb [bovb] -€“ SBB registras/atmintis -= betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_46_0
+   jmp not_46
+   yes_46_0:
+   ;--> The byte: md011r/m <--
+   cmp next_byte_available, 1
+   je yes_46_1
+   jmp not_46
+   yes_46_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 3
+   je yes_46_2
+   jmp not_46
+   yes_46_2:
+   mov ptr_, offset sbb_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md011r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..011r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_46:
+   
+
+   ;--> 1000 00sw mod 100 r/m [poslinkis] bojb [bovb] -€“ AND registras/atmintis & betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_47_0
+   jmp not_47
+   yes_47_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_47_1
+   jmp not_47
+   yes_47_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_47_2
+   jmp not_47
+   yes_47_2:
+   mov ptr_, offset and_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_47:
+   
+
+   ;--> 1000 00sw mod 101 r/m [poslinkis] bojb [bovb] -€“ SUB registras/atmintis -= betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_48_0
+   jmp not_48
+   yes_48_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_48_1
+   jmp not_48
+   yes_48_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_48_2
+   jmp not_48
+   yes_48_2:
+   mov ptr_, offset sub_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_48:
+   
+
+   ;--> 1000 00sw mod 110 r/m [poslinkis] bojb [bovb] -€“ XOR registras/atmintis | betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_49_0
+   jmp not_49
+   yes_49_0:
+   ;--> The byte: md110r/m <--
+   cmp next_byte_available, 1
+   je yes_49_1
+   jmp not_49
+   yes_49_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 6
+   je yes_49_2
+   jmp not_49
+   yes_49_2:
+   mov ptr_, offset xor_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md110r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..110r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_49:
+   
+
+   ;--> 1000 00sw mod 111 r/m [poslinkis] bojb [bovb] -€“ CMP registras/atmintis ~ betarpiÅ¡kas <--
+   ;--> The byte: 100000sw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 32
+   je yes_50_0
+   jmp not_50
+   yes_50_0:
+   ;--> The byte: md111r/m <--
+   cmp next_byte_available, 1
+   je yes_50_1
+   jmp not_50
+   yes_50_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 7
+   je yes_50_2
+   jmp not_50
+   yes_50_2:
+   mov ptr_, offset cmp_n
+   call write_to_line
+   ;--> The variable 's' in reformed byte: '100000sw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov s_, al
+   ;--> The variable 'w' in reformed byte: '100000.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md111r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..111r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_50:
+   
+
+   ;--> 1000 010w mod reg r/m [poslinkis] -€“ TEST registras ? registras/atmintis <--
+   ;--> The byte: 1000010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 66
+   je yes_51_0
+   jmp not_51
+   yes_51_0:
+   mov ptr_, offset test_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1000010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_reg_r_m_poslinkis
+   not_51:
+   
+
+   ;--> 1000 011w mod reg r/m [poslinkis] -€“ XCHG registras ïƒŸïƒ  registras/atmintis <--
+   ;--> The byte: 1000011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 67
+   je yes_52_0
+   jmp not_52
+   yes_52_0:
+   mov ptr_, offset xchg_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1000011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_reg_r_m_poslinkis
+   not_52:
+   
+
+   ;--> 1000 10dw mod reg r/m [poslinkis] -€“ MOV registras ïƒŸïƒ  registras/atmintis <--
+   ;--> The byte: 100010dw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 34
+   je yes_53_0
+   jmp not_53
+   yes_53_0:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '100010dw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   ;--> The variable 'w' in reformed byte: '100010.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_53:
+   
+
+   ;--> 1000 11d0 mod 0sr r/m [poslinkis] -€“ MOV segmento registras ïƒŸïƒ  registras/atmintis <--
+   ;--> The byte: 100011d0 <--
+   mov al, byte_
+   shr al, 2
+   shl al, 2
+   cmp al, 140
+   je yes_54_0
+   jmp not_54
+   yes_54_0:
+   ;--> The byte: md0srr/m <--
+   cmp next_byte_available, 1
+   je yes_54_1
+   jmp not_54
+   yes_54_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 7
+   cmp al, 0
+   je yes_54_2
+   jmp not_54
+   yes_54_2:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'd' in reformed byte: '100011d0' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov d_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md0srr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..0srr/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   ;--> The variable 'sr' in reformed byte: '..0sr...' <--
+   mov al, byte_
+   shl al, 3
+   shr al, 6
+   mov sr_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_54:
+   
+
+   ;--> 1000 1101 mod reg r/m [poslinkis] -€“ LEA registras ïƒŸ atmintis <--
+   ;--> The byte: 10001101 <--
+   mov al, byte_
+   cmp al, 141
+   je yes_55_0
+   jmp not_55
+   yes_55_0:
+   mov ptr_, offset lea_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_55:
+   
+
+   ;--> 1000 1111 mod 000 r/m [poslinkis] -€“ POP registras/atmintis <--
+   ;--> The byte: 10001111 <--
+   mov al, byte_
+   cmp al, 143
+   je yes_56_0
+   jmp not_56
+   yes_56_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_56_1
+   jmp not_56
+   yes_56_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_56_2
+   jmp not_56
+   yes_56_2:
+   mov ptr_, offset pop_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_56:
+   
+
+   ;--> 1001 0000 -€“ NOP; XCHG ax, ax <--
+   ;--> The byte: 10010000 <--
+   mov al, byte_
+   cmp al, 144
+   je yes_57_0
+   jmp not_57
+   yes_57_0:
+   mov ptr_, offset nop_n
+   call write_to_line
+   call read_bytes
+   not_57:
+   
+
+   ;--> 1001 0reg -€“ XCHG registras ïƒŸïƒ  ax <--
+   ;--> The byte: 10010reg <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 18
+   je yes_58_0
+   jmp not_58
+   yes_58_0:
+   mov ptr_, offset xchg_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '10010reg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   call read_bytes
+   call CONVERT_reg
+   not_58:
+   
+
+   ;--> 1001 1000 -€“ CBW <--
+   ;--> The byte: 10011000 <--
+   mov al, byte_
+   cmp al, 152
+   je yes_59_0
+   jmp not_59
+   yes_59_0:
+   mov ptr_, offset cbv_n
+   call write_to_line
+   call read_bytes
+   not_59:
+   
+
+   ;--> 1001 1001 -€“ CWD <--
+   ;--> The byte: 10011001 <--
+   mov al, byte_
+   cmp al, 153
+   je yes_60_0
+   jmp not_60
+   yes_60_0:
+   mov ptr_, offset cwd_n
+   call write_to_line
+   call read_bytes
+   not_60:
+   
+
+   ;--> 1001 1010 ajb avb srjb srvb -€“ CALL Å¾ymÄ— (iÅ¡orinis tiesioginis) <--
+   ;--> The byte: 10011010 <--
+   mov al, byte_
+   cmp al, 154
+   je yes_61_0
+   jmp not_61
+   yes_61_0:
+   mov ptr_, offset call_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'avb-' cannot be decoded by this function <--
+   ;--> The variable 'srjb' cannot be decoded by this function <--
+   not_61:
+   
+
+   ;--> 1001 1011 -€“ WAIT <--
+   ;--> The byte: 10011011 <--
+   mov al, byte_
+   cmp al, 155
+   je yes_62_0
+   jmp not_62
+   yes_62_0:
+   mov ptr_, offset wait_n
+   call write_to_line
+   call read_bytes
+   not_62:
+   
+
+   ;--> 1001 1100 -€“ PUSHF <--
+   ;--> The byte: 10011100 <--
+   mov al, byte_
+   cmp al, 156
+   je yes_63_0
+   jmp not_63
+   yes_63_0:
+   mov ptr_, offset pushf_n
+   call write_to_line
+   call read_bytes
+   not_63:
+   
+
+   ;--> 1001 1101 -€“ POPF <--
+   ;--> The byte: 10011101 <--
+   mov al, byte_
+   cmp al, 157
+   je yes_64_0
+   jmp not_64
+   yes_64_0:
+   mov ptr_, offset popf_n
+   call write_to_line
+   call read_bytes
+   not_64:
+   
+
+   ;--> 1001 1110 -€“ SAHF <--
+   ;--> The byte: 10011110 <--
+   mov al, byte_
+   cmp al, 158
+   je yes_65_0
+   jmp not_65
+   yes_65_0:
+   mov ptr_, offset sahf_n
+   call write_to_line
+   call read_bytes
+   not_65:
+   
+
+   ;--> 1001 1111 -€“ LAHF <--
+   ;--> The byte: 10011111 <--
+   mov al, byte_
+   cmp al, 159
+   je yes_66_0
+   jmp not_66
+   yes_66_0:
+   mov ptr_, offset lahf_n
+   call write_to_line
+   call read_bytes
+   not_66:
+   
+
+   ;--> 1010 000w ajb avb -€“ MOV akumuliatorius ïƒŸ atmintis <--
+   ;--> The byte: 1010000w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 80
+   je yes_67_0
+   jmp not_67
+   yes_67_0:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1010000w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'avb-' cannot be decoded by this function <--
+   not_67:
+   
+
+   ;--> 1010 001w ajb avb -€“ MOV atmintis ïƒŸ akumuliatorius <--
+   ;--> The byte: 1010001w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 81
+   je yes_68_0
+   jmp not_68
+   yes_68_0:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1010001w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'avb-' cannot be decoded by this function <--
+   not_68:
+   
+
+   ;--> 1010 010w -€“ MOVSB; MOVSW <--
+   ;--> The byte: 1010010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 82
+   je yes_69_0
+   jmp not_69
+   yes_69_0:
+   ;--> The variable 'w' in reformed byte: '1010010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_69
+   mov ptr_, offset movsb_n
+   jmp simple_name_69
+   other_name_69:
+   mov ptr_, offset movsw_n
+   simple_name_69:
+   call write_to_line
+   call add_plus
+   not_69:
+   
+
+   ;--> 1010 011w -€“ CMPSB; CMPSW <--
+   ;--> The byte: 1010011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 83
+   je yes_70_0
+   jmp not_70
+   yes_70_0:
+   ;--> The variable 'w' in reformed byte: '1010011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_70
+   mov ptr_, offset cmpsb_n
+   jmp simple_name_70
+   other_name_70:
+   mov ptr_, offset cmpsw_n
+   simple_name_70:
+   call write_to_line
+   not_70:
+   
+
+   ;--> 1010 100w bojb [bovb] -€“ TEST akumuliatorius ? betarpiÅ¡kas operandas <--
+   ;--> The byte: 1010100w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 84
+   je yes_71_0
+   jmp not_71
+   yes_71_0:
+   mov ptr_, offset test_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1010100w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_bojb_bovb
+   not_71:
+   
+
+   ;--> 1010 101w -€“ STOSB; STOSW <--
+   ;--> The byte: 1010101w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 85
+   je yes_72_0
+   jmp not_72
+   yes_72_0:
+   ;--> The variable 'w' in reformed byte: '1010101w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_72
+   mov ptr_, offset stosb_n
+   jmp simple_name_72
+   other_name_72:
+   mov ptr_, offset stosw_n
+   simple_name_72:
+   call write_to_line
+   not_72:
+   
+
+   ;--> 1010 110w -€“ LODSB; LODSW <--
+   ;--> The byte: 1010110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 86
+   je yes_73_0
+   jmp not_73
+   yes_73_0:
+   ;--> The variable 'w' in reformed byte: '1010110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_73
+   mov ptr_, offset lodsb_n
+   jmp simple_name_73
+   other_name_73:
+   mov ptr_, offset lodsw_n
+   simple_name_73:
+   call write_to_line
+   not_73:
+   
+
+   ;--> 1010 111w -€“ SCASB; SCASW <--
+   ;--> The byte: 1010111w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 87
+   je yes_74_0
+   jmp not_74
+   yes_74_0:
+   ;--> The variable 'w' in reformed byte: '1010111w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_74
+   mov ptr_, offset scasb_n
+   jmp simple_name_74
+   other_name_74:
+   mov ptr_, offset scasw_n
+   simple_name_74:
+   call write_to_line
+   not_74:
+   
+
+   ;--> 1011 wreg bojb [bovb] -€“ MOV registras ïƒŸ betarpiÅ¡kas operandas <--
+   ;--> The byte: 1011wreg <--
+   mov al, byte_
+   shr al, 4
+   cmp al, 11
+   je yes_75_0
+   jmp not_75
+   yes_75_0:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'reg' in reformed byte: '1011wreg' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'w' in reformed byte: '1011w...' <--
+   mov al, byte_
+   shl al, 4
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_75:
+   
+
+   ;--> 1100 0010 bojb bovb -€“ RET betarpiÅ¡kas operandas; RETN betarpiÅ¡kas operandas <--
+   ;--> The byte: 11000010 <--
+   mov al, byte_
+   cmp al, 194
+   je yes_76_0
+   jmp not_76
+   yes_76_0:
+   mov ptr_, offset ret_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_76:
+   
+
+   ;--> 1100 0011 -€“ RET; RETN <--
+   ;--> The byte: 11000011 <--
+   mov al, byte_
+   cmp al, 195
+   je yes_77_0
+   jmp not_77
+   yes_77_0:
+   mov ptr_, offset ret_n
+   call write_to_line
+   call read_bytes
+   not_77:
+   
+
+   ;--> 1100 0100 mod reg r/m [poslinkis] -€“ LES registras ïƒŸ atmintis <--
+   ;--> The byte: 11000100 <--
+   mov al, byte_
+   cmp al, 196
+   je yes_78_0
+   jmp not_78
+   yes_78_0:
+   mov ptr_, offset les_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_78:
+   
+
+   ;--> 1100 0101 mod reg r/m [poslinkis] -€“ LDS registras ïƒŸ atmintis <--
+   ;--> The byte: 11000101 <--
+   mov al, byte_
+   cmp al, 197
+   je yes_79_0
+   jmp not_79
+   yes_79_0:
+   mov ptr_, offset lds_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'reg' in reformed byte: '..regr/m' <--
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   mov reg_, al
+   ;--> The variable 'r/m' in reformed byte: '.....r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_79:
+   
+
+   ;--> 1100 011w mod 000 r/m [poslinkis] bojb [bovb] -€“ MOV registras/atmintis ïƒŸ betarpiÅ¡kas <--
+   ;--> The byte: 1100011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 99
+   je yes_80_0
+   jmp not_80
+   yes_80_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_80_1
+   jmp not_80
+   yes_80_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_80_2
+   jmp not_80
+   yes_80_2:
+   mov ptr_, offset mov_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1100011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_80:
+   
+
+   ;--> 1100 1010 bojb bovb -€“ RETF betarpiÅ¡kas operandas <--
+   ;--> The byte: 11001010 <--
+   mov al, byte_
+   cmp al, 202
+   je yes_81_0
+   jmp not_81
+   yes_81_0:
+   mov ptr_, offset retf_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_81:
+   
+
+   ;--> 1100 1011 -€“ RETF <--
+   ;--> The byte: 11001011 <--
+   mov al, byte_
+   cmp al, 203
+   je yes_82_0
+   jmp not_82
+   yes_82_0:
+   mov ptr_, offset retf_n
+   call write_to_line
+   call read_bytes
+   not_82:
+   
+
+   ;--> 1100 1100 -€“ INT 3 <--
+   ;--> The byte: 11001100 <--
+   mov al, byte_
+   cmp al, 204
+   je yes_83_0
+   jmp not_83
+   yes_83_0:
+   mov ptr_, offset int_3_n
+   call write_to_line
+   call read_bytes
+   not_83:
+   
+
+   ;--> 1100 1101 numeris -€“ INT numeris <--
+   ;--> The byte: 11001101 <--
+   mov al, byte_
+   cmp al, 205
+   je yes_84_0
+   jmp not_84
+   yes_84_0:
+   mov ptr_, offset int_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'numberis-' in reformed byte: 'numberis-' <--
+   mov al, byte_
+   mov com_num_, al
+   call read_bytes
+   call CONVERT_numeris
+   not_84:
+   
+
+   ;--> 1100 1110 -€“ INTO <--
+   ;--> The byte: 11001110 <--
+   mov al, byte_
+   cmp al, 206
+   je yes_85_0
+   jmp not_85
+   yes_85_0:
+   mov ptr_, offset into_n
+   call write_to_line
+   call read_bytes
+   not_85:
+   
+
+   ;--> 1100 1111 -€“ IRET <--
+   ;--> The byte: 11001111 <--
+   mov al, byte_
+   cmp al, 207
+   je yes_86_0
+   jmp not_86
+   yes_86_0:
+   mov ptr_, offset iret_n
+   call write_to_line
+   call read_bytes
+   not_86:
+   
+
+   ;--> 1101 00vw mod 000 r/m [poslinkis] -€“ ROL registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_87_0
+   jmp not_87
+   yes_87_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_87_1
+   jmp not_87
+   yes_87_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_87_2
+   jmp not_87
+   yes_87_2:
+   mov ptr_, offset rol_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_87:
+   
+
+   ;--> 1101 00vw mod 001 r/m [poslinkis] -€“ ROR registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_88_0
+   jmp not_88
+   yes_88_0:
+   ;--> The byte: md001r/m <--
+   cmp next_byte_available, 1
+   je yes_88_1
+   jmp not_88
+   yes_88_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 1
+   je yes_88_2
+   jmp not_88
+   yes_88_2:
+   mov ptr_, offset ror_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md001r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..001r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_88:
+   
+
+   ;--> 1101 00vw mod 010 r/m [poslinkis] -€“ RCL registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_89_0
+   jmp not_89
+   yes_89_0:
+   ;--> The byte: md010r/m <--
+   cmp next_byte_available, 1
+   je yes_89_1
+   jmp not_89
+   yes_89_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 2
+   je yes_89_2
+   jmp not_89
+   yes_89_2:
+   mov ptr_, offset rcl_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md010r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..010r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_89:
+   
+
+   ;--> 1101 00vw mod 011 r/m [poslinkis] -€“ RCR registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_90_0
+   jmp not_90
+   yes_90_0:
+   ;--> The byte: md011r/m <--
+   cmp next_byte_available, 1
+   je yes_90_1
+   jmp not_90
+   yes_90_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 3
+   je yes_90_2
+   jmp not_90
+   yes_90_2:
+   mov ptr_, offset rcr_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md011r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..011r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_90:
+   
+
+   ;--> 1101 00vw mod 100 r/m [poslinkis] -€“ SHL registras/atmintis, {1; CL}; SAL registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_91_0
+   jmp not_91
+   yes_91_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_91_1
+   jmp not_91
+   yes_91_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_91_2
+   jmp not_91
+   yes_91_2:
+   mov ptr_, offset shl_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_91:
+   
+
+   ;--> 1101 00vw mod 101 r/m [poslinkis] -€“ SHR registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_92_0
+   jmp not_92
+   yes_92_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_92_1
+   jmp not_92
+   yes_92_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_92_2
+   jmp not_92
+   yes_92_2:
+   mov ptr_, offset shr_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_92:
+   
+
+   ;--> 1101 00vw mod 111 r/m [poslinkis] -€“ SAR registras/atmintis, {1; CL} <--
+   ;--> The byte: 110100vw <--
+   mov al, byte_
+   shr al, 2
+   cmp al, 52
+   je yes_93_0
+   jmp not_93
+   yes_93_0:
+   ;--> The byte: md111r/m <--
+   cmp next_byte_available, 1
+   je yes_93_1
+   jmp not_93
+   yes_93_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 7
+   je yes_93_2
+   jmp not_93
+   yes_93_2:
+   mov ptr_, offset sar_n
+   call write_to_line
+   ;--> The variable 'v' in reformed byte: '110100vw' <--
+   mov al, byte_
+   shl al, 6
+   shr al, 7
+   mov v_, al
+   ;--> The variable 'w' in reformed byte: '110100.w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md111r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..111r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_93:
+   
+
+   ;--> 1101 0100 0000 1010 -€“ AAM <--
+   ;--> The byte: 11010100 <--
+   mov al, byte_
+   cmp al, 212
+   je yes_94_0
+   jmp not_94
+   yes_94_0:
+   ;--> The byte: 00001010 <--
+   cmp next_byte_available, 1
+   je yes_94_1
+   jmp not_94
+   yes_94_1:
+   mov al, byte_
+   cmp al, 10
+   je yes_94_2
+   jmp not_94
+   yes_94_2:
+   mov ptr_, offset aam_n
+   call write_to_line
+   call read_bytes
+   call read_bytes
+   not_94:
+   
+
+   ;--> 1101 0101 0000 1010 -€“ AAD <--
+   ;--> The byte: 11010101 <--
+   mov al, byte_
+   cmp al, 213
+   je yes_95_0
+   jmp not_95
+   yes_95_0:
+   ;--> The byte: 00001010 <--
+   cmp next_byte_available, 1
+   je yes_95_1
+   jmp not_95
+   yes_95_1:
+   mov al, byte_
+   cmp al, 10
+   je yes_95_2
+   jmp not_95
+   yes_95_2:
+   mov ptr_, offset aad_n
+   call write_to_line
+   call read_bytes
+   call read_bytes
+   not_95:
+   
+
+   ;--> 1101 0111 -€“ XLAT <--
+   ;--> The byte: 11010111 <--
+   mov al, byte_
+   cmp al, 215
+   je yes_96_0
+   jmp not_96
+   yes_96_0:
+   mov ptr_, offset xlat_n
+   call write_to_line
+   call read_bytes
+   not_96:
+   
+
+   ;--> 1101 1xxx mod yyy r/m [poslinkis] -€“ ESC komanda, registras/atmintis <--
+   ;--> The byte: 11011xxx <--
+   mov al, byte_
+   shr al, 3
+   cmp al, 27
+   je yes_97_0
+   jmp not_97
+   yes_97_0:
+   mov ptr_, offset esc_n
+   call write_to_line
+   ;--> The variable 'xxx' in reformed byte: '11011xxx' <--
+   ;--> Failed to find. Missing global variable. <--
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'mdyyyr/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..yyyr/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   ;--> The variable 'yyy' in reformed byte: '..yyy...' <--
+   ;--> Failed to find. Missing global variable. <--
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_97:
+   
+
+   ;--> 1110 0000 poslinkis -€“ LOOPNE Å¾ymÄ—; LOOPNZ Å¾ymÄ— <--
+   ;--> The byte: 11100000 <--
+   mov al, byte_
+   cmp al, 224
+   je yes_98_0
+   jmp not_98
+   yes_98_0:
+   mov ptr_, offset loopne_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_98:
+   
+
+   ;--> 1110 0001 poslinkis -€“ LOOPE Å¾ymÄ—; LOOPZ Å¾ymÄ— <--
+   ;--> The byte: 11100001 <--
+   mov al, byte_
+   cmp al, 225
+   je yes_99_0
+   jmp not_99
+   yes_99_0:
+   mov ptr_, offset loope_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_99:
+   
+
+   ;--> 1110 0010 poslinkis -€“ LOOP Å¾ymÄ— <--
+   ;--> The byte: 11100010 <--
+   mov al, byte_
+   cmp al, 226
+   je yes_100_0
+   jmp not_100
+   yes_100_0:
+   mov ptr_, offset loop_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_100:
+   
+
+   ;--> 1110 0011 poslinkis -€“ JCXZ Å¾ymÄ— <--
+   ;--> The byte: 11100011 <--
+   mov al, byte_
+   cmp al, 227
+   je yes_101_0
+   jmp not_101
+   yes_101_0:
+   mov ptr_, offset jcxz_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_101:
+   
+
+   ;--> 1110 010w portas -€“ IN akumuliatorius ïƒŸ portas <--
+   ;--> The byte: 1110010w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 114
+   je yes_102_0
+   jmp not_102
+   yes_102_0:
+   mov ptr_, offset in_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1110010w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'portas--' in reformed byte: 'portas--' <--
+   ;--> Failed to find. Missing global variable. <--
+   call read_bytes
+   not_102:
+   
+
+   ;--> 1110 011w portas -€“ OUT akumuliatorius ïƒ  portas <--
+   ;--> The byte: 1110011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 115
+   je yes_103_0
+   jmp not_103
+   yes_103_0:
+   mov ptr_, offset out_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1110011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'portas--' in reformed byte: 'portas--' <--
+   ;--> Failed to find. Missing global variable. <--
+   call read_bytes
+   not_103:
+   
+
+   ;--> 1110 1000 pjb pvb -€“ CALL Å¾ymÄ— (vidinis tiesioginis) <--
+   ;--> The byte: 11101000 <--
+   mov al, byte_
+   cmp al, 232
+   je yes_104_0
+   jmp not_104
+   yes_104_0:
+   mov ptr_, offset call_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'pjb-' cannot be decoded by this function <--
+   not_104:
+   
+
+   ;--> 1110 1001 pjb pvb -€“ JMP Å¾ymÄ— (vidinis tiesioginis) <--
+   ;--> The byte: 11101001 <--
+   mov al, byte_
+   cmp al, 233
+   je yes_105_0
+   jmp not_105
+   yes_105_0:
+   mov ptr_, offset jmp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'pjb-' cannot be decoded by this function <--
+   not_105:
+   
+
+   ;--> 1110 1010 ajb avb srjb srvb -€“ JMP Å¾ymÄ— (iÅ¡orinis tiesioginis) <--
+   ;--> The byte: 11101010 <--
+   mov al, byte_
+   cmp al, 234
+   je yes_106_0
+   jmp not_106
+   yes_106_0:
+   mov ptr_, offset jmp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'avb-' cannot be decoded by this function <--
+   ;--> The variable 'srjb' cannot be decoded by this function <--
+   not_106:
+   
+
+   ;--> 1110 1011 poslinkis -€“ JMP Å¾ymÄ— (vidinis artimas) <--
+   ;--> The byte: 11101011 <--
+   mov al, byte_
+   cmp al, 235
+   je yes_107_0
+   jmp not_107
+   yes_107_0:
+   mov ptr_, offset jmp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_poslinkis
+   not_107:
+   
+
+   ;--> 1110 110w -€“ IN akumuliatorius ïƒŸ dx portas <--
+   ;--> The byte: 1110110w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 118
+   je yes_108_0
+   jmp not_108
+   yes_108_0:
+   ;--> The variable 'w' in reformed byte: '1110110w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_108
+   mov ptr_, offset in_n
+   jmp simple_name_108
+   other_name_108:
+   mov ptr_, offset in_n
+   simple_name_108:
+   call write_to_line
+   not_108:
+   
+
+   ;--> 1110 111w -€“ OUT akumuliatorius ïƒ  dx portas <--
+   ;--> The byte: 1110111w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 119
+   je yes_109_0
+   jmp not_109
+   yes_109_0:
+   ;--> The variable 'w' in reformed byte: '1110111w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> Two names found <--
+   cmp w_, 1
+   je other_name_109
+   mov ptr_, offset out_n
+   jmp simple_name_109
+   other_name_109:
+   mov ptr_, offset out_n
+   simple_name_109:
+   call write_to_line
+   not_109:
+   
+
+   ;--> 1111 0000 -€“ LOCK <--
+   ;--> The byte: 11110000 <--
+   mov al, byte_
+   cmp al, 240
+   je yes_110_0
+   jmp not_110
+   yes_110_0:
+   mov ptr_, offset lock_n
+   call write_to_line
+   call read_bytes
+   not_110:
+   
+
+   ;--> 1111 0010 -€“ REPNZ; REPNE <--
+   ;--> The byte: 11110010 <--
+   mov al, byte_
+   cmp al, 242
+   je yes_111_0
+   jmp not_111
+   yes_111_0:
+   mov ptr_, offset repnz_n
+   call write_to_line
+   call read_bytes
+   not_111:
+   
+
+   ;--> 1111 0011 -€“ REP; REPZ; REPE <--
+   ;--> The byte: 11110011 <--
+   mov al, byte_
+   cmp al, 243
+   je yes_112_0
+   jmp not_112
+   yes_112_0:
+   mov ptr_, offset rep_n
+   call write_to_line
+   call read_bytes
+   not_112:
+   
+
+   ;--> 1111 0100 -€“ HLT <--
+   ;--> The byte: 11110100 <--
+   mov al, byte_
+   cmp al, 244
+   je yes_113_0
+   jmp not_113
+   yes_113_0:
+   mov ptr_, offset hlt_n
+   call write_to_line
+   call read_bytes
+   not_113:
+   
+
+   ;--> 1111 0101 -€“ CMC <--
+   ;--> The byte: 11110101 <--
+   mov al, byte_
+   cmp al, 245
+   je yes_114_0
+   jmp not_114
+   yes_114_0:
+   mov ptr_, offset cmc_n
+   call write_to_line
+   call read_bytes
+   not_114:
+   
+
+   ;--> 1111 011w mod 000 r/m [poslinkis] bojb [bovb] -€“ TEST registras/atmintis ? betarpiÅ¡kasoperandas <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_115_0
+   jmp not_115
+   yes_115_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_115_1
+   jmp not_115
+   yes_115_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_115_2
+   jmp not_115
+   yes_115_2:
+   mov ptr_, offset test_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   ;--> The variable 'bovb' cannot be decoded by this function <--
+   not_115:
+   
+
+   ;--> 1111 011w mod 010 r/m [poslinkis] -€“ NOT registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_116_0
+   jmp not_116
+   yes_116_0:
+   ;--> The byte: md010r/m <--
+   cmp next_byte_available, 1
+   je yes_116_1
+   jmp not_116
+   yes_116_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 2
+   je yes_116_2
+   jmp not_116
+   yes_116_2:
+   mov ptr_, offset not_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md010r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..010r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_116:
+   
+
+   ;--> 1111 011w mod 011 r/m [poslinkis] -€“ NEG registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_117_0
+   jmp not_117
+   yes_117_0:
+   ;--> The byte: md011r/m <--
+   cmp next_byte_available, 1
+   je yes_117_1
+   jmp not_117
+   yes_117_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 3
+   je yes_117_2
+   jmp not_117
+   yes_117_2:
+   mov ptr_, offset neg_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md011r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..011r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_117:
+   
+
+   ;--> 1111 011w mod 100 r/m [poslinkis] -€“ MUL registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_118_0
+   jmp not_118
+   yes_118_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_118_1
+   jmp not_118
+   yes_118_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_118_2
+   jmp not_118
+   yes_118_2:
+   mov ptr_, offset mul_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_118:
+   
+
+   ;--> 1111 011w mod 101 r/m [poslinkis] -€“ IMUL registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_119_0
+   jmp not_119
+   yes_119_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_119_1
+   jmp not_119
+   yes_119_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_119_2
+   jmp not_119
+   yes_119_2:
+   mov ptr_, offset imul_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_119:
+   
+
+   ;--> 1111 011w mod 110 r/m [poslinkis] -€“ DIV registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_120_0
+   jmp not_120
+   yes_120_0:
+   ;--> The byte: md110r/m <--
+   cmp next_byte_available, 1
+   je yes_120_1
+   jmp not_120
+   yes_120_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 6
+   je yes_120_2
+   jmp not_120
+   yes_120_2:
+   mov ptr_, offset div_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md110r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..110r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_120:
+   
+
+   ;--> 1111 011w mod 111 r/m [poslinkis] -€“ IDIV registras/atmintis <--
+   ;--> The byte: 1111011w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 123
+   je yes_121_0
+   jmp not_121
+   yes_121_0:
+   ;--> The byte: md111r/m <--
+   cmp next_byte_available, 1
+   je yes_121_1
+   jmp not_121
+   yes_121_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 7
+   je yes_121_2
+   jmp not_121
+   yes_121_2:
+   mov ptr_, offset idiv_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111011w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md111r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..111r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_121:
+   
+
+   ;--> 1111 1000 -€“ CLC <--
+   ;--> The byte: 11111000 <--
+   mov al, byte_
+   cmp al, 248
+   je yes_122_0
+   jmp not_122
+   yes_122_0:
+   mov ptr_, offset clc_n
+   call write_to_line
+   call read_bytes
+   not_122:
+   
+
+   ;--> 1111 1001 -€“ STC <--
+   ;--> The byte: 11111001 <--
+   mov al, byte_
+   cmp al, 249
+   je yes_123_0
+   jmp not_123
+   yes_123_0:
+   mov ptr_, offset stc_n
+   call write_to_line
+   call read_bytes
+   not_123:
+   
+
+   ;--> 1111 1010 -€“ CLI <--
+   ;--> The byte: 11111010 <--
+   mov al, byte_
+   cmp al, 250
+   je yes_124_0
+   jmp not_124
+   yes_124_0:
+   mov ptr_, offset cli_n
+   call write_to_line
+   call read_bytes
+   not_124:
+   
+
+   ;--> 1111 1011 -€“ STI <--
+   ;--> The byte: 11111011 <--
+   mov al, byte_
+   cmp al, 251
+   je yes_125_0
+   jmp not_125
+   yes_125_0:
+   mov ptr_, offset sti_n
+   call write_to_line
+   call read_bytes
+   not_125:
+   
+
+   ;--> 1111 1100 -€“ CLD <--
+   ;--> The byte: 11111100 <--
+   mov al, byte_
+   cmp al, 252
+   je yes_126_0
+   jmp not_126
+   yes_126_0:
+   mov ptr_, offset cld_n
+   call write_to_line
+   call read_bytes
+   not_126:
+   
+
+   ;--> 1111 1101 -€“ STD <--
+   ;--> The byte: 11111101 <--
+   mov al, byte_
+   cmp al, 253
+   je yes_127_0
+   jmp not_127
+   yes_127_0:
+   mov ptr_, offset std_n
+   call write_to_line
+   call read_bytes
+   not_127:
+   
+
+   ;--> 1111 111w mod 000 r/m [poslinkis] -€“ INC registras/atmintis <--
+   ;--> The byte: 1111111w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 127
+   je yes_128_0
+   jmp not_128
+   yes_128_0:
+   ;--> The byte: md000r/m <--
+   cmp next_byte_available, 1
+   je yes_128_1
+   jmp not_128
+   yes_128_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 0
+   je yes_128_2
+   jmp not_128
+   yes_128_2:
+   mov ptr_, offset inc_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111111w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md000r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..000r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_128:
+   
+
+   ;--> 1111 111w mod 001 r/m [poslinkis] -€“ DEC registras/atmintis <--
+   ;--> The byte: 1111111w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 127
+   je yes_129_0
+   jmp not_129
+   yes_129_0:
+   ;--> The byte: md001r/m <--
+   cmp next_byte_available, 1
+   je yes_129_1
+   jmp not_129
+   yes_129_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 1
+   je yes_129_2
+   jmp not_129
+   yes_129_2:
+   mov ptr_, offset dec_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1111111w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md001r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..001r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_129:
+   
+
+   ;--> 1111 1111 mod 010 r/m [poslinkis] -€“ CALL adresas (vidinis netiesioginis) <--
+   ;--> The byte: 11111111 <--
+   mov al, byte_
+   cmp al, 255
+   je yes_130_0
+   jmp not_130
+   yes_130_0:
+   ;--> The byte: md010r/m <--
+   cmp next_byte_available, 1
+   je yes_130_1
+   jmp not_130
+   yes_130_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 2
+   je yes_130_2
+   jmp not_130
+   yes_130_2:
+   mov ptr_, offset call_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md010r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..010r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_130:
+   
+
+   ;--> 1111 1111 mod 011 r/m [poslinkis] -€“ CALL adresas (iÅ¡orinis netiesioginis) <--
+   ;--> The byte: 11111111 <--
+   mov al, byte_
+   cmp al, 255
+   je yes_131_0
+   jmp not_131
+   yes_131_0:
+   ;--> The byte: md011r/m <--
+   cmp next_byte_available, 1
+   je yes_131_1
+   jmp not_131
+   yes_131_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 3
+   je yes_131_2
+   jmp not_131
+   yes_131_2:
+   mov ptr_, offset call_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md011r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..011r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_131:
+   
+
+   ;--> 1111 1111 mod 100 r/m [poslinkis] -€“ JMP adresas (vidinis netiesioginis) <--
+   ;--> The byte: 11111111 <--
+   mov al, byte_
+   cmp al, 255
+   je yes_132_0
+   jmp not_132
+   yes_132_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_132_1
+   jmp not_132
+   yes_132_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_132_2
+   jmp not_132
+   yes_132_2:
+   mov ptr_, offset jmp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_132:
+   
+
+   ;--> 1111 1111 mod 101 r/m [poslinkis] -€“ JMP adresas (iÅ¡orinis netiesioginis) <--
+   ;--> The byte: 11111111 <--
+   mov al, byte_
+   cmp al, 255
+   je yes_133_0
+   jmp not_133
+   yes_133_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_133_1
+   jmp not_133
+   yes_133_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_133_2
+   jmp not_133
+   yes_133_2:
+   mov ptr_, offset jmp_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_133:
+   
+
+   ;--> 1111 1111 mod 110 r/m [poslinkis] -€“ PUSH registras/atmintis <--
+   ;--> The byte: 11111111 <--
+   mov al, byte_
+   cmp al, 255
+   je yes_134_0
+   jmp not_134
+   yes_134_0:
+   ;--> The byte: md110r/m <--
+   cmp next_byte_available, 1
+   je yes_134_1
+   jmp not_134
+   yes_134_1:
+   mov al, byte_
+   shl al, 2
+   shr al, 5
+   cmp al, 6
+   je yes_134_2
+   jmp not_134
+   yes_134_2:
+   mov ptr_, offset push_n
+   call write_to_line
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md110r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..110r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   not_134:
+   
 
-    not_1:
 
-    mov al, byte_ ; 0000 010w bojb [bovb] – ADD akumuliatorius += betarpiškas operandas
-    shr al, 1 ; 0000 010w -> -000 0010
-    shl al, 1 ; 000 0010 -> 0000 010-
-    cmp al, 4 
-    jne not_2 
 
-    not_2:
 
-    mov al, byte_ ; 000sr 110 – PUSH segmento registras 
-    shr al, 5 ; 000sr 110 -> 0000 0000   00sr 0110
-    mov ah, byte_
-    shl ah, 5 ; 000sr 110 -> 1100 0000
-    shr ah, 5 ; 1100 0000 -> 0000 0110
-    add al, ah ; 0000 0000 + 0000 0100 -> 0000 0110
-    cmp al, 6 ; check 0000 0110
-    jne not_3
-    
-    not_3:
-    
-    mov al, byte_ ; 000sr 111 – POP segmento registras
-    shr al, 5 ; 000sr 111 -> 0000 0000
-    mov ah, byte_
-    shl ah, 5 ; 000sr 111 -> 1110 0000
-    shr ah, 5 ; 1110 0000 -> 0000 0111
-    add al, ah ; 0000 0000 + 0000 0111 -> 0000 0111
-    cmp al, 7 ; check 111
-    jne not_4
 
-    not_4:
 
-    mov al, byte_ ; 0000 10dw mod reg_ r/m [poslinkis] – OR registras V registras/atmintis
-    shr al, 2 ; 0000 10dw -> 0000 0010
-    shl al, 2 ; 0000 0010 -> 0000 1000
-    cmp al, 8
-    jne not_5
-
-    not_5:
-
-    mov al, byte_ ; 0000 110w bojb [bovb] – OR akumuliatorius V betarpiškas operandas
-    shr al, 1 ; 0000 110w -> 0000 0110
-    shl al, 1 ; 0000 0110 -> 0000 1100
-    cmp al, 12
-    jne not_6
-
-    not_6:
-
-    mov al, byte_ ; 0001 00dw mod reg_ r/m [poslinkis] – ADC registras += registras/axtmintis
-    shr al, 2 ; 0001 00dw -> 0000 0100
-    shl al, 2 ; 0000 0100 -> 0001 0000
-    cmp al, 16
-    jne not_7
-
-    not_7:
-
-    mov al, byte_ ; 0001 010w bojb [bovb] – ADC akumuliatorius += betarpiškas operandas
-    shr al, 1 ; 0001 010w -> 0000 1010
-    shl al, 1 ; 0000 1010 -> 0001 0100
-    cmp al, 20
-    jne not_8
-
-    not_8:
-
-    mov al, byte_ ; 0001 10dw mod reg_ r/m [poslinkis] – SBB registras -= registras/atmintis
-
-    mov al, byte_ ; 0001 110w bojb [bovb] – SBB akumuliatorius -= betarpiškas operandas
-
-    mov al, byte_ ; 0010 00dw mod reg_ r/m [poslinkis] – AND registras & registras/atmintis
-
-    mov al, byte_ ; 0010 010w bojb [bovb] – AND akumuliatorius & betarpiškas operandas
-
-    mov al, byte_ ; 001sr 110 – segmento registro keitimo prefiksas
-
-    mov al, byte_ ; 0010 0111 – DAA
-
-    mov al, byte_ ; 0010 10dw mod reg_ r/m [poslinkis] – SUB registras -= registras/atmintis
-
-    mov al, byte_ ; 0010 110w bojb [bovb] – SUB akumuliatorius -= betarpiškas operandas
-
-    mov al, byte_ ; 0010 1111 – DAS
-
-    mov al, byte_ ; 0011 00dw mod reg_ r/m [poslinkis] – XOR registras | registras/atmintis
-
-    mov al, byte_ ; 0011 010w bojb [bovb] – XOR akumuliatorius | betarpiškas operandas
-
-    mov al, byte_ ; 0011 0111 – AAA
-
-    mov al, byte_ ; 0011 10dw mod reg_ r/m [poslinkis] – CMP registras ~ registras/atmintis
-
-    mov al, byte_ ; 0011 110w bojb [bovb] – CMP akumuliatorius ~ betarpiškas operandas
-
-    mov al, byte_ ; 0011 1111 – AAS
-
-    mov al, byte_ ; 0100 0reg – INC registras (žodinis)
-
-    mov al, byte_ ; 0100 1reg – DEC registras (žodinis)
-
-    mov al, byte_ ; 0101 0reg – PUSH registras (žodinis)
-
-    mov al, byte_ ; 0101 1reg – POP registras (žodinis)
-
-    mov al, byte_ ; 0111 0000 poslinkis – JO žymė
-
-    mov al, byte_ ; 0111 0001 poslinkis – JNO žymė
-
-    mov al, byte_ ; 0111 0010 poslinkis – JNAE žymė; JB žymė; JC žymė
-
-    mov al, byte_ ; 0111 0011 poslinkis – JAE žymė; JNB žymė; JNC žymė
-    
-    mov al, byte_ ; 0111 0100 poslinkis – JE žymė; JZ žymė
-
-    mov al, byte_ ; 0111 0101 poslinkis – JNE žymė; JNZ žymė
-
-    mov al, byte_ ; 0111 0110 poslinkis – JBE žymė; JNA žymė
-
-    mov al, byte_ ; 0111 0111 poslinkis – JA žymė; JNBE žymė
-
-    mov al, byte_ ; 0111 1000 poslinkis – JS žymė
-
-    mov al, byte_ ; 0111 1001 poslinkis – JNS žymė
-
-    mov al, byte_ ; 0111 1010 poslinkis – JP žymė; JPE žymė
-
-    mov al, byte_ ; 0111 1011 poslinkis – JNP žymė; JPO žymė
-
-    mov al, byte_ ; 0111 1100 poslinkis – JL žymė; JNGE žymė
-
-    mov al, byte_ ; 0111 1101 poslinkis – JGE žymė; JNL žymė
-
-    mov al, byte_ ; 0111 1110 poslinkis – JLE žymė; JNG žymė
-
-    mov al, byte_ ; 0111 1111 poslinkis – JG žymė; JNLE žymė
-
-    mov al, byte_ ; 1000 010w mod reg_ r/m [poslinkis] – TEST registras ? registras/atmintis
-    
-    mov al, byte_ ; 1000 011w mod reg_ r/m [poslinkis] – XCHG registras <> registras/atmintis
-
-    mov al, byte_ ; 1000 10dw mod reg_ r/m [poslinkis] – MOV registras <> registras/atmintis
-
-    mov al, byte_ ; 1000 1101 mod reg_ r/m [poslinkis] – LEA registras < atmintis
-
-    mov al, byte_ ; 1001 0000 – NOP; XCHG ax, ax
-
-    mov al, byte_ ; 1001 0reg – XCHG registras <> ax
-
-    mov al, byte_ ; 1001 1000 – CBW
-
-    mov al, byte_ ; 1001 1001 – CWD
-
-    mov al, byte_ ; 1001 1010 ajb avb srjb srvb – CALL žymė (išorinis tiesioginis)
-
-    mov al, byte_ ; 1001 1011 – WAIT
-
-    mov al, byte_ ; 1001 1100 – PUSHF
-
-    mov al, byte_ ; 1001 1101 – POPF
-
-    mov al, byte_ ; 1001 1110 – SAHF
-
-    mov al, byte_ ; 1001 1111 – LAHF
-
-    mov al, byte_ ; 1010 000w ajb avb – MOV akumuliatorius < atmintis
-
-    mov al, byte_ ; 1010 001w ajb avb – MOV atmintis < akumuliatorius
-
-    mov al, byte_ ; 1010 010w – MOVSB; MOVSW
-
-    mov al, byte_ ; 1010 011w – CMPSB; CMPSW
-    
-    mov al, byte_ ; 1010 100w bojb [bovb] – TEST akumuliatorius ? betarpiškas operandas
-
-    mov al, byte_ ; 1010 101w – STOSB; STOSW
-
-    mov al, byte_ ; 1010 110w – LODSB; LODSW
-
-    mov al, byte_ ; 1010 111w – SCASB; SCASW
-
-    mov al, byte_ ; 1011 wreg bojb [bovb] – MOV registras < betarpiškas operandas
-
-    mov al, byte_ ; 1100 0010 bojb bovb – RET betarpiškas operandas; RETN betarpiškas operandas
-
-    mov al, byte_ ; 1100 0011 – RET; RETN
-
-    mov al, byte_ ; 1100 0100 mod reg_ r/m [poslinkis] – LES registras  atmintis
-
-    mov al, byte_ ; 1100 0101 mod reg_ r/m [poslinkis] – LDS registras  atmintis
-
-    mov al, byte_ ; 1100 1010 bojb bovb – RETF betarpiškas operandas
-
-    mov al, byte_ ; 1100 1011 – RETF
-
-    mov al, byte_ ; 1100 1100 – INT 3
-
-    mov al, byte_ ; 1100 1101 numeris – INT numeris
-
-    mov al, byte_ ; 1100 1110 – INTO
-
-    mov al, byte_ ; 1100 1111 – IRET
-
-    mov al, byte_ ; 1101 0111 – XLAT
-
-    mov al, byte_ ; 1101 1xxx mod yyy r/m [poslinkis] – ESC komanda, registras/atmintis
-
-    mov al, byte_ ; 1110 0000 poslinkis – LOOPNE žymė; LOOPNZ žymė
-
-    mov al, byte_ ; 1110 0001 poslinkis – LOOPE žymė; LOOPZ žymė
-
-    mov al, byte_ ; 1110 0010 poslinkis – LOOP žymė
-
-    mov al, byte_ ; 1110 0011 poslinkis – JCXZ žymė
-
-    mov al, byte_ ; 1110 010w portas – IN akumuliatorius  portas
-
-    mov al, byte_ ; 1110 011w portas – OUT akumuliatorius  portas
-
-    mov al, byte_ ; 1110 1000 pjb pvb – CALL žymė (vidinis tiesioginis)
-
-    mov al, byte_ ; 1110 1001 pjb pvb – JMP žymė (vidinis tiesioginis)
-
-    mov al, byte_ ; 1110 1010 ajb avb srjb srvb – JMP žymė (išorinis tiesioginis)
-
-    mov al, byte_ ; 1110 1011 poslinkis – JMP žymė (vidinis artimas)
-
-    mov al, byte_ ; 1110 110w – IN akumuliatorius  dx portas
-
-    mov al, byte_ ; 1110 111w – OUT akumuliatorius  dx portas
-
-    mov al, byte_ ; 1111 0000 – LOCK
-
-    mov al, byte_ ; 1111 0010 – REPNZ; REPNE
-
-    mov al, byte_ ; 1111 0011 – REP; REPZ; REPE
-
-    mov al, byte_ ; 1111 0100 – HLT
-
-    mov al, byte_ ; 1111 0101 – CMC
-
-    mov al, byte_ ; 1111 1000 – CLC
-
-    mov al, byte_ ; 1111 1001 – STC
-    
-    mov al, byte_ ; 1111 1010 – CLI
-
-    mov al, byte_ ; 1111 1011 – STI
-    
-    mov al, byte_ ; 1111 1100 – CLD
-
-    mov al, byte_ ; 1111 1101 – STD
-
-    cmp next_byte_available, 1
-    jne skip_two_bytes_commands
-    call check_double_byte_commands
-    skip_two_bytes_commands:
 RET
 
 end start

@@ -8,4 +8,3 @@
 import Disasm_commands
 
 Disasm_commands.command_detection("output.txt")
-Disasm_commands.function_detection("functions_found.txt")

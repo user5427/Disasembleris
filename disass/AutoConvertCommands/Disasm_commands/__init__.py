@@ -173,7 +173,35 @@ def command_detection(output_file):
         line = line.split("â")
         if len(line) > 1:
             new_command_names.append(line)
+
     command_names = new_command_names
+
+    file = open("Files/auto_functions.txt", "r")
+    auto_functions = file.read()
+    auto_functions = auto_functions.strip().split('\n')
+    new_auto_functions = []
+    for function in auto_functions:
+        function = function.strip().split('|')
+        new_line = []
+        new_line.append(function[0].strip())
+        if len(function) > 1:
+            new_line.append(function[1].strip())
+
+        new_auto_functions.append(new_line)
+    auto_functions = new_auto_functions
+
+    file = open("Files/manual_functions.txt", "r")
+    manual_functions = file.read()
+    manual_functions = manual_functions.strip().split('\n')
+    new_manual_functions = []
+    for line in manual_functions:
+        function = line.strip().split('|')
+        new_line = "-"
+        if len(function) > 1:
+            new_line = function[1].strip()
+
+        new_manual_functions.append(new_line)
+    manual_functions = new_manual_functions
 
     def binary_to_number(string):
         lenght_of_num = len(string)
@@ -184,7 +212,8 @@ def command_detection(output_file):
 
         return number
 
-    def byte_commands(byte, byte_name):
+
+    def byte_commands(byte, byte_name, spec_jump):
         output_lines = []
         output_lines.append("mov al, " + byte_name)
         compensate_for_shift = 0
@@ -196,30 +225,37 @@ def command_detection(output_file):
             length = command[1]
 
             if index == 0 and length < 8:  # the word is at the start of the command
-                output_lines.append("shl al, " + str(length))
-                binary_number = binary_number[length:]
-                compensate_for_shift += length
+                if not length == 0: #FIXME
+                    output_lines.append("shl al, " + str(length))
+                    binary_number = binary_number[length:]
+                    compensate_for_shift += length
                 print_compare = 1
             elif command_sum == 8 and length < 8:  # the word is at the end of the command
-                output_lines.append("shr al, " + str(length + compensate_for_shift))
-                binary_number = binary_number[:-length]
+                if not length + compensate_for_shift == 0:  #FIXME
+                    output_lines.append("shr al, " + str(length + compensate_for_shift))
+                    binary_number = binary_number[:-length]
                 print_compare = 1
             elif index > 0 and length < 8:  # the word is somewhere in the middle of the command
-                output_lines.append("shr al, " + str(8 - index))
-                output_lines.append("shl al, " + str(8 - index))
-                output_lines.append("mov ah, " + byte_name)
-                output_lines.append("shl ah, " + str(index + length))
-                output_lines.append("shr ah, " + str(index + length))
-                output_lines.append("add al, ah")
+                if not str(8 - index) == 0: #FIXME
+                    output_lines.append("shr al, " + str(8 - index))
+                    output_lines.append("shl al, " + str(8 - index))
+                if not str(index + length):
+                    output_lines.append("mov ah, " + byte_name)
+                    output_lines.append("shl ah, " + str(index + length))
+                    output_lines.append("shr ah, " + str(index + length))
+                    output_lines.append("add al, ah")
                 print_compare = 1
                 binary_number = re.sub(r"[a-zA-Z]", "0", binary_number)
 
         if print_compare == 1:
             number = binary_to_number(binary_number)
             output_lines.append("cmp al, " + str(number))
-            output_lines.append("jne not_" + str(command_number))
+            output_lines.append("je yes_" + str(command_number) + "_" + str(spec_jump))
+            output_lines.append("jmp not_" + str(command_number))
+            output_lines.append("yes_" + str(command_number) + "_" + str(spec_jump) + ":")
+            spec_jump += 1
 
-        return output_lines
+        return output_lines, spec_jump
 
     def num_there(s):
         return any(i.isdigit() for i in s)
@@ -238,11 +274,16 @@ def command_detection(output_file):
         output_lines.append(f"mov {db_var}, al")
         return output_lines
 
+    def strip_numbers(o_line):
+        n_line = re.sub(r'[0-9]+', "", o_line).strip()
+        return n_line
+
+
     output_lines = []  # this does not have anything in common with lines or names
     command_number = 0
     for line in lines:
-        # output_lines.append(f";--> {str(line)} --<")
-        output_lines.append(f";--> {command_names[command_number]} <--")
+        spec_jump = 0
+        output_lines.append(f";--> {command_names[command_number][0]}-{command_names[command_number][1]} <--")
 
         # do the command detection
         use_two_bytes = 2
@@ -258,12 +299,19 @@ def command_detection(output_file):
                 output_lines.append(";--> The byte: " + byte[len(byte) - 1] + " <--")
                 if use_two_bytes == 2:
                     use_two_bytes = 0
-                    output_lines += byte_commands(byte, "byte_")
+                    temp_line = byte_commands(byte, "byte_", spec_jump)
+                    output_lines += temp_line[0]
+                    spec_jump = temp_line[1]
                 else:
                     use_two_bytes = 1
                     output_lines.append("cmp next_byte_available, 1")
-                    output_lines.append("jne not_" + str(command_number))
-                    output_lines += byte_commands(byte, "next_byte")
+                    output_lines.append("je yes_" + str(command_number) + "_" + str(spec_jump))
+                    output_lines.append(f"jmp not_{str(command_number)}")
+                    output_lines.append("yes_" + str(command_number) + "_" + str(spec_jump) + ":")
+                    spec_jump += 1
+                    temp_line = byte_commands(byte, "byte_", spec_jump)
+                    output_lines += temp_line[0]
+                    spec_jump = temp_line[1]
 
         if print_word_type_command == 0:
             output_lines.append(f"mov ptr_, offset {new_names[command_number][0]}")
@@ -317,6 +365,19 @@ def command_detection(output_file):
             output_lines.append("call write_to_line")
 
         commands = []
+        stripped_command_name = strip_numbers(command_names[command_number][0])
+        for funct in auto_functions:
+            if funct[0] == stripped_command_name:
+                #print(f"{funct[0]} - {stripped_command_name}")
+                if len(funct[1]) > 0:
+                    #print("A function for command was found!")
+                    commands.append(funct[1])
+                    break
+
+        funct = manual_functions[command_number]
+        if not funct == '-':
+            commands.append(funct)
+
         # execute functions based on what variables were used
         for command in commands:
             output_lines.append(f"call {command}")
@@ -327,7 +388,7 @@ def command_detection(output_file):
 
     f = open(output_file, "w")
     for line in output_lines:
-        f.write(line + '\n')
+        f.write('   ' + line + '\n')
 
     # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 

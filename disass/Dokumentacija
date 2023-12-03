@@ -115,7 +115,63 @@ Funkcija \emph{reg\_} reikšmę patalpina į \emph{register\_index}, tuomet kvie
 Funkcija \emph{com\_num\_} patalpina į \emph{double\_byte\_number} tuomet jį paverčia į dešimtainį skaičių, su \emph{convert\_to\_decimal}.
 \subsection{check\_commands}
 Funkcija analizuoja \emph{byte\_} ir nustato kokia operacija užkoduota, tuomet nustato jos parametrus\emph{(mod, d, w, et allium)}.
+\subsection{help\_argument}
+Funkcija patikrina ar argumentas yra \emph{/?} ir, jei toks yra, atspauzdina kas sukūrė programą ir kaip ja naudotis.
 \pagebreak
 \section{Naudojami kintamieji}
+\emph{endl} -- saugo cartridge return ir newline ASCII kodus.
 
+\emph{argument} -- saugo argumenta, paduota per komandinę eilutę.
+
+\emph{fn\_in} -- input failo pavadinimas.
+
+\emph{in\_out} -- output failo pavadinimas.
+
+\emph{msg} -- saugo error žinutę.
+
+\emph{fh\_in / fh\_out} -- saugo failų handle'us.
+
+\emph{owner\_msg} -- žinute, kuri nurodo programos kurėjus.
+
+\emph{help\_msg} -- žinute, paaiškinanti programa.
+
+\emph{help\_caller} -- BOOL, ar buvo paleista programa su parametru /?.
+
+\emph{buff} -- 200 baitų dydžio buferis, kuriame laikomi nuskaityti duomenys.
+
+\emph{read\_symbols} -- nuskaitytų simbolių kiekis.
+
+\emph{write\_buff} -- 200 baitų buferis, kuriame laikomos linijos, kurios bus įrašytos į failą.
+
+\emph{write\_index} -- pozicija, kuri nurodo \emph{write\_buff} pabaigą.
+
+\emph{line} -- linijos buferis.
+
+\emph{line\_length} -- \emph{line} ilgis.
+
+\emph{ptr\_} -- rodyklė į kitus kintamuosius.
+
+\emph{index} -- \emph{buff} indeksas, kuris nurodo iki kurios vietos duomenys buvo apdoroti.
+
+\emph{byte\_} -- baitas, su kuriuo reikia dirbti.
+
+\emph{file\_end} -- BOOL ar pasiekta failo pabaiga.
+
+\emph{next\_byte} -- sekantis baitas po \emph{byte\_}.
+
+\emph{next\_byte\_available} -- BOOL ar \emph{next\_byte} turi reikšmingą informaciją.
+
+\emph{second\_byte\_used} -- ar buvo panaudotas \emph{next\_byte}.
+
+\emph{w\_ / s\_ / d\_ / v\_ / sr\_/ mod\_/ reg\_/ r\_m\_/ com\_num\_} -- iš operacijų atrinkti kintamieji.
+
+\emph{double\_byte\_number} -- skaičius, kuris užima 2B.
+
+\emph{binary\_number} -- dvejetainis skaičius.
+
+\emph{number\_in\_ASCII} -- dešimtainis skaičius ASCII formatu.
+
+\emph{register\_index\_} -- registro indeksas.
+
+\emph{\emph{*}\_n} - pavadinimai komandų, registų et allium.
 \end{document}

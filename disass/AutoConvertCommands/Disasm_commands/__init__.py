@@ -382,6 +382,7 @@ def command_detection(output_file):
         for command in commands:
             output_lines.append(f"call {command}")
 
+        output_lines.append("call end_line")
         output_lines.append("not_" + str(command_number) + ":")
         output_lines.append('\n')
         command_number += 1

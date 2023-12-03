@@ -11,6 +11,10 @@
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
+    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: ", 24h
+    help_msg db "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h   
+    help_called db 0
+    test_msg db "test ", 24h
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
@@ -199,10 +203,15 @@ start:
     mov ds, ax
     call read_argument
     call loop_over_argumet
-    ; find the inputfile, output file
-    call open_input_file 
-    call loop_over_bytes     
+    call help_argument
 
+    cmp help_called, 1
+    je end_work
+
+    call open_input_file 
+    call open_output_file
+    call loop_over_bytes     
+    end_work:
     mov ax, 4c00h
     int 21h 
 
@@ -210,8 +219,13 @@ start:
 
 error:                  ; output error msg
     mov ah, 9
-    mov dx, offset msg
+    mov dx, offset error_msg
     int 21h
+
+
+    mov ax, 4c01h
+    int 21h
+RET
 
 ;error
 
@@ -240,10 +254,11 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     xor cx, cx ; counter
     xor ax, ax ; temp char saver
     mov SI, offset argument
-    mov DI offset fn_in
+    mov DI, offset fn_in
 
     loop_first_argument:
-    cmp [SI], 32 ; space
+    mov dl, 32
+    cmp [SI], dl ; space
     je second_argument
     cmp [SI], 0 ; end of line
     je end_argument_copy
@@ -258,6 +273,7 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     jmp loop_first_argument
 
     second_argument:
+    inc SI
     ;mov [DI], 24h
     mov DI offset fn_out
     xor cx, cx
@@ -282,6 +298,38 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     pop bx
     pop ax
 RET
+help_argument:
+    push ax
+    push bx
+    push cx
+    push dx
+
+    mov SI, offset fn_in
+    mov dl, 92
+    cmp [SI], dl
+    jne not_help_msg
+    inc SI
+    mov dl, 63
+    cmp [SI], dl
+    jne not_help_msg
+
+    mov ah, 9
+    mov dx, offset owner_msg
+    int 21h
+    mov ah, 9
+    mov dx, offset endl
+    int 21h
+    mov ah, 9
+    mov dx, offset help_msg
+    int 21h
+    mov help_called, 1
+
+    not_help_msg:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
 
 open_input_file:
 
@@ -290,28 +338,60 @@ open_input_file:
     xor cx, cx
     int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
 
-    JC error                 ; jump if carry flag = 1 (CF = 1)
+    JnC no_error
+    call error                 ; jump if carry flag = 1 (CF = 1)
+    no_error:
     mov fh_in, ax            ; save the file handle in the double word type for later use
+
+RET
+open_output_file:
+
+    mov ax, 3c00h            ; open existing file in read mode only
+    mov dx, offset fn_out     ; return file handle to register AX
+    xor cx, cx
+    int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
+
+    JnC no_error_2
+    call error                 ; jump if carry flag = 1 (CF = 1)
+    no_error_2:
+    mov fh_out, ax            ; save the file handle in the double word type for later use
 
 RET
 
 loop_over_bytes:
 
+    
     call read_bytes            ; returns byte to byte_ from buffer
     loop_bytes:                ; do this until the end of file
-    
+    cmp file_end, 1
+    je exit_byte_loop
+
+    call test_print
     call check_commands   ; check the command
 
     jmp loop_bytes
 
+    exit_byte_loop:
+    call force_write_to_file
 RET
 
+test_print:
+    push ax
+    push dx
+    xor ax, ax
+    mov ah, 9
+    mov dx, offset test_msg
+    int 21h
+    pop dx
+    pop ax
+RET
 
 read_bytes:
     push ax
     push cx
     cmp second_byte_used, 1
     jne skip_double_reading
+    mov second_byte_used, 0 ; reset this so the program does not try to read two bytes at the same time next time
     mov cx, 2
     jmp skip_reseting_cx
     skip_double_reading:
@@ -372,7 +452,10 @@ read_buffer:
     mov bx, fh_in            ; bx- the input file handle
     mov cx, 200              ; cx - number of bytes to read
     int 21h                  ;
+    JnC skip_error_3
     call error                 ; if there are errors, stop the program
+    skip_error_3:
+    mov cx, ax               ; move the amount of read symbols from ax to cx
 RET
 
 
@@ -444,7 +527,7 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     pop bx
     pop ax
 RET
-end_line: ; add endl to line
+end_line: ; add endl to line and output line contents to the write buffer
     push ax
     push bx
     push cx
@@ -1204,8 +1287,7 @@ RET
 
 ;holy fuck riebi funkcija
 check_commands:
-    xor ax, ax
-       ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
+   ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--
    mov al, byte_
    shr al, 2
@@ -1242,6 +1324,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_0:
    
 
@@ -1263,6 +1346,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_1:
    
 
@@ -1284,6 +1368,7 @@ check_commands:
    mov sr_, al
    call read_bytes
    call CONVERT_sr
+   call end_line
    not_2:
    
 
@@ -1305,6 +1390,7 @@ check_commands:
    mov sr_, al
    call read_bytes
    call CONVERT_sr
+   call end_line
    not_3:
    
 
@@ -1345,6 +1431,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_4:
    
 
@@ -1366,6 +1453,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_5:
    
 
@@ -1406,6 +1494,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_6:
    
 
@@ -1427,6 +1516,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_7:
    
 
@@ -1467,6 +1557,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_8:
    
 
@@ -1488,6 +1579,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_9:
    
 
@@ -1528,6 +1620,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_10:
    
 
@@ -1549,6 +1642,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_11:
    
 
@@ -1570,6 +1664,7 @@ check_commands:
    mov sr_, al
    call read_bytes
    call CONVERT_sr
+   call end_line
    not_12:
    
 
@@ -1583,6 +1678,7 @@ check_commands:
    mov ptr_, offset daa_n
    call write_to_line
    call read_bytes
+   call end_line
    not_13:
    
 
@@ -1623,6 +1719,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_14:
    
 
@@ -1644,6 +1741,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_15:
    
 
@@ -1657,6 +1755,7 @@ check_commands:
    mov ptr_, offset das_n
    call write_to_line
    call read_bytes
+   call end_line
    not_16:
    
 
@@ -1697,6 +1796,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_17:
    
 
@@ -1718,6 +1818,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_18:
    
 
@@ -1731,6 +1832,7 @@ check_commands:
    mov ptr_, offset aaa_n
    call write_to_line
    call read_bytes
+   call end_line
    not_19:
    
 
@@ -1771,6 +1873,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_20:
    
 
@@ -1792,6 +1895,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_21:
    
 
@@ -1805,6 +1909,7 @@ check_commands:
    mov ptr_, offset aas_n
    call write_to_line
    call read_bytes
+   call end_line
    not_22:
    
 
@@ -1825,6 +1930,7 @@ check_commands:
    mov reg_, al
    call read_bytes
    call CONVERT_reg
+   call end_line
    not_23:
    
 
@@ -1845,6 +1951,7 @@ check_commands:
    mov reg_, al
    call read_bytes
    call CONVERT_reg
+   call end_line
    not_24:
    
 
@@ -1865,6 +1972,7 @@ check_commands:
    mov reg_, al
    call read_bytes
    call CONVERT_reg
+   call end_line
    not_25:
    
 
@@ -1885,6 +1993,7 @@ check_commands:
    mov reg_, al
    call read_bytes
    call CONVERT_reg
+   call end_line
    not_26:
    
 
@@ -1900,6 +2009,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_27:
    
 
@@ -1915,6 +2025,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_28:
    
 
@@ -1930,6 +2041,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_29:
    
 
@@ -1945,6 +2057,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_30:
    
 
@@ -1960,6 +2073,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_31:
    
 
@@ -1975,6 +2089,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_32:
    
 
@@ -1990,6 +2105,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_33:
    
 
@@ -2005,6 +2121,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_34:
    
 
@@ -2020,6 +2137,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_35:
    
 
@@ -2035,6 +2153,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_36:
    
 
@@ -2050,6 +2169,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_37:
    
 
@@ -2065,6 +2185,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_38:
    
 
@@ -2080,6 +2201,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_39:
    
 
@@ -2095,6 +2217,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_40:
    
 
@@ -2110,6 +2233,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_41:
    
 
@@ -2125,6 +2249,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_42:
    
 
@@ -2173,6 +2298,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_43:
    
 
@@ -2221,6 +2347,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_44:
    
 
@@ -2269,6 +2396,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_45:
    
 
@@ -2317,6 +2445,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_46:
    
 
@@ -2365,6 +2494,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_47:
    
 
@@ -2413,6 +2543,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_48:
    
 
@@ -2461,6 +2592,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_49:
    
 
@@ -2509,6 +2641,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_50:
    
 
@@ -2545,6 +2678,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_w_mod_reg_r_m_poslinkis
+   call end_line
    not_51:
    
 
@@ -2581,6 +2715,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_w_mod_reg_r_m_poslinkis
+   call end_line
    not_52:
    
 
@@ -2621,6 +2756,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_53:
    
 
@@ -2669,6 +2805,7 @@ check_commands:
    mov sr_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_54:
    
 
@@ -2698,6 +2835,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_55:
    
 
@@ -2734,6 +2872,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_56:
    
 
@@ -2747,6 +2886,7 @@ check_commands:
    mov ptr_, offset nop_n
    call write_to_line
    call read_bytes
+   call end_line
    not_57:
    
 
@@ -2767,6 +2907,7 @@ check_commands:
    mov reg_, al
    call read_bytes
    call CONVERT_reg
+   call end_line
    not_58:
    
 
@@ -2780,6 +2921,7 @@ check_commands:
    mov ptr_, offset cbv_n
    call write_to_line
    call read_bytes
+   call end_line
    not_59:
    
 
@@ -2793,6 +2935,7 @@ check_commands:
    mov ptr_, offset cwd_n
    call write_to_line
    call read_bytes
+   call end_line
    not_60:
    
 
@@ -2808,6 +2951,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call end_line
    not_61:
    
 
@@ -2821,6 +2965,7 @@ check_commands:
    mov ptr_, offset wait_n
    call write_to_line
    call read_bytes
+   call end_line
    not_62:
    
 
@@ -2834,6 +2979,7 @@ check_commands:
    mov ptr_, offset pushf_n
    call write_to_line
    call read_bytes
+   call end_line
    not_63:
    
 
@@ -2847,6 +2993,7 @@ check_commands:
    mov ptr_, offset popf_n
    call write_to_line
    call read_bytes
+   call end_line
    not_64:
    
 
@@ -2860,6 +3007,7 @@ check_commands:
    mov ptr_, offset sahf_n
    call write_to_line
    call read_bytes
+   call end_line
    not_65:
    
 
@@ -2873,6 +3021,7 @@ check_commands:
    mov ptr_, offset lahf_n
    call write_to_line
    call read_bytes
+   call end_line
    not_66:
    
 
@@ -2893,6 +3042,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
+   call end_line
    not_67:
    
 
@@ -2913,6 +3063,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
+   call end_line
    not_68:
    
 
@@ -2940,6 +3091,7 @@ check_commands:
    simple_name_69:
    call write_to_line
    call add_plus
+   call end_line
    not_69:
    
 
@@ -2966,6 +3118,7 @@ check_commands:
    mov ptr_, offset cmpsw_n
    simple_name_70:
    call write_to_line
+   call end_line
    not_70:
    
 
@@ -2987,6 +3140,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
    call CONVERT_w_bojb_bovb
+   call end_line
    not_71:
    
 
@@ -3013,6 +3167,7 @@ check_commands:
    mov ptr_, offset stosw_n
    simple_name_72:
    call write_to_line
+   call end_line
    not_72:
    
 
@@ -3039,6 +3194,7 @@ check_commands:
    mov ptr_, offset lodsw_n
    simple_name_73:
    call write_to_line
+   call end_line
    not_73:
    
 
@@ -3065,6 +3221,7 @@ check_commands:
    mov ptr_, offset scasw_n
    simple_name_74:
    call write_to_line
+   call end_line
    not_74:
    
 
@@ -3090,6 +3247,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_75:
    
 
@@ -3104,6 +3262,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_76:
    
 
@@ -3117,6 +3276,7 @@ check_commands:
    mov ptr_, offset ret_n
    call write_to_line
    call read_bytes
+   call end_line
    not_77:
    
 
@@ -3146,6 +3306,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_78:
    
 
@@ -3175,6 +3336,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_79:
    
 
@@ -3218,6 +3380,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_80:
    
 
@@ -3232,6 +3395,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_81:
    
 
@@ -3245,6 +3409,7 @@ check_commands:
    mov ptr_, offset retf_n
    call write_to_line
    call read_bytes
+   call end_line
    not_82:
    
 
@@ -3258,6 +3423,7 @@ check_commands:
    mov ptr_, offset int_3_n
    call write_to_line
    call read_bytes
+   call end_line
    not_83:
    
 
@@ -3276,6 +3442,7 @@ check_commands:
    mov com_num_, al
    call read_bytes
    call CONVERT_numeris
+   call end_line
    not_84:
    
 
@@ -3289,6 +3456,7 @@ check_commands:
    mov ptr_, offset into_n
    call write_to_line
    call read_bytes
+   call end_line
    not_85:
    
 
@@ -3302,6 +3470,7 @@ check_commands:
    mov ptr_, offset iret_n
    call write_to_line
    call read_bytes
+   call end_line
    not_86:
    
 
@@ -3349,6 +3518,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_87:
    
 
@@ -3396,6 +3566,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_88:
    
 
@@ -3443,6 +3614,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_89:
    
 
@@ -3490,6 +3662,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_90:
    
 
@@ -3537,6 +3710,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_91:
    
 
@@ -3584,6 +3758,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_92:
    
 
@@ -3631,6 +3806,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_93:
    
 
@@ -3655,6 +3831,7 @@ check_commands:
    call write_to_line
    call read_bytes
    call read_bytes
+   call end_line
    not_94:
    
 
@@ -3679,6 +3856,7 @@ check_commands:
    call write_to_line
    call read_bytes
    call read_bytes
+   call end_line
    not_95:
    
 
@@ -3692,6 +3870,7 @@ check_commands:
    mov ptr_, offset xlat_n
    call write_to_line
    call read_bytes
+   call end_line
    not_96:
    
 
@@ -3721,6 +3900,7 @@ check_commands:
    ;--> Failed to find. Missing global variable. <--
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_97:
    
 
@@ -3736,6 +3916,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_98:
    
 
@@ -3751,6 +3932,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_99:
    
 
@@ -3766,6 +3948,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_100:
    
 
@@ -3781,6 +3964,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_101:
    
 
@@ -3803,6 +3987,7 @@ check_commands:
    ;--> The variable 'portas--' in reformed byte: 'portas--' <--
    ;--> Failed to find. Missing global variable. <--
    call read_bytes
+   call end_line
    not_102:
    
 
@@ -3825,6 +4010,7 @@ check_commands:
    ;--> The variable 'portas--' in reformed byte: 'portas--' <--
    ;--> Failed to find. Missing global variable. <--
    call read_bytes
+   call end_line
    not_103:
    
 
@@ -3839,6 +4025,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call end_line
    not_104:
    
 
@@ -3853,6 +4040,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call end_line
    not_105:
    
 
@@ -3868,6 +4056,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call end_line
    not_106:
    
 
@@ -3883,6 +4072,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    call CONVERT_poslinkis
+   call end_line
    not_107:
    
 
@@ -3909,6 +4099,7 @@ check_commands:
    mov ptr_, offset in_n
    simple_name_108:
    call write_to_line
+   call end_line
    not_108:
    
 
@@ -3935,6 +4126,7 @@ check_commands:
    mov ptr_, offset out_n
    simple_name_109:
    call write_to_line
+   call end_line
    not_109:
    
 
@@ -3948,6 +4140,7 @@ check_commands:
    mov ptr_, offset lock_n
    call write_to_line
    call read_bytes
+   call end_line
    not_110:
    
 
@@ -3961,6 +4154,7 @@ check_commands:
    mov ptr_, offset repnz_n
    call write_to_line
    call read_bytes
+   call end_line
    not_111:
    
 
@@ -3974,6 +4168,7 @@ check_commands:
    mov ptr_, offset rep_n
    call write_to_line
    call read_bytes
+   call end_line
    not_112:
    
 
@@ -3987,6 +4182,7 @@ check_commands:
    mov ptr_, offset hlt_n
    call write_to_line
    call read_bytes
+   call end_line
    not_113:
    
 
@@ -4000,6 +4196,7 @@ check_commands:
    mov ptr_, offset cmc_n
    call write_to_line
    call read_bytes
+   call end_line
    not_114:
    
 
@@ -4043,6 +4240,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call end_line
    not_115:
    
 
@@ -4085,6 +4283,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_116:
    
 
@@ -4127,6 +4326,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_117:
    
 
@@ -4169,6 +4369,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_118:
    
 
@@ -4211,6 +4412,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_119:
    
 
@@ -4253,6 +4455,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_120:
    
 
@@ -4295,6 +4498,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_121:
    
 
@@ -4308,6 +4512,7 @@ check_commands:
    mov ptr_, offset clc_n
    call write_to_line
    call read_bytes
+   call end_line
    not_122:
    
 
@@ -4321,6 +4526,7 @@ check_commands:
    mov ptr_, offset stc_n
    call write_to_line
    call read_bytes
+   call end_line
    not_123:
    
 
@@ -4334,6 +4540,7 @@ check_commands:
    mov ptr_, offset cli_n
    call write_to_line
    call read_bytes
+   call end_line
    not_124:
    
 
@@ -4347,6 +4554,7 @@ check_commands:
    mov ptr_, offset sti_n
    call write_to_line
    call read_bytes
+   call end_line
    not_125:
    
 
@@ -4360,6 +4568,7 @@ check_commands:
    mov ptr_, offset cld_n
    call write_to_line
    call read_bytes
+   call end_line
    not_126:
    
 
@@ -4373,6 +4582,7 @@ check_commands:
    mov ptr_, offset std_n
    call write_to_line
    call read_bytes
+   call end_line
    not_127:
    
 
@@ -4415,6 +4625,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_128:
    
 
@@ -4457,6 +4668,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_129:
    
 
@@ -4493,6 +4705,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_130:
    
 
@@ -4529,6 +4742,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_131:
    
 
@@ -4565,6 +4779,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_132:
    
 
@@ -4601,6 +4816,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_133:
    
 
@@ -4637,12 +4853,9 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call end_line
    not_134:
    
-
-
-
-
 
 
 RET

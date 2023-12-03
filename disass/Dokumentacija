@@ -1,6 +1,5 @@
 \documentclass[a4paper,12pt, titlepage, lithuanian]{article}
 \usepackage[lithuanian]{babel}
-\usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 %opening
 \title{Arno ir Tado dissasemblerio dokumentacija}
@@ -33,8 +32,7 @@ Funkcija iš kintamojo \emph{argument} išskaido į skaitomojo failo pavadinimą
 \subsection{open\_input\_file}
 Atidaro failą, su pavadinimu esančiu \emph{fn\_in} ir jo handleį išsaugo į \emph{fh\_in}.
 \subsection{loop\_over\_bytes}
-
-Funkcija iškviečia funkciją \emph{read\_bytes} ir tada nuolat ciklina funkcijos \emph{check\_command} iškvietimą.
+Funkcija iškviečia funkciją \emph{read\_bytes} ir tada nuolat ciklina funkcijos \emph{check\_commands} iškvietimą iki tol, kol pasiekiama failo pabaiga.
 \subsection{read\_bytes}
 Funkcija nustato ar buvo panaudotas antrasis baitas esantis buferyje.
 Jei taip \emph{cx} nustatomas į 1, kitu atvėju į 2. Tuomet cikliškai yra nustatomas \emph{byte\_} ir iškviečiama funkcija \emph{get\_byte}. Kuomet
@@ -90,5 +88,34 @@ Funkcija nustato, kaip adresuojama operaciją \emph{(BX + SI, BX + SI, et allium
 Funkcija nustato ar yra segmento perrašymas
 naudojant kintamajį \emph{register\_index}. Nustato \emph{ptr\_} į kintamajį, kuriame laikomas
 pavadinimas ir kviečiama funkcija \emph{write\_to\_line}.
+\subsection{find\_poslinkis}
+Funkcija, naudojant \emph{mod\_} nustato kokio dydžio poslinkis, kviečia \emph{read\_bytes} atitinkamą kiekį kartų ir kviečia atitinkamą \emph{to\_hex} funkciją(\emph{double\_byte/number}).
+\subsection{find\_fill\_effective\_address}
+Funkcija iškviečia \emph{add\_left\_bracket}, \emph{find\_effective\_address\_registers}. Jei \emph{mod\_} nelygus 0 tuomet papildomai kviečiamos funkcijos: \emph{add\_plus}, \emph{find\_poslinkis}.
+Abiejais atvejais funkcija taip pat iškviečia \emph{add\_right\_bracket}.
+\subsection{full\_reg\_detector}
+Funkcija tikrina ar \emph{w\_} lygus 1. Jei taip, tuomet kviečiama funkcija \emph{find\_word\_register}, kitu atveju kviečiama \emph{find\_byte\_register}.
+\subsection{full\_r\_m\_detector}
+Funkcija tikrina ar \emph{mod\_} lygus 3. Jei taip tuomet kviečiama funkcija \emph{full\_reg\_detector}, kitu atveju kviečiama funkcija \emph{find\_full\_effective\_address}.
+\subsection{CONVERT\_dw\_mod\_reg\_r\_m\_poslinki}
+Funkcija dar neimplementuota!
+\subsection{CONVERT\_w\_bojb\_bovb}
+Funkcija kviečia \emph{read\_bytes} priklausomai nuo \emph{w\_} vieną arba du kartus, bitas/-ai paverčiamas į dešimtainį skaičių per funkciją \emph{convert\_to\_decimal}.
+\subsection{CONVERT\_sr}
+Funkcija reikšmę esančią \emph{sr\_} patalpina į \emph{register\_index}, tuomet iškviečia \emph{find\_seg\_register}.
+\subsection{CONVERT\_reg}
+Funkcija \emph{reg\_} patalpina į \emph{register\_index}, tuomet iškviečia \emph{find\_word\_register}.
+\subsection{CONVERT\_poslinkis}
+Funkcija nustato \emph{mod\_} reikšme į 1 ir kviečia \emph{find\_poslinkis}.
+\subsection{CONVERT\_sw\_mod\_r\_m\_\\poslinkis\_bojb\_bovb}
+Funkcija dar neimplementuota!
+\subsection{CONVERT\_w\_mod\_reg\_r\_m\_poslinkis}
+Funkcija \emph{reg\_} reikšmę patalpina į \emph{register\_index}, tuomet kviečia funkcijas: \emph{add\_space\_line}, \emph{full\_reg\_detector}, \emph{add\_comma\_line}, \emph{add\_space\_line}, \emph{full\_r\_m\_detector}.
+\subsection{CONVERT\_numeris}
+Funkcija \emph{com\_num\_} patalpina į \emph{double\_byte\_number} tuomet jį paverčia į dešimtainį skaičių, su \emph{convert\_to\_decimal}.
+\subsection{check\_commands}
+Funkcija analizuoja \emph{byte\_} ir nustato kokia operacija užkoduota, tuomet nustato jos parametrus\emph{(mod, d, w, et allium)}.
+\pagebreak
+\section{Naudojami kintamieji}
 
 \end{document}

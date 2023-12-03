@@ -11,7 +11,7 @@
     error_msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
-    owner_msg db "Disassembleris. Parase komparcho studentai.", 24h
+    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: ", 24h
     help_msg db "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h   
     help_called db 0
     test_msg db "test ", 24h

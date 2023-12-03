@@ -1,13 +1,13 @@
-.model tiny
+.model small
 ;.386                        ; Just to show at what position it has to be
 .stack 100h
 .data
 
     endl db 0dh, 0ah, 24h
 
-    argument db 127 dup(?)
-    fn_in db "hello.com", 24h;127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
-    fn_out db "hello.txt", 24h;127 dup(?)
+    argument db 127 dup('$')
+    fn_in db 127 dup('$')    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db 127 dup('$')   ; 127 dup(?)
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
@@ -43,8 +43,7 @@
     number_in_ASCII db 0, 255 dup(?)
     register_index db 0
 
-    
-lots_of_names:
+;lots_of_names:
     wtf_n db ";unknown", 24h
     mov_n db "MOV", 24h
     nop_n db "NOP", 24h
@@ -191,14 +190,15 @@ lots_of_names:
     di_n db "DI", 24h
     bp_n db "BP", 24h
     sp_n db "SP", 24h
-;
+
 
 .code
-;ORG 100h
+
 start:
     mov ax, @data
     mov ds, ax
-    ;call read_argument FIXME
+    call read_argument
+    call loop_over_argumet
     ; find the inputfile, output file
     call open_input_file 
     call loop_over_bytes     
@@ -212,7 +212,7 @@ error:                  ; output error msg
     mov ah, 9
     mov dx, offset msg
     int 21h
-RET
+
 ;error
 
 read_argument:
@@ -231,11 +231,64 @@ read_argument:
     loop SKAITYTI            ; loop till cx register is equal to zero
 
 RET
+loop_over_argumet: ; get the argument, try to find space, and dollar symbol whatever
+    push ax
+    push bx
+    push cx
+    push dx
+    
+    xor cx, cx ; counter
+    xor ax, ax ; temp char saver
+    mov SI, offset argument
+    mov DI offset fn_in
+
+    loop_first_argument:
+    cmp [SI], 32 ; space
+    je second_argument
+    cmp [SI], 24h ; end of line
+    je end_argument_copy
+
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    inc cx
+    cmp cx, 126
+    ja end_argument_copy
+    jmp loop_first_argument
+
+    second_argument:
+    ;mov [DI], 24h
+    mov DI offset fn_out
+
+    loop_second_argument:
+    cmp [SI], 24h ; end of line
+    je end_argument_copy
+
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    inc cx
+    cmp cx, 126
+    ja end_argument_copy
+    jmp loop_second_argument
+    ;mov [DI], 24h
+
+
+    end_argument_copy:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
 
 open_input_file:
+
     mov ax, 3d00h            ; open existing file in read mode only
     mov dx, offset fn_in     ; return file handle to register AX
-    inc dx                   ; ignore the whitespace at start
+    xor cx, cx
+    ;inc dx                   ; ignore the whitespace at start
     int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
 
     JC error                 ; jump if carry flag = 1 (CF = 1)

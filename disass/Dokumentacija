@@ -1,0 +1,26 @@
+\documentclass[a4paper,12pt, titlepage]{article}
+\usepackage[lithuanian]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%opening
+\title{Arno ir Tado dissasemblerio dokumentacija}
+\author{Arnas, Tadas}
+
+\begin{document}
+
+\maketitle
+
+\pagebreak
+\section{Naudojimas}
+Programa paleidžiama su 2 argumentais:
+\begin{enumerate}
+ \item .com failas kuris turi buti dissassemblinamas
+ \item .asm failas i kuri reikia irasyti rezultata
+\end{enumerate}
+
+Programa skaito \emph{.COM} failus ir juos atkoduoja i 16bitu x86 asemblerio komandas
+
+Failu apribojimai tokie kokie yra DOS operacinei sistemai(failo pavadinimas apribojimas į 8 simbolius
+ir failu pletinys 3 simboliai atskirti tašku). \emph{.COM} failo apribojimai tokie kokie yra pagal standarta(failas apribojamas į 65280 baitų)
+
+\end{document}

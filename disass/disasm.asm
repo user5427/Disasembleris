@@ -3,11 +3,11 @@
 .stack 100h
 .data
 
-    endl db 0dh, 0ah, 24h
+    endl db 0dh, 0ah ;cr, lf
 
-    argument db 127 dup('$')
-    fn_in db 127 dup('$')    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
-    fn_out db 127 dup('$')   ; 127 dup(?)
+    argument db 127 dup('0')
+    fn_in db 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
     msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
@@ -27,7 +27,7 @@
     next_byte db 0           
     next_byte_available db 0 
     second_byte_used db 1    ; a quick way to tell the function that it should renew the current and following byte values. May only be used when the next_byte value was used
-
+    ;operation parameters
     w_ db 0
     s_ db 0
     d_ db 0
@@ -44,152 +44,152 @@
     register_index db 0
 
 ;lots_of_names:
-    wtf_n db ";unknown", 24h
-    mov_n db "MOV", 24h
-    nop_n db "NOP", 24h
-    add_n db "ADD", 24h
-    push_n db "PUSH", 24h
-    pop_n db "POP", 24h
-    or_n db "OR", 24h
-    adc_n db "ADC", 24h
-    sbb_n db "SBB", 24h
-    and_n db "AND", 24h
-    daa_n db "DAA", 24h
-    sub_n db "SUB", 24h
-    das_n db "DAS", 24h
-    xor_n db "XOR", 24h
-    aaa_n db "AAA", 24h
-    cmp_n db "CMP", 24h
-    aas_n db "AAS", 24h
-    inc_n db "INC", 24h
-    dec_n db "DEC", 24h
-    jo_n db "JO", 24h
-    jno_n db "JNO", 24h
-    jnae_n db "JNAE", 24h
-    jb_n db "JB", 24h
-    jc_n db "JC", 24h
-    jae_n db "JAE", 24h
-    jnb_n db "JNB", 24h
-    jnc_n db "JNC", 24h
-    je_n db "JE", 24h
-    jz_n db "JZ", 24h
-    jne_n db "JNE", 24h
-    jnz_n db "JNZ", 24h
-    jbe_n db "JBE", 24h
-    jna_n db "JNA", 24h
-    ja_n db "JA", 24h
-    jnbe_n db "JNBE", 24h
-    js_n db "JS", 24h
-    jns_n db "JNS", 24h
-    jp_n db "JP", 24h
-    jpe_n db "JPE", 24h
-    jnp_n db "JNP", 24h
-    jpo_n db "JPO", 24h
-    jl_n db "JL", 24h
-    jnge_n db "JNGE", 24h
-    jge_n db "JGE", 24h
-    jnl_n db "JNL", 24h
-    jle_n db "JLE", 24h
-    jng_n db "JNG", 24h
-    jg_n db "JG", 24h
-    jnle_n db "JNLE", 24h
-    test_n db "TEST", 24h
-    xchg_n db "XCHG", 24h
-    lea_n db "LEA", 24h
-    cbv_n db "CBV", 24h
-    cwd_n db "CWD", 24h
-    call_n db "CALL", 24h
-    wait_n db "WAIT", 24h
-    pushf_n db "PUSHF", 24h
-    popf_n db "POPF", 24h
-    sahf_n db "SAHF", 24h
-    lahf_n db "LAHF", 24h
-    movsb_n db "MOVSB", 24h
-    movsw_n db "MOVSW", 24h
-    cmpsb_n db "CMPSB", 24h
-    cmpsw_n db "CMPSW", 24h
-    stosb_n db "STOSB", 24h
-    stosw_n db "STOSW", 24h
-    lodsb_n db "LODSB", 24h
-    lodsw_n db "LODSW", 24h
-    scasb_n db "SCASB", 24h
-    scasw_n db "SCASW", 24h
-    ret_n db "RET", 24h
-    retn_n db "RETN", 24h
-    les_n db "LES", 24h
-    lds_n db "LDS", 24h
-    retf_n db "RETF", 24h
-    int_3_n db "INT 3", 24h
-    int_n db "INT", 24h
-    into_n db "INTO", 24h
-    iret_n db "IRET", 24h
-    rol_n db "ROL", 24h
-    ror_n db "ROR", 24h
-    rcl_n db "RCL", 24h
-    rcr_n db "RCR", 24h
-    shl_n db "SHL", 24h
-    sal_n db "SAL", 24h
-    shr_n db "SHR", 24h
-    sar_n db "SAR", 24h
-    aam_n db "AAM", 24h
-    aad_n db "AAD", 24h
-    xlat_n db "XLAT", 24h
-    esc_n db "ESC", 24h
-    loopne_n db "LOOPNE", 24h
-    loopnz_n db "LOOPNZ", 24h
-    loope_n db "LOOPE", 24h
-    loopz_n db "LOOPZ", 24h
-    loop_n db "LOOP", 24h
-    jcxz_n db "JCXZ", 24h
-    in_n db "IN", 24h
-    out_n db "OUT", 24h
-    jmp_n db "JMP", 24h
-    lock_n db "LOCK", 24h
-    repnz_n db "REPNZ", 24h
-    repne_n db "REPNE", 24h
-    rep_n db "REP", 24h
-    repz_n db "REPZ", 24h
-    repe_n db "REPE", 24h
-    hlt_n db "HLT", 24h
-    cmc_n db "CMC", 24h
-    not_n db "NOT", 24h
-    neg_n db "NEG", 24h
-    mul_n db "MUL", 24h
-    imul_n db "IMUL", 24h
-    div_n db "DIV", 24h
-    idiv_n db "IDIV", 24h
-    clc_n db "CLC", 24h
-    stc_n db "STC", 24h
-    cli_n db "CLI", 24h
-    sti_n db "STI", 24h
-    cld_n db "CLD", 24h
-    std_n db "STD", 24h
+    wtf_n db "unknown", 0
+    mov_n db "MOV", 0
+    nop_n db "NOP", 0
+    add_n db "ADD", 0
+    push_n db "PUSH", 0
+    pop_n db "POP", 0
+    or_n db "OR", 0
+    adc_n db "ADC", 0
+    sbb_n db "SBB", 0
+    and_n db "AND", 0
+    daa_n db "DAA", 0
+    sub_n db "SUB", 0
+    das_n db "DAS", 0
+    xor_n db "XOR", 0
+    aaa_n db "AAA", 0
+    cmp_n db "CMP", 0
+    aas_n db "AAS", 0
+    inc_n db "INC", 0
+    dec_n db "DEC", 0
+    jo_n db "JO", 0
+    jno_n db "JNO", 0
+    jnae_n db "JNAE", 0
+    jb_n db "JB", 0
+    jc_n db "JC", 0
+    jae_n db "JAE", 0
+    jnb_n db "JNB", 0
+    jnc_n db "JNC", 0
+    je_n db "JE", 0
+    jz_n db "JZ", 0
+    jne_n db "JNE", 0
+    jnz_n db "JNZ", 0
+    jbe_n db "JBE", 0
+    jna_n db "JNA", 0
+    ja_n db "JA", 0
+    jnbe_n db "JNBE", 0
+    js_n db "JS", 0
+    jns_n db "JNS", 0
+    jp_n db "JP", 0
+    jpe_n db "JPE", 0
+    jnp_n db "JNP", 0
+    jpo_n db "JPO", 0
+    jl_n db "JL", 0
+    jnge_n db "JNGE", 0
+    jge_n db "JGE", 0
+    jnl_n db "JNL", 0
+    jle_n db "JLE", 0
+    jng_n db "JNG", 0
+    jg_n db "JG", 0
+    jnle_n db "JNLE", 0
+    test_n db "TEST", 0
+    xchg_n db "XCHG", 0
+    lea_n db "LEA", 0
+    cbv_n db "CBV", 0
+    cwd_n db "CWD", 0
+    call_n db "CALL", 0
+    wait_n db "WAIT", 0
+    pushf_n db "PUSHF", 0
+    popf_n db "POPF", 0
+    sahf_n db "SAHF", 0
+    lahf_n db "LAHF", 0
+    movsb_n db "MOVSB", 0
+    movsw_n db "MOVSW", 0
+    cmpsb_n db "CMPSB", 0
+    cmpsw_n db "CMPSW", 0
+    stosb_n db "STOSB", 0
+    stosw_n db "STOSW", 0
+    lodsb_n db "LODSB", 0
+    lodsw_n db "LODSW", 0
+    scasb_n db "SCASB", 0
+    scasw_n db "SCASW", 0
+    ret_n db "RET", 0
+    retn_n db "RETN", 0
+    les_n db "LES", 0
+    lds_n db "LDS", 0
+    retf_n db "RETF", 0
+    int_3_n db "INT 3", 0
+    int_n db "INT", 0
+    into_n db "INTO", 0
+    iret_n db "IRET", 0
+    rol_n db "ROL", 0
+    ror_n db "ROR", 0
+    rcl_n db "RCL", 0
+    rcr_n db "RCR", 0
+    shl_n db "SHL", 0
+    sal_n db "SAL", 0
+    shr_n db "SHR", 0
+    sar_n db "SAR", 0
+    aam_n db "AAM", 0
+    aad_n db "AAD", 0
+    xlat_n db "XLAT", 0
+    esc_n db "ESC", 0
+    loopne_n db "LOOPNE", 0
+    loopnz_n db "LOOPNZ", 0
+    loope_n db "LOOPE", 0
+    loopz_n db "LOOPZ", 0
+    loop_n db "LOOP", 0
+    jcxz_n db "JCXZ", 0
+    in_n db "IN", 0
+    out_n db "OUT", 0
+    jmp_n db "JMP", 0
+    lock_n db "LOCK", 0
+    repnz_n db "REPNZ", 0
+    repne_n db "REPNE", 0
+    rep_n db "REP", 0
+    repz_n db "REPZ", 0
+    repe_n db "REPE", 0
+    hlt_n db "HLT", 0
+    cmc_n db "CMC", 0
+    not_n db "NOT", 0
+    neg_n db "NEG", 0
+    mul_n db "MUL", 0
+    imul_n db "IMUL", 0
+    div_n db "DIV", 0
+    idiv_n db "IDIV", 0
+    clc_n db "CLC", 0
+    stc_n db "STC", 0
+    cli_n db "CLI", 0
+    sti_n db "STI", 0
+    cld_n db "CLD", 0
+    std_n db "STD", 0
 
     ; registrai
-    ax_n db "AX", 24h
-    al_n db "AL", 24h
-    ah_n db "AH", 24h
-    bx_n db "BX", 24h
-    bl_n db "BL", 24h
-    bh_n db "BH", 24h
-    cx_n db "CX", 24h
-    cl_n db "CL", 24h
-    ch_n db "CH", 24h
-    dx_n db "DX", 24h
-    dl_n db "DL", 24h
-    dh_n db "DH", 24h
+    ax_n db "AX", 0
+    al_n db "AL", 0
+    ah_n db "AH", 0
+    bx_n db "BX", 0
+    bl_n db "BL", 0
+    bh_n db "BH", 0
+    cx_n db "CX", 0
+    cl_n db "CL", 0
+    ch_n db "CH", 0
+    dx_n db "DX", 0
+    dl_n db "DL", 0
+    dh_n db "DH", 0
 
     ; segmento registrai
-    es_n db "ES", 24h
-    cs_n db "CS", 24h
-    ss_n db "SS", 24h
-    ds_n db "DS", 24h
+    es_n db "ES", 0
+    cs_n db "CS"0
+    ss_n db "SS", 0
+    ds_n db "DS", 0
 
     ; kiti registrai
-    si_n db "SI", 24h
-    di_n db "DI", 24h
-    bp_n db "BP", 24h
-    sp_n db "SP", 24h
+    si_n db "SI", 0
+    di_n db "DI", 0
+    bp_n db "BP", 0
+    sp_n db "SP", 0
 
 
 .code
@@ -216,10 +216,10 @@ error:                  ; output error msg
 ;error
 
 read_argument:
-    xor cx, cx               ; i have no idea how this works and at this point i am too scared to ask
-    mov cl, es:[80h]         ; the length of the argument?
-    mov si, 82h                 ;We can start from 82h, since 81h              ; the start of the argument? will always contain a space bar
-    dec cl                      ;We need to adjust C so that it truthfully represents the character amount
+    xor cx, cx               ; clear cx to avoid corruuption
+    mov cl, es:[80h]         ; the length of the argument
+    mov si, 82h                 ;We can start from 82h, since 81h always contain a space bar
+    dec cl                      ;We need to adjust cx so that it truthfully represents the character amount
     mov di, offset argument     ; move the adress of file name to register dx
     jcxz error
 
@@ -245,7 +245,7 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     loop_first_argument:
     cmp [SI], 32 ; space
     je second_argument
-    cmp [SI], 24h ; end of line
+    cmp [SI], 0 ; end of line
     je end_argument_copy
 
     mov al, [SI]
@@ -253,16 +253,16 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     inc SI
     inc DI
     inc cx
-    cmp cx, 126
-    ja end_argument_copy
+    cmp cx, 13
+    jae end_argument_copy
     jmp loop_first_argument
 
     second_argument:
     ;mov [DI], 24h
     mov DI offset fn_out
-
+    xor cx, cx
     loop_second_argument:
-    cmp [SI], 24h ; end of line
+    cmp [SI], 0 ; end of line
     je end_argument_copy
 
     mov al, [SI]
@@ -270,8 +270,8 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     inc SI
     inc DI
     inc cx
-    cmp cx, 126
-    ja end_argument_copy
+    cmp cx, 13
+    jae end_argument_copy
     jmp loop_second_argument
     ;mov [DI], 24h
 
@@ -288,7 +288,6 @@ open_input_file:
     mov ax, 3d00h            ; open existing file in read mode only
     mov dx, offset fn_in     ; return file handle to register AX
     xor cx, cx
-    ;inc dx                   ; ignore the whitespace at start
     int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
 
     JC error                 ; jump if carry flag = 1 (CF = 1)
@@ -343,17 +342,15 @@ get_byte:
 
     mov al, read_symbols
     cmp index, al
-    jnae skip_reading
+    jb skip_reading
     mov index, 0                ; reset index
     call read_buffer
     mov read_symbols, cl
-    skip_reading:
-
     jcxz file_end_reached
-
+    skip_reading:
     mov SI, offset buff
 
-    mov al, [SI + 1]
+    mov al, [SI + index]
     mov next_byte, al
     inc index
 
@@ -371,7 +368,6 @@ get_byte:
 RET
 read_buffer:
     mov dx, offset buff      ; the start adress of the array "buff"
-    xor cx, cx               ; just in case
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
     mov bx, fh_in            ; bx- the input file handle
     mov cx, 200              ; cx - number of bytes to read
@@ -433,7 +429,7 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
 
     copy_values:
     mov al, [SI]
-    cmp al, 24h
+    cmp al, 0
     je exit_copy_loop
 
     mov [DI + line_length], al
@@ -514,8 +510,8 @@ add_comma_line:
     inc line_length
     call add_space_line
 RET
-
-reset_doble_byte_number:
+; xddd doble xdddd
+reset_double_byte_number:
     push ax
     mov DI, offset double_byte_number
     mov al, 0
@@ -1068,7 +1064,7 @@ CONVERT_w_bojb_bovb:
     one_byte_num:
     call read_bytes
     mov al, byte_
-    call reset_doble_byte_number
+    call reset_double_byte_number
     mov double_byte_number, al
     call convert_to_decimal
     jmp exit_bojb_function
@@ -1174,7 +1170,7 @@ RET
 CONVERT_numeris:
     push ax
     xor ax, ax
-    call reset_doble_byte_number
+    call reset_double_byte_number
     mov al, com_num_
     mov double_byte_number, al
     call convert_to_decimal
@@ -1206,7 +1202,7 @@ CONVERT_w_mod_r_m_poslinkis:
 
 RET
 
-
+;holy fuck riebi funkcija
 check_commands:
     xor ax, ax
        ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--

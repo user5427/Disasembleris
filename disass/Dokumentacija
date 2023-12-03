@@ -1,4 +1,4 @@
-\documentclass[a4paper,12pt, titlepage]{article}
+\documentclass[a4paper,12pt, titlepage, lithuanian]{article}
 \usepackage[lithuanian]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -7,9 +7,10 @@
 \author{Arnas, Tadas}
 
 \begin{document}
-
 \maketitle
-
+\raggedright
+\pagebreak
+\tableofcontents
 \pagebreak
 \section{Naudojimas}
 Programa paleidžiama su 2 argumentais:
@@ -22,5 +23,72 @@ Programa skaito \emph{.COM} failus ir juos atkoduoja i 16bitu x86 asemblerio kom
 
 Failu apribojimai tokie kokie yra DOS operacinei sistemai(failo pavadinimas apribojimas į 8 simbolius
 ir failu pletinys 3 simboliai atskirti tašku). \emph{.COM} failo apribojimai tokie kokie yra pagal standarta(failas apribojamas į 65280 baitų)
+Jei pateikiama daugiau nei 2 argumentai like argumentai ignoruojami. Jei pateikamas argumentas \emph{/?} tuomet atspauzdinamas trumpas programos aprašas.
+\pagebreak
+\section{Funkcijų aprašai}
+\subsection{read\_argument}
+Funkcija į \emph{argument} kintamajį irašo tai, kas buvo pateikta kaip argumentas į komandinę eilutę.
+\subsection{loop\_over\_argument}
+Funkcija iš kintamojo \emph{argument} išskaido į skaitomojo failo pavadinimą ir rašomojo failo pavadinimą \emph{fn\_in} ir \emph{fn\_out} atitinkamai. Jei argumentų kiekis daugiau nei 2 like argumentai ignoruojami.
+\subsection{open\_input\_file}
+Atidaro failą, su pavadinimu esančiu \emph{fn\_in} ir jo handleį išsaugo į \emph{fh\_in}.
+\subsection{loop\_over\_bytes}
+
+Funkcija iškviečia funkciją \emph{read\_bytes} ir tada nuolat ciklina funkcijos \emph{check\_command} iškvietimą.
+\subsection{read\_bytes}
+Funkcija nustato ar buvo panaudotas antrasis baitas esantis buferyje.
+Jei taip \emph{cx} nustatomas į 1, kitu atvėju į 2. Tuomet cikliškai yra nustatomas \emph{byte\_} ir iškviečiama funkcija \emph{get\_byte}. Kuomet
+pasiekiama \emph{fh\_in} failo pabaiga, funkcija nutraukia veikimą.
+\subsection{get\_byte}
+Funkcija nustato ar ar jau pasiekta buferio pabaiga. Jei taip, tuomet \emph{index} yra
+nunulinamas ir kviečiama funkcija \emph{read\_buffer} ir atnaujinama \emph{read\_symbols} reikšmė.
+Į \emph{AL} irašomas sekantis baitas esantis \emph{buff} buferyje.
+Gauta reikšmė išsaugoma į \emph{next\_byte} ir
+padidinamas \emph{index}.
+Jei pasiekta failo pabaiga, tuomet \emph{file\_end} nustatomas į 1.
+\subsection{read\_buffer}
+Funkcija nuskaito 200 baitų dydžio bloką iš \emph{fh\_in} ir jį išsaugo į \emph{buff}.
+\subsection{write\_to\_buff}
+Funkcija patikrina ar pridėjus teksto eilutę
+yra daugiau nei 200 simbolių, jei taip, tuomet kviečiama funkcija \emph{write\_to\_file} ir nunulinamas \emph{write\_index}.
+Jei simbolių kiekis nesiekia 200, tuomet
+prie bufferio \emph{line} prijungiama
+eilutė esanti \emph{write\_buff} ir nunulinamas
+\emph{line\_length}.
+\subsection{write\_to\_file}
+Funkciją į failą \emph{fh\_out} įrašo \emph{write\_index} simbolių,
+kurie yra bufferyje \emph{write\_buff}.
+\subsection{write\_to\_line}
+Funkcija naudoja \emph{ptr\_} kurią interpretuoja,
+kaip rodyklę į simbolių masyvą ir visas reikšmes
+iki NUll \emph{(hex \emph{0})} išsaugo \emph{line}.
+\subsection{end\_line}
+Funkcija prie \emph{line} prideda \emph{cartridge return} ir \emph{line feed} simbolius. Po to kviečia funkciją \emph{write\_to\_buff}.
+\subsection{force\_write\_to\_file}
+Funkcija iškviečia \emph{end\_line} ir \emph{write\_to\_file} funkcijas. Po to \emph{write\_index} yra nunulinamas.
+\subsection{\emph{add\_*}}
+Visus funkcijos pavadinimu \emph{add\_*} prie \emph{line} prideda tam tikrą simbolį.\\ Pvz: \emph{add\_plus} prie \emph{line} prijungia simbolį \emph{+}.
+\subsection{reset\_double\_byte\_number}
+Funkcija nunulina kintamajį \emph{double\_byte\_number}.
+\subsection{number\_to\_hex}
+Funkcija, iškviesdama funkciją \emph{convert\_half\_byte\_to\_HEX} pavercia skaičių
+esantį \emph{binary\_number} į šešioliktainį ir prie \emph{line} prideda raide \emph{h}.
+\subsection{double\_byte\_number\_to\_hex}
+Funkcija atlieką tą pačią funkciją kaip \emph{number\_to\_hex}, tik su 2B dydžio kintamuoju.
+\subsection{convert\_half\_byte\_to\_HEX}
+Funkcija pusbaitį paverčia į šešioliktainį skaičių ir jį parašo ji \emph{line} pabaigoje.
+\subsection{convert\_to\_decimal}
+Funkcija skaičių, esantį \emph{double\_byte\_number} ir jį irašo į \emph{number\_in\_ASCII}.
+\subsection{find\_word\_register}
+Funkcija tikrina reikšmę esančią \emph{register\_index} ir iš jos gauną registrą. Tuomet atitinkamai į tai koks registras, \emph{ptr\_} nustato į pradžią
+kintamojo, kuriame laikomas jo pavadinimas, kviečiama funkcija \emph{write\_to\_line}.
+\subsection{find\_byte\-register}
+Funkcijos veikimas analogiškas funkcijai \emph{find\_word\_register}, tik registrai yra 1B dydžio.
+\subsection{find\_effective\_address\_registers}
+Funkcija nustato, kaip adresuojama operaciją \emph{(BX + SI, BX + SI, et allium)} iš \emph{reg\_} kintamojo. Nustato \emph{ptr\_} į kintamajį, kuris saugo pavadinimą ir kviečia funkciją \emph{write\_to\_line}.
+\subsection{find\_seg\_register}
+Funkcija nustato ar yra segmento perrašymas
+naudojant kintamajį \emph{register\_index}. Nustato \emph{ptr\_} į kintamajį, kuriame laikomas
+pavadinimas ir kviečiama funkcija \emph{write\_to\_line}.
 
 \end{document}

@@ -1,0 +1,13 @@
+\babel@toc {lithuanian}{}\relax 
+\contentsline {section}{\numberline {1}Naudojimas}{2}{}%
+\contentsline {section}{\numberline {2}Funkcijų aprašai}{3}{}%
+\contentsline {subsection}{\numberline {2.1}read\_argument}{3}{}%
+\contentsline {subsection}{\numberline {2.2}loop\_over\_argument}{3}{}%
+\contentsline {subsection}{\numberline {2.3}open\_input\_file}{3}{}%
+\contentsline {subsection}{\numberline {2.4}loop\_over\_bytes}{3}{}%
+\contentsline {subsection}{\numberline {2.5}read\_bytes}{3}{}%
+\contentsline {subsection}{\numberline {2.6}get\_byte}{3}{}%
+\contentsline {subsection}{\numberline {2.7}read\_buffer}{3}{}%
+\contentsline {subsection}{\numberline {2.8}write\_to\_buff}{4}{}%
+\contentsline {subsection}{\numberline {2.9}write\_to\_file}{4}{}%
+\contentsline {subsection}{\numberline {2.10}write\_to\_line}{4}{}%

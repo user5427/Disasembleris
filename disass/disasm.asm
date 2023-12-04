@@ -8,7 +8,7 @@
     argument db 127 dup('0')
     fn_in db 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
-    msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
+    error_msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
     owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: ", 24h
@@ -30,7 +30,9 @@
     file_end db 0            ; is set to 1 when file end is reached
     next_byte db 0           
     next_byte_available db 0 
+    first_byte_available db 2 ;TODO
     second_byte_used db 1    ; a quick way to tell the function that it should renew the current and following byte values. May only be used when the next_byte value was used
+    temp_second_byte_used db 0 
     ;operation parameters
     w_ db 0
     s_ db 0
@@ -185,7 +187,7 @@
 
     ; segmento registrai
     es_n db "ES", 0
-    cs_n db "CS"0
+    cs_n db "CS", 0
     ss_n db "SS", 0
     ds_n db "DS", 0
 
@@ -260,7 +262,8 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     mov dl, 32
     cmp [SI], dl ; space
     je second_argument
-    cmp [SI], 0 ; end of line
+    mov dl, 0
+    cmp [SI], dl ; end of line
     je end_argument_copy
 
     mov al, [SI]
@@ -275,10 +278,11 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     second_argument:
     inc SI
     ;mov [DI], 24h
-    mov DI offset fn_out
+    mov DI, offset fn_out
     xor cx, cx
     loop_second_argument:
-    cmp [SI], 0 ; end of line
+    mov dl, 0
+    cmp [SI], dl ; end of line
     je end_argument_copy
 
     mov al, [SI]
@@ -363,11 +367,12 @@ loop_over_bytes:
     
     call read_bytes            ; returns byte to byte_ from buffer
     loop_bytes:                ; do this until the end of file
-    cmp file_end, 1
-    je exit_byte_loop
+    cmp first_byte_available, 1            ; TODO?
+    jb exit_byte_loop
 
     call test_print
     call check_commands   ; check the command
+
 
     jmp loop_bytes
 
@@ -389,6 +394,10 @@ RET
 read_bytes:
     push ax
     push cx
+    mov al, second_byte_used
+    mov temp_second_byte_used, al
+
+
     cmp second_byte_used, 1
     jne skip_double_reading
     mov second_byte_used, 0 ; reset this so the program does not try to read two bytes at the same time next time
@@ -409,8 +418,18 @@ read_bytes:
     mov next_byte_available, 1
 
     loop get_bytes_loop
+    jmp end_func
 
     end_of_file_reached:
+    cmp temp_second_byte_used, 1
+    jne check_first_byte_status
+    mov first_byte_available, 0
+    check_first_byte_status:
+    cmp first_byte_available, 1
+    jb end_func
+    dec first_byte_available
+
+    end_func:
     pop cx
     pop ax
 RET
@@ -431,7 +450,7 @@ get_byte:
     mov SI, offset buff
 
     mov al, [SI + index]
-    mov next_byte, al
+    mov next_byte, al           ; TODO there is a problem where this will be moved to byte_, but file_end will be set to 1
     inc index
 
     jmp skip_file_end_indicator
@@ -439,7 +458,7 @@ get_byte:
     file_end_reached:
     mov file_end, 1
     skip_file_end_indicator:
-    
+
     pop dx
     pop cx
     pop bx

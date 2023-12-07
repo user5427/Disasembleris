@@ -1159,8 +1159,28 @@ RET
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
     push ax
-    
-
+        cmp d_, 0
+        jne back
+            mov al, reg_
+            mov register_index, al
+            call full_reg_detector
+            call add_comma_line
+            call add_space_line
+            mov al, r_m_
+            mov register_index, al
+            call full_r_m_detector
+        pop ax
+        ret
+        back:
+            mov al, reg_
+            mov register_index, al
+            call full_r_m_detector
+            call add_comma_line
+            call add_space_line
+            mov al, r_m_
+            mov register_index, al
+            call full_reg_detector
+    pop ax
 RET
 
 
@@ -1219,7 +1239,27 @@ RET
 
 
 CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
-
+    push ax
+    call reset_double_byte_number
+    mov r_m_, al
+    mov al, register_index
+    call full_r_m_detector
+    call add_comma_line
+    call add_space_line
+    cmp w_, 1
+    je pab
+    cmp s_, 1
+    jne ba
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    ba:
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    pab:
+    call convert_to_decimal
+    pop ax
 RET
 
 
@@ -1243,7 +1283,17 @@ RET
 
 
 CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
-
+    push ax
+    call add_space_line
+    mov al, reg_
+    mov register_index, al
+    call find_word_register
+    call add_comma_line
+    call add_space_line
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    pop ax
 RET
 
 
@@ -1260,6 +1310,7 @@ RET
 
 
 CONVERT_ajb_avb_srjb_srvb:;galimai neveikia nzn
+push ax
     call reset_double_byte_number
     call read_bytes
     mov al, byte_
@@ -1277,10 +1328,12 @@ CONVERT_ajb_avb_srjb_srvb:;galimai neveikia nzn
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call convert_to_decimal
+    pop ax
 RET
 
 
 CONVERT_w_ajb_avb:
+    push ax
     cmp w_, 0
     call reset_double_byte_number
     jne big
@@ -1288,6 +1341,7 @@ CONVERT_w_ajb_avb:
         mov al, byte_
         mov [byte ptr double_byte_number], al
         call convert_to_decimal
+    pop ax
 ret
     big:
         call read_bytes
@@ -1296,12 +1350,30 @@ ret
         call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number], al
-        call convert_to_decimal    
+        call convert_to_decimal  
+    pop ax
 RET
 
 
 CONVERT_wreg_bojb_bovb_:
-     
+    call full_reg_detector
+    call reset_double_byte_number
+    cmp w_, 0
+    jne wordc
+        call read_bytes
+        mov al, byte_
+        mov [byte ptr double_byte_number], al
+        call convert_to_decimal
+ret
+    wordc:
+        call read_bytes
+        mov al, byte_
+        mov [byte ptr double_byte_number + 1], al
+        call read_bytes
+        mov al, byte_
+        mov [byte ptr double_byte_number], al
+        call convert_to_decimal
+
 RET
 
 

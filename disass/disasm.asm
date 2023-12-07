@@ -1278,7 +1278,29 @@ RET
 
 
 CONVERT_d_mod_sr_r_m_poslinkis:
-    
+    push ax
+    cmp d_, 1
+    jne bac
+    mov al, sr_
+    mov register_index, al
+    call find_seg_register
+    call add_comma_line
+    call add_space_line
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    pop ax
+    ret
+    bac:
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    call add_comma_line
+    call add_space_line
+    mov al, sr_
+    mov register_index, al
+    call find_seg_register
+    pop ax
 RET
 
 
@@ -1389,7 +1411,24 @@ RET
 
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
-
+    push ax
+    call reset_double_byte_number
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    call add_comma_line
+    call add_space_line
+    cmp w_, 1
+    jne smol
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    smol:
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
+    pop ax
 RET
 
 
@@ -1404,28 +1443,49 @@ CONVERT_numeris:
 RET
 
 
-CONVERT_vw_mod_r_m_poslinkis:
-
+CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
+    push ax
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    pop ax
 RET
 
 
 CONVERT_xxx_mod_yyy_r_m_poslinkis:
-
+    mov ptr_, byte ptr wtf_n
+    call end_line
 RET
 
 
 CONVERT_w_portas:
-
+    push ax
+    call reset_double_byte_number
+    cmp w_, 1
+    jne smal
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    smal:
+    call get_byte
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
+    pop ax
 RET
 
 
 CONVERT_pjb_pvb:
-
+    call CONVERT_bojb_bovb
 RET
 
 
 CONVERT_w_mod_r_m_poslinkis:
-    
+    push ax
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    pop ax
 RET
 
 ;

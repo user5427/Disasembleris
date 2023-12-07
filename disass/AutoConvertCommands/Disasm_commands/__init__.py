@@ -383,13 +383,19 @@ def command_detection(output_file):
             output_lines.append(f"call {command}")
 
         output_lines.append("call end_line")
+
+        output_lines.append(f"quick_exit_{str(command_number)}:")
+        output_lines.append(f"jmp quick_exit_{str(command_number + 1)}")
+
         output_lines.append("not_" + str(command_number) + ":")
         output_lines.append('\n')
         command_number += 1
 
+    output_lines.append(f"quick_exit_{str(command_number)}:")
     f = open(output_file, "w")
     for line in output_lines:
         f.write('   ' + line + '\n')
+
 
     # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 

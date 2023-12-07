@@ -36,4 +36,5 @@
 \contentsline {subsection}{\numberline {2.33}CONVERT\_w\_mod\_reg\_r\_m\_poslinkis}{8}{}%
 \contentsline {subsection}{\numberline {2.34}CONVERT\_numeris}{8}{}%
 \contentsline {subsection}{\numberline {2.35}check\_commands}{8}{}%
+\contentsline {subsection}{\numberline {2.36}help\_argument}{8}{}%
 \contentsline {section}{\numberline {3}Naudojami kintamieji}{9}{}%

@@ -4,7 +4,6 @@
 .data
 
     endl db 0dh, 0ah ;cr, lf
-
     argument db 127 dup('0')
     fn_in db 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
@@ -1133,6 +1132,8 @@ RET
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
+    push ax
+    
 
 RET
 
@@ -1211,7 +1212,7 @@ RET
 
 
 CONVERT_d_mod_sr_r_m_poslinkis:
-
+    
 RET
 
 
@@ -1220,28 +1221,72 @@ CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
 RET
 
 
-CONVERT_mod_r_m_poslinkis:
-
+CONVERT_mod_r_m_poslinkis:; galimai neveikia 
+    push ax
+    call add_space_line
+    call full_reg_detector
+    call add_space_line
+    call add_comma_line
+    call add_space_line
+    call find_poslinkis
+    pop ax
 RET
 
 
-CONVERT_ajb_avb_srjb_srvb:
-
+CONVERT_ajb_avb_srjb_srvb:;galimai neveikia nzn
+    call reset_double_byte_number
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
+    call add_comma_line
+    call add_space_line
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
 RET
 
 
 CONVERT_w_ajb_avb:
-
+    cmp w_, 0
+    call reset_double_byte_number
+    jne big
+        call read_bytes
+        mov al, byte_
+        mov [byte ptr double_byte_number], al
+        call convert_to_decimal
+ret
+    big:
+        call read_bytes
+        mov al, byte_
+        mov[byte ptr double_byte_number + 1], al
+        call read_bytes
+        mov al, byte_
+        mov [byte ptr double_byte_number], al
+        call convert_to_decimal    
 RET
 
 
 CONVERT_wreg_bojb_bovb_:
-
+     
 RET
 
 
 CONVERT_bojb_bovb:
-
+    call read_bytes
+    mov al, byte_
+    mov[byte ptr double_byte_number + 1], al
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
 RET
 
 
@@ -1282,10 +1327,10 @@ RET
 
 
 CONVERT_w_mod_r_m_poslinkis:
-
+    
 RET
 
-;holy fuck riebi funkcija
+;
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--

@@ -29,9 +29,8 @@
     file_end db 0            ; is set to 1 when file end is reached
     next_byte db 0           
     next_byte_available db 0 
-    first_byte_available db 2 ;TODO
+    first_byte_available db 2
     second_byte_used db 1    ; a quick way to tell the function that it should renew the current and following byte values. May only be used when the next_byte value was used
-    temp_second_byte_used db 0 
     ;operation parameters
     w_ db 0
     s_ db 0
@@ -217,6 +216,27 @@ start:
     int 21h 
 
 ; -- The end.
+com_check_done:
+    mov first_byte_available, 0
+RET
+
+loop_over_bytes:
+
+    
+    call read_bytes            ; returns byte to byte_ from buffer
+    loop_bytes:                ; do this until the end of file
+    cmp first_byte_available, 0            ; TODO?
+    je exit_byte_loop
+
+   
+    call check_commands   ; check the command
+
+
+    jmp loop_bytes
+
+    exit_byte_loop:
+    call force_write_to_file
+RET
 
 error:                  ; output error msg
     mov ah, 9
@@ -361,24 +381,6 @@ open_output_file:
 
 RET
 
-loop_over_bytes:
-
-    
-    call read_bytes            ; returns byte to byte_ from buffer
-    loop_bytes:                ; do this until the end of file
-    cmp first_byte_available, 1            ; TODO?
-    jb exit_byte_loop
-
-    call test_print
-    call check_commands   ; check the command
-
-
-    jmp loop_bytes
-
-    exit_byte_loop:
-    call force_write_to_file
-RET
-
 test_print:
     push ax
     push dx
@@ -394,7 +396,6 @@ read_bytes:
     push ax
     push cx
     mov al, second_byte_used
-    mov temp_second_byte_used, al
 
 
     cmp second_byte_used, 1
@@ -412,23 +413,13 @@ read_bytes:
     mov al, next_byte
     mov byte_, al
     call get_byte
-    cmp file_end, 1
-    je end_of_file_reached
-    mov next_byte_available, 1
-
     loop get_bytes_loop
-    jmp end_func
 
-    end_of_file_reached:
-    cmp temp_second_byte_used, 1
-    jne check_first_byte_status
-    mov first_byte_available, 0
-    check_first_byte_status:
-    cmp first_byte_available, 1
-    jb end_func
-    dec first_byte_available
-
+    cmp file_end, 1
+    je end_func
+    mov next_byte_available, 1
     end_func:
+
     pop cx
     pop ax
 RET
@@ -437,6 +428,7 @@ get_byte:
     push bx
     push cx
     push dx
+    call test_print
 
     mov al, read_symbols
     cmp index, al
@@ -459,6 +451,7 @@ get_byte:
 
     file_end_reached:
     mov file_end, 1
+    dec first_byte_available
     skip_file_end_indicator:
 
     pop dx
@@ -1378,6 +1371,7 @@ RET
 
 
 CONVERT_wreg_bojb_bovb_:
+    ;mov register_index, reg_
     call full_reg_detector
     call reset_double_byte_number
     cmp w_, 0
@@ -1453,8 +1447,11 @@ RET
 
 
 CONVERT_xxx_mod_yyy_r_m_poslinkis:
-    mov ptr_, byte ptr wtf_n
-    call end_line
+    push ax
+    mov ax, offset wtf_n
+    mov ptr_, ax
+    call write_to_line
+    pop ax
 RET
 
 
@@ -2587,6 +2584,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_43:
    jmp quick_exit_44
@@ -2638,6 +2636,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_44:
    jmp quick_exit_45
@@ -2689,6 +2688,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_45:
    jmp quick_exit_46
@@ -2740,6 +2740,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_46:
    jmp quick_exit_47
@@ -2791,6 +2792,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_47:
    jmp quick_exit_48
@@ -2842,6 +2844,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_48:
    jmp quick_exit_49
@@ -2893,6 +2896,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_49:
    jmp quick_exit_50
@@ -2944,6 +2948,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_50:
    jmp quick_exit_51
@@ -3116,6 +3121,7 @@ check_commands:
    mov sr_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_d_mod_sr_r_m_poslinkis
    call end_line
    quick_exit_54:
    jmp quick_exit_55
@@ -3148,6 +3154,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_reg_r_m_poslinkis
    call end_line
    quick_exit_55:
    jmp quick_exit_56
@@ -3187,6 +3194,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_56:
    jmp quick_exit_57
@@ -3276,6 +3284,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call CONVERT_ajb_avb_srjb_srvb
    call end_line
    quick_exit_61:
    jmp quick_exit_62
@@ -3379,6 +3388,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
+   call CONVERT_w_ajb_avb
    call end_line
    quick_exit_67:
    jmp quick_exit_68
@@ -3402,6 +3412,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
+   call CONVERT_w_ajb_avb
    call end_line
    quick_exit_68:
    jmp quick_exit_69
@@ -3600,6 +3611,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_wreg_bojb_bovb_
    call end_line
    quick_exit_75:
    jmp quick_exit_76
@@ -3617,6 +3629,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_bojb_bovb
    call end_line
    quick_exit_76:
    jmp quick_exit_77
@@ -3665,6 +3678,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_reg_r_m_poslinkis
    call end_line
    quick_exit_78:
    jmp quick_exit_79
@@ -3697,6 +3711,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_reg_r_m_poslinkis
    call end_line
    quick_exit_79:
    jmp quick_exit_80
@@ -3743,6 +3758,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_80:
    jmp quick_exit_81
@@ -3760,6 +3776,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_bojb_bovb
    call end_line
    quick_exit_81:
    jmp quick_exit_82
@@ -3895,6 +3912,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_87:
    jmp quick_exit_88
@@ -3945,6 +3963,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_88:
    jmp quick_exit_89
@@ -3995,6 +4014,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_89:
    jmp quick_exit_90
@@ -4045,6 +4065,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_90:
    jmp quick_exit_91
@@ -4095,6 +4116,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_91:
    jmp quick_exit_92
@@ -4145,6 +4167,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_92:
    jmp quick_exit_93
@@ -4195,6 +4218,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_vw_mod_r_m_poslinkis
    call end_line
    quick_exit_93:
    jmp quick_exit_94
@@ -4297,6 +4321,7 @@ check_commands:
    ;--> Failed to find. Missing global variable. <--
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_xxx_mod_yyy_r_m_poslinkis
    call end_line
    quick_exit_97:
    jmp quick_exit_98
@@ -4391,9 +4416,8 @@ check_commands:
    shr al, 7
    mov w_, al
    call read_bytes
-   ;--> The variable 'portas--' in reformed byte: 'portas--' <--
-   ;--> Failed to find. Missing global variable. <--
-   call read_bytes
+   ;--> The variable 'portas--' cannot be decoded by this function <--
+   call CONVERT_w_portas
    call end_line
    quick_exit_102:
    jmp quick_exit_103
@@ -4416,9 +4440,8 @@ check_commands:
    shr al, 7
    mov w_, al
    call read_bytes
-   ;--> The variable 'portas--' in reformed byte: 'portas--' <--
-   ;--> Failed to find. Missing global variable. <--
-   call read_bytes
+   ;--> The variable 'portas--' cannot be decoded by this function <--
+   call CONVERT_w_portas
    call end_line
    quick_exit_103:
    jmp quick_exit_104
@@ -4436,6 +4459,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call CONVERT_pjb_pvb
    call end_line
    quick_exit_104:
    jmp quick_exit_105
@@ -4453,6 +4477,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call CONVERT_pjb_pvb
    call end_line
    quick_exit_105:
    jmp quick_exit_106
@@ -4471,6 +4496,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call CONVERT_ajb_avb_srjb_srvb
    call end_line
    quick_exit_106:
    jmp quick_exit_107
@@ -4673,6 +4699,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis_bojb_bovb
    call end_line
    quick_exit_115:
    jmp quick_exit_116
@@ -4718,6 +4745,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_116:
    jmp quick_exit_117
@@ -4763,6 +4791,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_117:
    jmp quick_exit_118
@@ -4808,6 +4837,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_118:
    jmp quick_exit_119
@@ -4853,6 +4883,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_119:
    jmp quick_exit_120
@@ -4898,6 +4929,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_120:
    jmp quick_exit_121
@@ -4943,6 +4975,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_121:
    jmp quick_exit_122
@@ -5084,6 +5117,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_128:
    jmp quick_exit_129
@@ -5129,6 +5163,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
    call end_line
    quick_exit_129:
    jmp quick_exit_130
@@ -5168,6 +5203,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_130:
    jmp quick_exit_131
@@ -5207,6 +5243,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_131:
    jmp quick_exit_132
@@ -5246,6 +5283,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_132:
    jmp quick_exit_133
@@ -5285,6 +5323,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_133:
    jmp quick_exit_134
@@ -5324,13 +5363,16 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_134:
    jmp quick_exit_135
    not_134:
    
-
+    call com_check_done
    quick_exit_135:
+
+
 
 RET
 

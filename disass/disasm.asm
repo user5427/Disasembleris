@@ -44,156 +44,156 @@
 
     double_byte_number db 0, 0
     binary_number db 0
-    number_in_ASCII db 0, 255 dup(?)
+    number_in_ASCII db 10 dup(0)
     register_index db 0
 
 ;lots_of_names:
-    wtf_n db "unknown", 0
-    mov_n db "MOV", 0
-    nop_n db "NOP", 0
-    add_n db "ADD", 0
-    push_n db "PUSH", 0
-    pop_n db "POP", 0
-    or_n db "OR", 0
-    adc_n db "ADC", 0
-    sbb_n db "SBB", 0
-    and_n db "AND", 0
-    daa_n db "DAA", 0
-    sub_n db "SUB", 0
-    das_n db "DAS", 0
-    xor_n db "XOR", 0
-    aaa_n db "AAA", 0
-    cmp_n db "CMP", 0
-    aas_n db "AAS", 0
-    inc_n db "INC", 0
-    dec_n db "DEC", 0
-    jo_n db "JO", 0
-    jno_n db "JNO", 0
-    jnae_n db "JNAE", 0
-    jb_n db "JB", 0
-    jc_n db "JC", 0
-    jae_n db "JAE", 0
-    jnb_n db "JNB", 0
-    jnc_n db "JNC", 0
-    je_n db "JE", 0
-    jz_n db "JZ", 0
-    jne_n db "JNE", 0
-    jnz_n db "JNZ", 0
-    jbe_n db "JBE", 0
-    jna_n db "JNA", 0
-    ja_n db "JA", 0
-    jnbe_n db "JNBE", 0
-    js_n db "JS", 0
-    jns_n db "JNS", 0
-    jp_n db "JP", 0
-    jpe_n db "JPE", 0
-    jnp_n db "JNP", 0
-    jpo_n db "JPO", 0
-    jl_n db "JL", 0
-    jnge_n db "JNGE", 0
-    jge_n db "JGE", 0
-    jnl_n db "JNL", 0
-    jle_n db "JLE", 0
-    jng_n db "JNG", 0
-    jg_n db "JG", 0
-    jnle_n db "JNLE", 0
-    test_n db "TEST", 0
-    xchg_n db "XCHG", 0
-    lea_n db "LEA", 0
-    cbv_n db "CBV", 0
-    cwd_n db "CWD", 0
-    call_n db "CALL", 0
-    wait_n db "WAIT", 0
-    pushf_n db "PUSHF", 0
-    popf_n db "POPF", 0
-    sahf_n db "SAHF", 0
-    lahf_n db "LAHF", 0
-    movsb_n db "MOVSB", 0
-    movsw_n db "MOVSW", 0
-    cmpsb_n db "CMPSB", 0
-    cmpsw_n db "CMPSW", 0
-    stosb_n db "STOSB", 0
-    stosw_n db "STOSW", 0
-    lodsb_n db "LODSB", 0
-    lodsw_n db "LODSW", 0
-    scasb_n db "SCASB", 0
-    scasw_n db "SCASW", 0
-    ret_n db "RET", 0
-    retn_n db "RETN", 0
-    les_n db "LES", 0
-    lds_n db "LDS", 0
-    retf_n db "RETF", 0
-    int_3_n db "INT 3", 0
-    int_n db "INT", 0
-    into_n db "INTO", 0
-    iret_n db "IRET", 0
-    rol_n db "ROL", 0
-    ror_n db "ROR", 0
-    rcl_n db "RCL", 0
-    rcr_n db "RCR", 0
-    shl_n db "SHL", 0
-    sal_n db "SAL", 0
-    shr_n db "SHR", 0
-    sar_n db "SAR", 0
-    aam_n db "AAM", 0
-    aad_n db "AAD", 0
-    xlat_n db "XLAT", 0
-    esc_n db "ESC", 0
-    loopne_n db "LOOPNE", 0
-    loopnz_n db "LOOPNZ", 0
-    loope_n db "LOOPE", 0
-    loopz_n db "LOOPZ", 0
-    loop_n db "LOOP", 0
-    jcxz_n db "JCXZ", 0
-    in_n db "IN", 0
-    out_n db "OUT", 0
-    jmp_n db "JMP", 0
-    lock_n db "LOCK", 0
-    repnz_n db "REPNZ", 0
-    repne_n db "REPNE", 0
-    rep_n db "REP", 0
-    repz_n db "REPZ", 0
-    repe_n db "REPE", 0
-    hlt_n db "HLT", 0
-    cmc_n db "CMC", 0
-    not_n db "NOT", 0
-    neg_n db "NEG", 0
-    mul_n db "MUL", 0
-    imul_n db "IMUL", 0
-    div_n db "DIV", 0
-    idiv_n db "IDIV", 0
-    clc_n db "CLC", 0
-    stc_n db "STC", 0
-    cli_n db "CLI", 0
-    sti_n db "STI", 0
-    cld_n db "CLD", 0
-    std_n db "STD", 0
+    wtf_n db "unknown", 24h   
+    mov_n db "MOV", 24h   
+    nop_n db "NOP", 24h
+    add_n db "ADD", 24h
+    push_n db "PUSH", 24h
+    pop_n db "POP", 24h
+    or_n db "OR", 24h
+    adc_n db "ADC", 24h
+    sbb_n db "SBB", 24h
+    and_n db "AND", 24h
+    daa_n db "DAA", 24h
+    sub_n db "SUB", 24h
+    das_n db "DAS", 24h
+    xor_n db "XOR", 24h
+    aaa_n db "AAA", 24h
+    cmp_n db "CMP", 24h
+    aas_n db "AAS", 24h
+    inc_n db "INC", 24h
+    dec_n db "DEC", 24h
+    jo_n db "JO", 24h
+    jno_n db "JNO", 24h
+    jnae_n db "JNAE", 24h
+    jb_n db "JB", 24h
+    jc_n db "JC", 24h
+    jae_n db "JAE", 24h
+    jnb_n db "JNB", 24h
+    jnc_n db "JNC", 24h
+    je_n db "JE", 24h
+    jz_n db "JZ", 24h
+    jne_n db "JNE", 24h
+    jnz_n db "JNZ", 24h
+    jbe_n db "JBE", 24h
+    jna_n db "JNA", 24h
+    ja_n db "JA", 24h
+    jnbe_n db "JNBE", 24h
+    js_n db "JS", 24h
+    jns_n db "JNS", 24h
+    jp_n db "JP", 24h
+    jpe_n db "JPE", 24h
+    jnp_n db "JNP", 24h
+    jpo_n db "JPO", 24h
+    jl_n db "JL", 24h
+    jnge_n db "JNGE", 24h
+    jge_n db "JGE", 24h
+    jnl_n db "JNL", 24h
+    jle_n db "JLE", 24h
+    jng_n db "JNG", 24h
+    jg_n db "JG", 24h
+    jnle_n db "JNLE", 24h
+    test_n db "TEST", 24h
+    xchg_n db "XCHG", 24h
+    lea_n db "LEA", 24h
+    cbv_n db "CBV", 24h
+    cwd_n db "CWD", 24h
+    call_n db "CALL", 24h
+    wait_n db "WAIT", 24h
+    pushf_n db "PUSHF", 24h
+    popf_n db "POPF", 24h
+    sahf_n db "SAHF", 24h
+    lahf_n db "LAHF", 24h
+    movsb_n db "MOVSB", 24h
+    movsw_n db "MOVSW", 24h
+    cmpsb_n db "CMPSB", 24h
+    cmpsw_n db "CMPSW", 24h
+    stosb_n db "STOSB", 24h
+    stosw_n db "STOSW", 24h
+    lodsb_n db "LODSB", 24h
+    lodsw_n db "LODSW", 24h
+    scasb_n db "SCASB", 24h
+    scasw_n db "SCASW", 24h
+    ret_n db "RET", 24h
+    retn_n db "RETN", 24h
+    les_n db "LES", 24h
+    lds_n db "LDS", 24h
+    retf_n db "RETF", 24h
+    int_3_n db "INT 3", 24h
+    int_n db "INT", 24h
+    into_n db "INTO", 24h
+    iret_n db "IRET", 24h
+    rol_n db "ROL", 24h
+    ror_n db "ROR", 24h
+    rcl_n db "RCL", 24h
+    rcr_n db "RCR", 24h
+    shl_n db "SHL", 24h
+    sal_n db "SAL", 24h
+    shr_n db "SHR", 24h
+    sar_n db "SAR", 24h
+    aam_n db "AAM", 24h
+    aad_n db "AAD", 24h
+    xlat_n db "XLAT", 24h
+    esc_n db "ESC", 24h
+    loopne_n db "LOOPNE", 24h
+    loopnz_n db "LOOPNZ", 24h
+    loope_n db "LOOPE", 24h
+    loopz_n db "LOOPZ", 24h
+    loop_n db "LOOP", 24h
+    jcxz_n db "JCXZ", 24h
+    in_n db "IN", 24h
+    out_n db "OUT", 24h
+    jmp_n db "JMP", 24h
+    lock_n db "LOCK", 24h
+    repnz_n db "REPNZ", 24h
+    repne_n db "REPNE", 24h
+    rep_n db "REP", 24h
+    repz_n db "REPZ", 24h
+    repe_n db "REPE", 24h
+    hlt_n db "HLT", 24h
+    cmc_n db "CMC", 24h
+    not_n db "NOT", 24h
+    neg_n db "NEG", 24h
+    mul_n db "MUL", 24h
+    imul_n db "IMUL", 24h
+    div_n db "DIV", 24h
+    idiv_n db "IDIV", 24h
+    clc_n db "CLC", 24h
+    stc_n db "STC", 24h
+    cli_n db "CLI", 24h
+    sti_n db "STI", 24h
+    cld_n db "CLD", 24h
+    std_n db "STD", 24h
 
     ; registrai
-    ax_n db "AX", 0
-    al_n db "AL", 0
-    ah_n db "AH", 0
-    bx_n db "BX", 0
-    bl_n db "BL", 0
-    bh_n db "BH", 0
-    cx_n db "CX", 0
-    cl_n db "CL", 0
-    ch_n db "CH", 0
-    dx_n db "DX", 0
-    dl_n db "DL", 0
-    dh_n db "DH", 0
+    ax_n db "AX", 24h
+    al_n db "AL", 24h
+    ah_n db "AH", 24h
+    bx_n db "BX", 24h
+    bl_n db "BL", 24h
+    bh_n db "BH", 24h
+    cx_n db "CX", 24h
+    cl_n db "CL", 24h
+    ch_n db "CH", 24h
+    dx_n db "DX", 24h
+    dl_n db "DL", 24h
+    dh_n db "DH", 24h
 
     ; segmento registrai
-    es_n db "ES", 0
-    cs_n db "CS", 0
-    ss_n db "SS", 0
-    ds_n db "DS", 0
+    es_n db "ES", 24h
+    cs_n db "CS", 24h
+    ss_n db "SS", 24h
+    ds_n db "DS", 24h
 
     ; kiti registrai
-    si_n db "SI", 0
-    di_n db "DI", 0
-    bp_n db "BP", 0
-    sp_n db "SP", 0
+    si_n db "SI", 24h
+    di_n db "DI", 24h
+    bp_n db "BP", 24h
+    sp_n db "SP", 24h
 
 
 .code
@@ -218,6 +218,11 @@ start:
 ; -- The end.
 com_check_done:
     mov first_byte_available, 0
+RET
+
+debug:
+    push ax
+    pop ax
 RET
 
 loop_over_bytes:
@@ -528,7 +533,8 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
 
     copy_values:
     mov al, [SI]
-    cmp al, 0   ; use 0 to detect string end
+
+    cmp al, 24h   ; use 24h to detect string end
     je exit_copy_loop
 
     xor bx, bx
@@ -563,6 +569,8 @@ end_line: ; add endl to line and output line contents to the write buffer
     inc SI
     inc DI
     loop copy_endl
+
+    add line_length, 3
 
     call write_to_buff
 
@@ -703,18 +711,17 @@ convert_to_decimal:       ; takes number in the binary_number
     push dx
     push cx
     push bx
-    
-    xor dx, dx
+
+
     mov SI, offset double_byte_number
     mov dl, [SI]      ; in reality al is actually --00
     mov dh, [SI + 1]  ; while ah is for 00--
-
     mov DI, offset number_in_ASCII               
     
     xor cx, cx
-    mov ax, dx
+    mov ax, dx                  ; move the number from dx to register ax
     mov bl, [DI]                ; the lenght of numbers_in_binary
-
+    xor bx, bx
     ASCII_values_loop:   
     inc bl
     push bx
@@ -783,13 +790,17 @@ convert_to_decimal:       ; takes number in the binary_number
     exi_loop:
 
     ; add the $ symbol to number
-    mov DI, offset ASCII_values_loop
-    mov bx, [DI] ; the length of number
+    call debug
+    mov DI, offset number_in_ASCII
+    xor bx, bx
+    mov bl, [DI] ; the length of number
     mov al, 24h
+    add bx, 1
     mov [DI + bx], al ; move the $ symbol
-    
+
     mov ptr_, DI
     add ptr_, 1
+    
     call write_to_line
 
     pop bx
@@ -1371,24 +1382,29 @@ RET
 
 
 CONVERT_wreg_bojb_bovb_:
-    ;mov register_index, reg_
+    mov al, reg_
+    mov register_index, al
+
+    call add_space_line
     call full_reg_detector
+    call add_comma_line
+    call add_space_line
     call reset_double_byte_number
     cmp w_, 0
     jne wordc
-        call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number], al
         call convert_to_decimal
+        call read_bytes
 ret
     wordc:
-        call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number + 1], al
         call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number], al
         call convert_to_decimal
+        call read_bytes
 
 RET
 
@@ -1429,10 +1445,10 @@ RET
 CONVERT_numeris:
     push ax
     xor ax, ax
-    call reset_double_byte_number
     mov al, com_num_
-    mov double_byte_number, al
-    call convert_to_decimal
+    mov binary_number, al
+    call add_space_line
+    call number_to_hex
     pop ax
 RET
 

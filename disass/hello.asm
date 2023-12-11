@@ -10,13 +10,8 @@ ORG 0100h
 
 start:
 
-    mov ah, 09h             ; http://www.ctyme.com/intr/rb-2562.htm
-    mov dx, OFFSET hello
-    int 21h
 
-    mov ax, 4C00h           ; http://www.ctyme.com/intr/rb-2974.htm
-    int 21h
+    dec ah
 
-hello:  db "Hello World", '$'
-
+   
 END start

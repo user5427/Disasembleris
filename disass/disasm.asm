@@ -562,7 +562,7 @@ end_line: ; add endl to line and output line contents to the write buffer
     xor bx, bx
     mov bl, line_length ; change offset line_length -> line_length
 
-    mov cx, 3
+    mov cx, 2
     copy_endl:
     mov al, [SI]
     mov [DI + bx], al
@@ -570,7 +570,7 @@ end_line: ; add endl to line and output line contents to the write buffer
     inc DI
     loop copy_endl
 
-    add line_length, 3
+    add line_length, 2
 
     call write_to_buff
 
@@ -595,27 +595,47 @@ RET
 
 add_space_line:
     mov bx, offset line
-    mov [bx + line_length], ' '
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, ' '
+    mov [bx], al
     inc line_length
 RET
 add_left_bracket:
     mov bx, offset line
-    mov [bx + line_length], '['
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, '['
+    mov [bx], al
     inc line_length
 RET
 add_right_bracket:
     mov bx, offset line
-    mov [bx + line_length], ']'
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, ']'
+    mov [bx], al
     inc line_length
 RET
 add_plus:
     mov bx, offset line
-    mov [bx + line_length], '+'
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, '+'
+    mov [bx], al
     inc line_length
 RET
 add_comma_line:
     mov bx, offset line
-    mov [bx + line_length], ','
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, ','
+    mov [bx], al
     inc line_length
     call add_space_line
 RET
@@ -634,18 +654,23 @@ number_to_hex:
     push cx
     push dx
 
-    mov al, binary_number
+    mov dl, binary_number
 
-    mov cl, al
+    mov cl, dl
     shr cl, 4
     call convert_half_byte_to_HEX
-    mov cl, al
+    mov cl, dl
     shl cl, 4
     shr cl, 4
     call convert_half_byte_to_HEX
 
+    xor bx, bx
     mov bx, offset line
-    mov [bx + line_length], 'h'
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'h'
+    mov [bx], al
     inc line_length
 
     pop dx
@@ -661,27 +686,35 @@ double_byte_number_to_hex:
 
     mov SI, offset double_byte_number
 
-    mov al, [SI]      ; in reality al is actually --00
+
+    
     mov ah, [SI + 1]  ; while ah is for 00--
-
     mov cl, ah
     shr cl, 4
     call convert_half_byte_to_HEX
+    mov ah, [SI + 1]  ; while ah is for 00--
     mov cl, ah
     shl cl, 4
     shr cl, 4
     call convert_half_byte_to_HEX
 
+    mov al, [SI]      ; in reality al is actually --00
     mov cl, al
     shr cl, 4
     call convert_half_byte_to_HEX
+    mov al, [SI]      ; in reality al is actually --00
     mov cl, al
     shl cl, 4
     shr cl, 4
     call convert_half_byte_to_HEX
 
+    xor bx, bx
     mov bx, offset line
-    mov [bx + line_length], 'h'
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'h'
+    mov [bx], al
     inc line_length
 
     pop dx
@@ -701,8 +734,13 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     add cl, 48
 
     write_symbol:
+    xor ch, ch
+    xor bx, bx
     mov bx, offset line
-    mov [bx + line_length], cl
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov [bx], cl
     inc line_length
     
 RET
@@ -1162,6 +1200,7 @@ RET
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
+    call add_space_line
     push ax
         cmp d_, 0
         jne back
@@ -1169,7 +1208,6 @@ CONVERT_dw_mod_reg_r_m_poslinki:
             mov register_index, al
             call full_reg_detector
             call add_comma_line
-            call add_space_line
             mov al, r_m_
             mov register_index, al
             call full_r_m_detector
@@ -1180,7 +1218,6 @@ CONVERT_dw_mod_reg_r_m_poslinki:
             mov register_index, al
             call full_r_m_detector
             call add_comma_line
-            call add_space_line
             mov al, r_m_
             mov register_index, al
             call full_reg_detector
@@ -1388,7 +1425,6 @@ CONVERT_wreg_bojb_bovb_:
     call add_space_line
     call full_reg_detector
     call add_comma_line
-    call add_space_line
     call reset_double_byte_number
     cmp w_, 0
     jne wordc
@@ -1540,6 +1576,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_0:
    jmp quick_exit_1
@@ -1655,6 +1692,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_4:
    jmp quick_exit_5
@@ -1722,6 +1760,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_6:
    jmp quick_exit_7
@@ -1789,6 +1828,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_8:
    jmp quick_exit_9
@@ -1856,6 +1896,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_10:
    jmp quick_exit_11
@@ -1963,6 +2004,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_14:
    jmp quick_exit_15
@@ -2046,6 +2088,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_17:
    jmp quick_exit_18
@@ -2129,6 +2172,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_20:
    jmp quick_exit_21
@@ -2568,7 +2612,7 @@ check_commands:
    je yes_43_1
    jmp not_43
    yes_43_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -2620,7 +2664,7 @@ check_commands:
    je yes_44_1
    jmp not_44
    yes_44_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 1
@@ -2672,7 +2716,7 @@ check_commands:
    je yes_45_1
    jmp not_45
    yes_45_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 2
@@ -2724,7 +2768,7 @@ check_commands:
    je yes_46_1
    jmp not_46
    yes_46_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 3
@@ -2776,7 +2820,7 @@ check_commands:
    je yes_47_1
    jmp not_47
    yes_47_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 4
@@ -2828,7 +2872,7 @@ check_commands:
    je yes_48_1
    jmp not_48
    yes_48_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 5
@@ -2880,7 +2924,7 @@ check_commands:
    je yes_49_1
    jmp not_49
    yes_49_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 6
@@ -2932,7 +2976,7 @@ check_commands:
    je yes_50_1
    jmp not_50
    yes_50_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 7
@@ -3086,6 +3130,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_dw_mod_reg_r_m_poslinki
    call end_line
    quick_exit_53:
    jmp quick_exit_54
@@ -3106,7 +3151,7 @@ check_commands:
    je yes_54_1
    jmp not_54
    yes_54_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 7
    cmp al, 0
@@ -3189,7 +3234,7 @@ check_commands:
    je yes_56_1
    jmp not_56
    yes_56_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -3747,7 +3792,7 @@ check_commands:
    je yes_80_1
    jmp not_80
    yes_80_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -3897,7 +3942,7 @@ check_commands:
    je yes_87_1
    jmp not_87
    yes_87_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -3948,7 +3993,7 @@ check_commands:
    je yes_88_1
    jmp not_88
    yes_88_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 1
@@ -3999,7 +4044,7 @@ check_commands:
    je yes_89_1
    jmp not_89
    yes_89_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 2
@@ -4050,7 +4095,7 @@ check_commands:
    je yes_90_1
    jmp not_90
    yes_90_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 3
@@ -4101,7 +4146,7 @@ check_commands:
    je yes_91_1
    jmp not_91
    yes_91_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 4
@@ -4152,7 +4197,7 @@ check_commands:
    je yes_92_1
    jmp not_92
    yes_92_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 5
@@ -4203,7 +4248,7 @@ check_commands:
    je yes_93_1
    jmp not_93
    yes_93_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 7
@@ -4253,7 +4298,7 @@ check_commands:
    je yes_94_1
    jmp not_94
    yes_94_1:
-   mov al, byte_
+   mov al, next_byte
    cmp al, 10
    je yes_94_2
    jmp not_94
@@ -4280,7 +4325,7 @@ check_commands:
    je yes_95_1
    jmp not_95
    yes_95_1:
-   mov al, byte_
+   mov al, next_byte
    cmp al, 10
    je yes_95_2
    jmp not_95
@@ -4688,7 +4733,7 @@ check_commands:
    je yes_115_1
    jmp not_115
    yes_115_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -4735,7 +4780,7 @@ check_commands:
    je yes_116_1
    jmp not_116
    yes_116_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 2
@@ -4781,7 +4826,7 @@ check_commands:
    je yes_117_1
    jmp not_117
    yes_117_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 3
@@ -4827,7 +4872,7 @@ check_commands:
    je yes_118_1
    jmp not_118
    yes_118_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 4
@@ -4873,7 +4918,7 @@ check_commands:
    je yes_119_1
    jmp not_119
    yes_119_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 5
@@ -4919,7 +4964,7 @@ check_commands:
    je yes_120_1
    jmp not_120
    yes_120_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 6
@@ -4965,7 +5010,7 @@ check_commands:
    je yes_121_1
    jmp not_121
    yes_121_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 7
@@ -5107,7 +5152,7 @@ check_commands:
    je yes_128_1
    jmp not_128
    yes_128_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 0
@@ -5153,7 +5198,7 @@ check_commands:
    je yes_129_1
    jmp not_129
    yes_129_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 1
@@ -5198,7 +5243,7 @@ check_commands:
    je yes_130_1
    jmp not_130
    yes_130_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 2
@@ -5238,7 +5283,7 @@ check_commands:
    je yes_131_1
    jmp not_131
    yes_131_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 3
@@ -5278,7 +5323,7 @@ check_commands:
    je yes_132_1
    jmp not_132
    yes_132_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 4
@@ -5318,7 +5363,7 @@ check_commands:
    je yes_133_1
    jmp not_133
    yes_133_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 5
@@ -5358,7 +5403,7 @@ check_commands:
    je yes_134_1
    jmp not_134
    yes_134_1:
-   mov al, byte_
+   mov al, next_byte
    shl al, 2
    shr al, 5
    cmp al, 6
@@ -5385,11 +5430,9 @@ check_commands:
    jmp quick_exit_135
    not_134:
    
-    call com_check_done
+
+   call com_check_done
    quick_exit_135:
-
-
-
 RET
 
 end start

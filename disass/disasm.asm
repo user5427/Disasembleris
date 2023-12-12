@@ -42,7 +42,7 @@
     r_m_ db 0
     com_num_ db 0
 
-    double_byte_number db 0, 0
+    double_byte_number db 5 dup(0)
     binary_number db 0
     number_in_ASCII db 10 dup(0)
     register_index db 0
@@ -639,6 +639,16 @@ add_comma_line:
     inc line_length
     call add_space_line
 RET
+add_h:
+    mov bx, offset line
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'h'
+    mov [bx], al
+    inc line_length
+RET
+
 ; xddd doble xdddd
 reset_double_byte_number:
     push ax
@@ -664,14 +674,7 @@ number_to_hex:
     shr cl, 4
     call convert_half_byte_to_HEX
 
-    xor bx, bx
-    mov bx, offset line
-    xor ax, ax
-    mov al, line_length
-    add bx, ax
-    mov al, 'h'
-    mov [bx], al
-    inc line_length
+    call add_h
 
     pop dx
     pop cx
@@ -708,14 +711,7 @@ double_byte_number_to_hex:
     shr cl, 4
     call convert_half_byte_to_HEX
 
-    xor bx, bx
-    mov bx, offset line
-    xor ax, ax
-    mov al, line_length
-    add bx, ax
-    mov al, 'h'
-    mov [bx], al
-    inc line_length
+    call add_h
 
     pop dx
     pop cx
@@ -754,7 +750,9 @@ convert_to_decimal:       ; takes number in the binary_number
     mov SI, offset double_byte_number
     mov dl, [SI]      ; in reality al is actually --00
     mov dh, [SI + 1]  ; while ah is for 00--
-    mov DI, offset number_in_ASCII               
+    mov DI, offset number_in_ASCII            
+    mov al, 0   
+    mov [DI], al ; reset digit count 
     
     xor cx, cx
     mov ax, dx                  ; move the number from dx to register ax
@@ -794,33 +792,30 @@ convert_to_decimal:       ; takes number in the binary_number
 
     exit_loop:
         
-    mov dl, bl                  ; save a copy
-    mov ax, [DI]                ; save the previous last position             
-    mov ah, 0                   ; remove the senior byte
     mov [DI], bl                ; save the bx value
-    add al, 1                   ; get the begining of element
-    
-    mov cl, dl
-    sub cl, al                  ; get how many times to loop
-    
+    xor cx, cx
+    mov cl, [DI]
+
+    xor bx, bx
+    mov SI, offset number_in_ASCII
+    mov DI, SI
+    add SI, cx
+    inc DI
+
+    call debug
     flip_loop:                  ; change the number from 4321 to its real value 1234                              
-                                ; al - the left element
-                                ; dl - the right element                    
-    mov bl, al
-    mov ah, [DI + bx]           ; get the left element
-    mov bl, dl
-    mov dh, [DI + bx]           ; get the right element  
-    cmp ah, dh                  ; compare these two values
-    je skip                     ; if they are the same, skip then
     
-    mov bl, al                  ; flip the two numbers in the array
-    mov [DI + bx], dh   
-    mov bl, dl
-    mov [DI + bx], ah
-    
-    skip:
-    inc al
-    dec dl
+    cmp SI, DI
+    jbe exi_loop
+
+    mov dl, [DI]
+    mov dh, [SI]
+
+    mov [SI], dl
+    mov [DI], dh
+
+    inc DI
+    dec SI
     
     jcxz exi_loop     
     loop flip_loop    
@@ -828,7 +823,6 @@ convert_to_decimal:       ; takes number in the binary_number
     exi_loop:
 
     ; add the $ symbol to number
-    call debug
     mov DI, offset number_in_ASCII
     xor bx, bx
     mov bl, [DI] ; the length of number
@@ -1003,8 +997,8 @@ find_byte_register: ; use register_index as input
     pop bx
     pop ax
 RET
-find_effective_address_registers: ; use register_index as input, double_byte_number when there is direct address and mod_ for changing between address and BP reg
-    cmp reg_, 0
+find_effective_address_registers: ; use register_index as input, and when there is direct address and mod_ for changing between address and BP reg
+    cmp register_index, 0
     jne not_BX_SI
     mov ptr_, offset bx_n
     call write_to_line
@@ -1015,7 +1009,7 @@ find_effective_address_registers: ; use register_index as input, double_byte_num
     not_BX_SI:
 
 
-    cmp reg_, 1
+    cmp register_index, 1
     jne not_BX_DI
     mov ptr_, offset bx_n
     call write_to_line
@@ -1025,7 +1019,7 @@ find_effective_address_registers: ; use register_index as input, double_byte_num
     jmp end_checking_address_reg
     not_BX_DI:
 
-    cmp reg_, 2
+    cmp register_index, 2
     jne not_BP_SI
     mov ptr_, offset bp_n
     call write_to_line
@@ -1035,7 +1029,7 @@ find_effective_address_registers: ; use register_index as input, double_byte_num
     jmp end_checking_address_reg
     not_BP_SI:
 
-    cmp reg_, 3
+    cmp register_index, 3
     jne not_BP_DI
     mov ptr_, offset bp_n
     call write_to_line
@@ -1045,24 +1039,31 @@ find_effective_address_registers: ; use register_index as input, double_byte_num
     jmp end_checking_address_reg
     not_BP_DI:
 
-    cmp reg_, 4
+    cmp register_index, 4
     jne not_SI_address
     mov ptr_, offset si_n
     call write_to_line
     jmp end_checking_address_reg
     not_SI_address:
 
-    cmp reg_, 5
+    cmp register_index, 5
     jne not_DI_address
     mov ptr_, offset di_n
     call write_to_line
     jmp end_checking_address_reg
     not_DI_address:
 
-    cmp reg_, 6
+    cmp register_index, 6
     jne not_address
     cmp mod_, 0
     jne second_column_BP_offset
+    call reset_double_byte_number
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     call double_byte_number_to_hex ; FIXME neveiks, reik double_byte_number skaiciu nurodyti
     jmp end_checking_address_reg
 
@@ -1072,7 +1073,7 @@ find_effective_address_registers: ; use register_index as input, double_byte_num
     jmp end_checking_address_reg
     not_address:
 
-    cmp reg_, 7
+    cmp register_index, 7
     jne bx_as_address
     mov ptr_, offset bx_n
     call write_to_line
@@ -1141,21 +1142,23 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     jmp exit_poslinkis_function
 
     one_byte_poslinkis:
-    call read_bytes
+
     mov al, byte_
     mov binary_number, al
+    call read_bytes
     call number_to_hex
     jmp exit_poslinkis_function
 
 
     two_byte_poslinkis:
     mov DI, offset double_byte_number
-    call read_bytes
+
     mov al, byte_
     mov [DI], al
     call read_bytes
     mov ah, byte_
     mov [DI + 1], ah
+    call read_bytes
     call double_byte_number_to_hex
     jmp exit_poslinkis_function
 
@@ -1170,7 +1173,7 @@ find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'do
     call add_left_bracket
     call find_effective_address_registers
     cmp mod_, 0
-    jne skip_poslinkis
+    je skip_poslinkis
     call add_plus
     call find_poslinkis
     skip_poslinkis:
@@ -1190,6 +1193,8 @@ RET
 full_r_m_detector: ; takes mod_, w_ and register_index as input
     cmp mod_, 3
     jne not_reg
+    mov al, r_m_
+    mov register_index, al
     call full_reg_detector
     jmp skip_effective_address
     not_reg:
@@ -1204,50 +1209,52 @@ CONVERT_dw_mod_reg_r_m_poslinki:
     push ax
         cmp d_, 0
         jne back
-            mov al, reg_
-            mov register_index, al
-            call full_reg_detector
-            call add_comma_line
             mov al, r_m_
             mov register_index, al
             call full_r_m_detector
+            call add_comma_line
+            mov al, reg_
+            mov register_index, al
+            call full_reg_detector
+            
         pop ax
         ret
         back:
             mov al, reg_
             mov register_index, al
-            call full_r_m_detector
+            call full_reg_detector
             call add_comma_line
             mov al, r_m_
             mov register_index, al
-            call full_reg_detector
+            call full_r_m_detector
     pop ax
 RET
 
 
 CONVERT_w_bojb_bovb:
     push ax
+    call add_space_line
+    call reset_double_byte_number
+
     cmp w_, 1
     je two_bytes_num
     cmp w_, 0
     je one_byte_num
 
     one_byte_num:
-    call read_bytes
     mov al, byte_
-    call reset_double_byte_number
     mov double_byte_number, al
     call convert_to_decimal
+    call read_bytes
     jmp exit_bojb_function
 
     two_bytes_num:
-    mov DI, offset double_byte_number
-    call read_bytes
     mov al, byte_
-    mov [DI], al
+    mov [byte ptr double_byte_number], al
     call read_bytes
     mov ah, byte_
-    mov [DI + 1], ah
+    mov [byte ptr double_byte_number + 1], ah
+    call read_bytes
     call convert_to_decimal
     jmp exit_bojb_function
 
@@ -1266,6 +1273,7 @@ RET
 
 CONVERT_reg: ; take reg_ variable and convert it to word sized register
     push ax
+    call add_space_line
     mov al, reg_
     mov register_index, al
     call find_word_register
@@ -1274,6 +1282,7 @@ RET
 
 
 CONVERT_poslinkis: ; this one is one byte only!
+    call add_space_line
     mov mod_, 1 ; using the mod_, tell poslinkis function to only get one byte and convert it to hex number
     call find_poslinkis
 RET
@@ -1291,13 +1300,13 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     je pab
     cmp s_, 1
     jne ba
-    call get_byte
-    mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
-    ba:
-    call get_byte
     mov al, byte_
     mov [byte ptr double_byte_number], al
+    ba:
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     pab:
     call convert_to_decimal
     pop ax
@@ -1377,19 +1386,20 @@ push ax
     call reset_double_byte_number
     call read_bytes
     mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
+    mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
-    mov [byte ptr double_byte_number], al
+    mov [byte ptr double_byte_number + 1], al
     call convert_to_decimal
     call add_comma_line
     call add_space_line
     call read_bytes
     mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
+    mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
-    mov [byte ptr double_byte_number], al
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     call convert_to_decimal
     pop ax
 RET
@@ -1397,23 +1407,26 @@ RET
 
 CONVERT_w_ajb_avb:
     push ax
-    cmp w_, 0
+    call add_left_bracket
     call reset_double_byte_number
+    cmp w_, 0
     jne big
-        call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number], al
+        call read_bytes
         call convert_to_decimal
+    call add_right_bracket
     pop ax
 ret
     big:
+        mov al, byte_
+        mov[byte ptr double_byte_number], al
         call read_bytes
         mov al, byte_
-        mov[byte ptr double_byte_number + 1], al
+        mov [byte ptr double_byte_number + 1], al
         call read_bytes
-        mov al, byte_
-        mov [byte ptr double_byte_number], al
         call convert_to_decimal  
+    call add_right_bracket
     pop ax
 RET
 
@@ -1430,34 +1443,35 @@ CONVERT_wreg_bojb_bovb_:
     jne wordc
         mov al, byte_
         mov [byte ptr double_byte_number], al
-        call convert_to_decimal
         call read_bytes
+        call convert_to_decimal
 ret
     wordc:
         mov al, byte_
-        mov [byte ptr double_byte_number + 1], al
+        mov [byte ptr double_byte_number], al
         call read_bytes
         mov al, byte_
-        mov [byte ptr double_byte_number], al
-        call convert_to_decimal
+        mov [byte ptr double_byte_number + 1], al
         call read_bytes
-
+        call convert_to_decimal
 RET
 
 
 CONVERT_bojb_bovb:
+    call add_space_line
+    mov al, byte_
+    mov[byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
-    mov[byte ptr double_byte_number + 1], al
+    mov [byte ptr double_byte_number + 1], al
     call read_bytes
-    mov al, byte_
-    mov [byte ptr double_byte_number], al
     call convert_to_decimal
 RET
 
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     push ax
+    call add_space_line
     call reset_double_byte_number
     mov al, r_m_
     mov register_index, al
@@ -1466,13 +1480,13 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     call add_space_line
     cmp w_, 1
     jne smol
-    call get_byte
-    mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
-    smol:
-    call get_byte
     mov al, byte_
     mov [byte ptr double_byte_number], al
+    smol:
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     call convert_to_decimal
     pop ax
 RET
@@ -1512,13 +1526,13 @@ CONVERT_w_portas:
     call reset_double_byte_number
     cmp w_, 1
     jne smal
-    call get_byte
-    mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
-    smal:
-    call get_byte
     mov al, byte_
     mov [byte ptr double_byte_number], al
+    smal:
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     call convert_to_decimal
     pop ax
 RET
@@ -1531,10 +1545,27 @@ RET
 
 CONVERT_w_mod_r_m_poslinkis:
     push ax
+    call add_space_line
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
     pop ax
+RET
+
+CONVERT_reg_bef_adr:
+    call add_space_line
+    mov ptr_, offset ax_n
+    call write_to_line
+    call add_comma_line
+    call CONVERT_w_ajb_avb
+RET
+
+CONVERT_reg_aft_adr:
+    call add_space_line
+    call CONVERT_w_ajb_avb
+    call add_comma_line
+    mov ptr_, offset ax_n
+    call write_to_line
 RET
 
 ;
@@ -3449,7 +3480,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
-   call CONVERT_w_ajb_avb
+   call CONVERT_reg_bef_adr
    call end_line
    quick_exit_67:
    jmp quick_exit_68
@@ -3473,7 +3504,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
-   call CONVERT_w_ajb_avb
+   call CONVERT_reg_aft_adr
    call end_line
    quick_exit_68:
    jmp quick_exit_69
@@ -5433,6 +5464,7 @@ check_commands:
 
    call com_check_done
    quick_exit_135:
+
 RET
 
 end start

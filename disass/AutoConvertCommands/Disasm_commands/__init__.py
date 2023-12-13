@@ -391,7 +391,11 @@ def command_detection(output_file):
         output_lines.append('\n')
         command_number += 1
 
-    output_lines.append(f"call com_check_done")
+    output_lines.append(f";call com_check_done")
+    output_lines.append(f"mov ptr_, offset wtf_n")
+    output_lines.append(f"call write_to_line")
+    output_lines.append(f"call end_line")
+    output_lines.append(f"call read_bytes")
     output_lines.append(f"quick_exit_{str(command_number)}:")
     f = open(output_file, "w")
     for line in output_lines:

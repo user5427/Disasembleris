@@ -1538,11 +1538,13 @@ CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
     call add_comma_line
     call add_space_line
     call reset_double_byte_number
+    xor bx, bx
+    mov bl, line_length
     mov al, 'c'
-    mov [byte ptr offset line + line_length], al
+    mov [byte ptr offset line + bx], al
     inc line_length
     mov al, 'x'
-    mov [byte ptr offset line + line_length], al
+    mov [byte ptr offset line + bx], al
     inc line_length
 
     exit_v:
@@ -5505,7 +5507,12 @@ check_commands:
    
 
    call com_check_done
+   ;mov ptr_, offset wtf_n
+   ;call write_to_line
+   ;call end_line
+   ;call read_bytes
    quick_exit_135:
+
 RET
 
 

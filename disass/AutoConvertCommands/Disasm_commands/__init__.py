@@ -309,7 +309,7 @@ def command_detection(output_file):
                     output_lines.append(f"jmp not_{str(command_number)}")
                     output_lines.append("yes_" + str(command_number) + "_" + str(spec_jump) + ":")
                     spec_jump += 1
-                    temp_line = byte_commands(byte, "byte_", spec_jump)
+                    temp_line = byte_commands(byte, "next_byte", spec_jump)
                     output_lines += temp_line[0]
                     spec_jump = temp_line[1]
 
@@ -376,7 +376,7 @@ def command_detection(output_file):
 
         funct = manual_functions[command_number]
         if not funct == '-':
-            commands.append(funct)
+            output_lines.append(f"call {funct}")
 
         # execute functions based on what variables were used
         for command in commands:

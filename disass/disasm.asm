@@ -1455,9 +1455,33 @@ RET
 
 CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
     push ax
+    mov al, v_
+    cmp al, 0
+    jne c_poslinkis
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
+    call add_comma_line
+    call add_space_line
+    call reset_double_byte_number
+    mov al, 1
+    mov [byte ptr double_byte_number], al
+    call convert_to_decimal
+    jmp exit_v
+    c_poslinkis:
+    mov al, r_m_
+    call full_reg_detector
+    call add_comma_line
+    call add_space_line
+    call reset_double_byte_number
+    mov al, 'c'
+    mov [byte ptr offset line + line_length], al
+    inc line_length
+    mov al, 'x'
+    mov [byte ptr offset line + line_length], al
+    inc line_length
+
+    exit_v:
     pop ax
 RET
 

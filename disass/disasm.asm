@@ -416,7 +416,6 @@ read_bytes:
     skip_reseting_cx:
 
     get_bytes_loop:
-
     mov next_byte_available, 0
     mov al, next_byte
     mov byte_, al
@@ -436,7 +435,6 @@ get_byte:
     push bx
     push cx
     push dx
-    call test_print
 
     mov al, read_symbols
     cmp index, al
@@ -459,8 +457,10 @@ get_byte:
     jmp skip_file_end_indicator
 
     file_end_reached:
+    call test_print
     mov file_end, 1
-    dec first_byte_available
+    ;dec first_byte_available ; pasirodo baisiai sunkiai tam durnam assembleriui sumazinti sita vienu skaiciu tai tiesiog movinti i ji 0 ir tiketis kad kompas nesprogs
+    mov first_byte_available, 0
     skip_file_end_indicator:
 
     pop dx

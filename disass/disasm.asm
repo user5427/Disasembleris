@@ -233,7 +233,7 @@ loop_over_bytes:
     
     call read_bytes            ; returns byte to byte_ from buffer
     loop_bytes:                ; do this until the end of file
-    cmp first_byte_available, 0            ; TODO?
+    cmp file_end,  1           ; TODO?
     je exit_byte_loop
 
    

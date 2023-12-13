@@ -376,7 +376,7 @@ def command_detection(output_file):
 
         funct = manual_functions[command_number]
         if not funct == '-':
-            commands.append(funct)
+            output_lines.append(f"call {funct}")
 
         # execute functions based on what variables were used
         for command in commands:

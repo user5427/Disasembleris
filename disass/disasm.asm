@@ -47,6 +47,9 @@
     number_in_ASCII db 10 dup(0)
     register_index db 0
 
+    count_segment dw 0
+    add_cs_bool db 0
+
 ;lots_of_names:
     wtf_n db "unknown", 24h   
     mov_n db "MOV", 24h   
@@ -451,6 +454,7 @@ get_byte:
     mov al, [SI + bx]
     mov next_byte, al           ; TODO there is a problem where this will be moved to byte_, but file_end will be set to 1
     inc index
+    inc count_segment
 
     jmp skip_file_end_indicator
 
@@ -740,6 +744,9 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     inc line_length
     
 RET
+add_counter_segment:
+    mov add_cs_bool, 1
+RET
 convert_to_decimal:       ; takes number in the binary_number
     push ax
     push dx
@@ -758,6 +765,13 @@ convert_to_decimal:       ; takes number in the binary_number
     mov ax, dx                  ; move the number from dx to register ax
     mov bl, [DI]                ; the lenght of numbers_in_binary
     xor bx, bx
+
+    cmp add_cs_bool, 1
+    jne skip_cs_addition
+    add ax, count_segment
+    mov add_cs_bool, 0
+    skip_cs_addition:
+
     ASCII_values_loop:   
     inc bl
     push bx
@@ -3376,6 +3390,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call add_counter_segment
    call CONVERT_ajb_avb_srjb_srvb
    call end_line
    quick_exit_61:
@@ -4551,6 +4566,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call add_counter_segment
    call CONVERT_pjb_pvb
    call end_line
    quick_exit_104:
@@ -5295,6 +5311,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call add_counter_segment
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_130:
@@ -5335,6 +5352,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call add_counter_segment
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_131:
@@ -5464,8 +5482,8 @@ check_commands:
 
    call com_check_done
    quick_exit_135:
-
 RET
+
 
 end start
 

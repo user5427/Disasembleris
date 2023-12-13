@@ -64,8 +64,6 @@ error:                  ; output error msg
     int 21h
 RET
 
-;error
-
 read_argument:
     xor cx, cx               ; clear cx to avoid corruuption
     ;mov cl, es:[80h]         ; the length of the argument

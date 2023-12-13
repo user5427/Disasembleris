@@ -5506,11 +5506,11 @@ check_commands:
    not_134:
    
 
-   call com_check_done
-   ;mov ptr_, offset wtf_n
-   ;call write_to_line
-   ;call end_line
-   ;call read_bytes
+   ;call com_check_done     Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
+   mov ptr_, offset wtf_n
+   call write_to_line
+   call end_line
+   call read_bytes
    quick_exit_135:
 
 RET

@@ -1317,8 +1317,8 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     jne ba
     mov al, byte_
     mov [byte ptr double_byte_number], al
-    ba:
     call read_bytes
+    ba:
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
@@ -1497,8 +1497,8 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     jne smol
     mov al, byte_
     mov [byte ptr double_byte_number], al
-    smol:
     call read_bytes
+    smol:
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes

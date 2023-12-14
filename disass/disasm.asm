@@ -7,11 +7,10 @@
     argument db 127 dup('0')
     fn_in db "HELLO.COM0", 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db "out555.txt0", 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
-    error_msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
+    error_msg db "Error! Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
-    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: ", 24h
-    help_msg db "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h   
+    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
     help_called db 0
     test_msg db "test ", 24h
 
@@ -208,9 +207,11 @@ start:
     call read_argument
     call loop_over_argumet
     call help_argument
-
     cmp help_called, 1
     je end_work
+
+  
+
 
     call open_input_file 
     call open_output_file
@@ -347,14 +348,9 @@ help_argument:
     cmp [SI], dl
     jne not_help_msg
 
+    xor ax, ax
     mov ah, 9
     mov dx, offset owner_msg
-    int 21h
-    mov ah, 9
-    mov dx, offset endl
-    int 21h
-    mov ah, 9
-    mov dx, offset help_msg
     int 21h
     mov help_called, 1
 

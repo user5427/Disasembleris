@@ -1075,12 +1075,12 @@ find_effective_address_registers: ; use register_index as input, and when there 
     jne second_column_BP_offset
     call reset_double_byte_number
     mov al, byte_
-    mov [byte ptr double_byte_number], al
-    call read_bytes
-    mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
-    call double_byte_number_to_hex ; FIXME neveiks, reik double_byte_number skaiciu nurodyti
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call read_bytes
+    call double_byte_number_to_hex ;FIXME neveiks, reik double_byte_number skaiciu nurodyti
     jmp end_checking_address_reg
 
     second_column_BP_offset:

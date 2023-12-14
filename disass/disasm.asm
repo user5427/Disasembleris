@@ -1506,7 +1506,7 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     je skip_w_
     cmp w_, 1
     jmp skip_reset_w
-    skip_w:
+    skip_w_:
     mov w_, 0
     mov ignore_w_, 0
     skip_reset_w:
@@ -1542,6 +1542,7 @@ RET
 
 CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
     call debug
+    call add_space_line
     push ax
     mov al, v_
     cmp al, 0
@@ -1650,7 +1651,6 @@ CONVERT_reg_aft_adr:
     call write_to_line
 RET
 
-;
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--
@@ -5548,104 +5548,12 @@ check_commands:
    not_134:
    
 
-   ;--> 1100 000w mod 101 r/m [poslinkis] -€“ SHR <--
-   ;--> The byte: 1100000w <--
-   mov al, byte_
-   shr al, 1
-   cmp al, 96
-   je yes_135_0
-   jmp not_135
-   yes_135_0:
-   ;--> The byte: md101r/m <--
-   cmp next_byte_available, 1
-   je yes_135_1
-   jmp not_135
-   yes_135_1:
-   mov al, next_byte
-   shl al, 2
-   shr al, 5
-   cmp al, 5
-   je yes_135_2
-   jmp not_135
-   yes_135_2:
-   mov ptr_, offset shr_n
-   call write_to_line
-   ;--> The variable 'w' in reformed byte: '1100000w' <--
-   mov al, byte_
-   shl al, 7
-   shr al, 7
-   mov w_, al
-   call read_bytes
-   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
-   mov al, byte_
-   shr al, 6
-   mov mod_, al
-   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
-   mov al, byte_
-   shl al, 5
-   shr al, 5
-   mov r_m_, al
-   call read_bytes
-   ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call CONVERT_w_mod_r_m_poslinkis
-   call end_line
-   quick_exit_135:
-   jmp quick_exit_136
-   not_135:
-   
-
-   ;--> 1100 000w mod 100 r/m [poslinkis] -€“ SHL <--
-   ;--> The byte: 1100000w <--
-   mov al, byte_
-   shr al, 1
-   cmp al, 96
-   je yes_136_0
-   jmp not_136
-   yes_136_0:
-   ;--> The byte: md100r/m <--
-   cmp next_byte_available, 1
-   je yes_136_1
-   jmp not_136
-   yes_136_1:
-   mov al, next_byte
-   shl al, 2
-   shr al, 5
-   cmp al, 4
-   je yes_136_2
-   jmp not_136
-   yes_136_2:
-   mov ptr_, offset shl_n
-   call write_to_line
-   ;--> The variable 'w' in reformed byte: '1100000w' <--
-   mov al, byte_
-   shl al, 7
-   shr al, 7
-   mov w_, al
-   call read_bytes
-   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
-   mov al, byte_
-   shr al, 6
-   mov mod_, al
-   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
-   mov al, byte_
-   shl al, 5
-   shr al, 5
-   mov r_m_, al
-   call read_bytes
-   ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call CONVERT_w_mod_r_m_poslinkis
-   call end_line
-   quick_exit_136:
-   jmp quick_exit_137
-   not_136:
-   
-
    ;call com_check_done
    mov ptr_, offset wtf_n
    call write_to_line
    call end_line
    call read_bytes
-   quick_exit_137:
+   quick_exit_135:
 RET
 
 

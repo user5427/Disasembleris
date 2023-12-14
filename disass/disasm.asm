@@ -1305,7 +1305,6 @@ RET
 
 CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     push ax
-    call debug
     call reset_double_byte_number
     mov al, r_m_
     mov register_index, al
@@ -1531,6 +1530,7 @@ RET
 
 
 CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
+    call debug
     push ax
     mov al, v_
     cmp al, 0
@@ -5537,11 +5537,11 @@ check_commands:
    not_134:
    
 
-   call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
-   ;mov ptr_, offset wtf_n
-   ;call write_to_line
-   ;call end_line
-   ;call read_bytes
+   ;call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
+   mov ptr_, offset wtf_n
+   call write_to_line
+   call end_line
+   call read_bytes
    quick_exit_135:
 
 RET

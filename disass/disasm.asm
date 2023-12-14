@@ -1713,6 +1713,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_1:
@@ -1829,6 +1830,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_5:
@@ -1897,6 +1899,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_7:
@@ -1965,6 +1968,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_9:
@@ -2033,6 +2037,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_11:
@@ -2141,6 +2146,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_15:
@@ -2225,6 +2231,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_18:
@@ -2309,6 +2316,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
+   call CONVERT_reg_bef_adr
    call CONVERT_w_bojb_bovb
    call end_line
    quick_exit_21:
@@ -5548,12 +5556,107 @@ check_commands:
    not_134:
    
 
+   ;--> 1100 000w mod 101 r/m [poslinkis] -€“ SHR <--
+   ;--> The byte: 1100000w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 96
+   je yes_135_0
+   jmp not_135
+   yes_135_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_135_1
+   jmp not_135
+   yes_135_1:
+   mov al, next_byte
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_135_2
+   jmp not_135
+   yes_135_2:
+   mov ptr_, offset shr_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1100000w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call SET_ignore_w_
+   call CONVERT_w_mod_r_m_poslinkis
+   call end_line
+   quick_exit_135:
+   jmp quick_exit_136
+   not_135:
+   
+
+   ;--> 1100 000w mod 100 r/m [poslinkis] -€“ SHL <--
+   ;--> The byte: 1100000w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 96
+   je yes_136_0
+   jmp not_136
+   yes_136_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_136_1
+   jmp not_136
+   yes_136_1:
+   mov al, next_byte
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_136_2
+   jmp not_136
+   yes_136_2:
+   mov ptr_, offset shl_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1100000w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call SET_ignore_w_
+   call CONVERT_w_mod_r_m_poslinkis
+   call end_line
+   quick_exit_136:
+   jmp quick_exit_137
+   not_136:
+   
+
    ;call com_check_done
    mov ptr_, offset wtf_n
    call write_to_line
    call end_line
    call read_bytes
-   quick_exit_135:
+   quick_exit_137:
+
 RET
 
 

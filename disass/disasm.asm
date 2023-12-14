@@ -1307,6 +1307,7 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     call reset_double_byte_number
     mov r_m_, al
     mov al, register_index
+    call add_space_line
     call full_r_m_detector
     call add_comma_line
     call add_space_line

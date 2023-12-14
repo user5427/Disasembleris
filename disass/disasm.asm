@@ -1607,17 +1607,30 @@ RET
 
 CONVERT_reg_bef_adr:
     call add_space_line
+    cmp w_, 1
+    jne skip_ax
     mov ptr_, offset ax_n
+    jmp skip_al
+    skip_ax:
+    mov ptr_, offset al_n
+    skip_al:
+
     call write_to_line
     call add_comma_line
-    call CONVERT_w_ajb_avb
+    call CONVERT_bojb_bovb
 RET
 
 CONVERT_reg_aft_adr:
     call add_space_line
-    call CONVERT_w_ajb_avb
+    call CONVERT_bojb_bovb
     call add_comma_line
+    cmp w_, 1
+    jne skip_ax_1
     mov ptr_, offset ax_n
+    jmp skip_al_1
+    skip_ax_1:
+    mov ptr_, offset al_n
+    skip_al_1:
     call write_to_line
 RET
 
@@ -5519,11 +5532,11 @@ check_commands:
    not_134:
    
 
-   ;call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
-   mov ptr_, offset wtf_n
-   call write_to_line
-   call end_line
-   call read_bytes
+   call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
+   ;mov ptr_, offset wtf_n
+   ;call write_to_line
+   ;call end_line
+   ;call read_bytes
    quick_exit_135:
 
 RET

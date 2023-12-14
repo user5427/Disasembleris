@@ -205,12 +205,12 @@
 start:
     mov ax, @data
     mov ds, ax
-    ;call read_argument
-    ;call loop_over_argumet
-    ;call help_argument
+    call read_argument
+    call loop_over_argumet
+    call help_argument
 
-    ;cmp help_called, 1
-    ;je end_work
+    cmp help_called, 1
+    je end_work
 
     call open_input_file 
     call open_output_file
@@ -248,7 +248,8 @@ loop_over_bytes:
 RET
 
 error:                  ; output error msg
-    mov ah, 9
+    xor ax, ax
+    mov ah, 9h
     mov dx, offset error_msg
     int 21h
 

@@ -263,10 +263,11 @@ RET
 read_argument:
     xor cx, cx               ; clear cx to avoid corruuption
     mov cl, es:[80h]         ; the length of the argument
+    jcxz error
     mov si, 82h                 ;We can start from 82h, since 81h always contain a space bar
     dec cl                      ;We need to adjust cx so that it truthfully represents the character amount
     mov di, offset argument     ; move the adress of file name to register dx
-    jcxz error
+
 
     SKAITYTI:           
     mov al, es:[si]          ; move to register al one symbol from start of the argument

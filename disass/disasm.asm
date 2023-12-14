@@ -41,6 +41,7 @@
     reg_ db 0
     r_m_ db 0
     com_num_ db 0
+    ignore_w_ db 0
 
     double_byte_number db 5 dup(0)
     binary_number db 0
@@ -1265,10 +1266,10 @@ CONVERT_w_bojb_bovb:
 
     two_bytes_num:
     mov al, byte_
-    mov [byte ptr double_byte_number], al
+    mov [byte ptr double_byte_number + 1], al
     call read_bytes
     mov ah, byte_
-    mov [byte ptr double_byte_number + 1], ah
+    mov [byte ptr double_byte_number], ah
     call read_bytes
     call convert_to_decimal
     jmp exit_bojb_function
@@ -1488,6 +1489,9 @@ CONVERT_bojb_bovb:
     call convert_to_decimal
 RET
 
+SET_ignore_w_:
+    mov ignore_w_, 1
+RET
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     push ax
@@ -1498,7 +1502,14 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     call full_r_m_detector
     call add_comma_line
     call add_space_line
+    cmp ignore_w_, 1
+    je skip_w_
     cmp w_, 1
+    jmp skip_reset_w
+    skip_w:
+    mov w_, 0
+    mov ignore_w_, 0
+    skip_reset_w:
     jne smol
     mov al, byte_
     mov [byte ptr double_byte_number], al
@@ -5537,13 +5548,104 @@ check_commands:
    not_134:
    
 
-   ;call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
+   ;--> 1100 000w mod 101 r/m [poslinkis] -€“ SHR <--
+   ;--> The byte: 1100000w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 96
+   je yes_135_0
+   jmp not_135
+   yes_135_0:
+   ;--> The byte: md101r/m <--
+   cmp next_byte_available, 1
+   je yes_135_1
+   jmp not_135
+   yes_135_1:
+   mov al, next_byte
+   shl al, 2
+   shr al, 5
+   cmp al, 5
+   je yes_135_2
+   jmp not_135
+   yes_135_2:
+   mov ptr_, offset shr_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1100000w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md101r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..101r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
+   call end_line
+   quick_exit_135:
+   jmp quick_exit_136
+   not_135:
+   
+
+   ;--> 1100 000w mod 100 r/m [poslinkis] -€“ SHL <--
+   ;--> The byte: 1100000w <--
+   mov al, byte_
+   shr al, 1
+   cmp al, 96
+   je yes_136_0
+   jmp not_136
+   yes_136_0:
+   ;--> The byte: md100r/m <--
+   cmp next_byte_available, 1
+   je yes_136_1
+   jmp not_136
+   yes_136_1:
+   mov al, next_byte
+   shl al, 2
+   shr al, 5
+   cmp al, 4
+   je yes_136_2
+   jmp not_136
+   yes_136_2:
+   mov ptr_, offset shl_n
+   call write_to_line
+   ;--> The variable 'w' in reformed byte: '1100000w' <--
+   mov al, byte_
+   shl al, 7
+   shr al, 7
+   mov w_, al
+   call read_bytes
+   ;--> The variable 'md' in reformed byte: 'md100r/m' <--
+   mov al, byte_
+   shr al, 6
+   mov mod_, al
+   ;--> The variable 'r/m' in reformed byte: '..100r/m' <--
+   mov al, byte_
+   shl al, 5
+   shr al, 5
+   mov r_m_, al
+   call read_bytes
+   ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call CONVERT_w_mod_r_m_poslinkis
+   call end_line
+   quick_exit_136:
+   jmp quick_exit_137
+   not_136:
+   
+
+   ;call com_check_done
    mov ptr_, offset wtf_n
    call write_to_line
    call end_line
    call read_bytes
-   quick_exit_135:
-
+   quick_exit_137:
 RET
 
 

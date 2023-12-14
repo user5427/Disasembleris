@@ -1617,12 +1617,16 @@ CONVERT_reg_bef_adr:
 
     call write_to_line
     call add_comma_line
+    call add_left_bracket
     call CONVERT_bojb_bovb
+    call add_right_bracket
 RET
 
 CONVERT_reg_aft_adr:
     call add_space_line
+    call add_left_bracket
     call CONVERT_bojb_bovb
+    call add_right_bracket
     call add_comma_line
     cmp w_, 1
     jne skip_ax_1

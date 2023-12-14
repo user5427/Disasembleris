@@ -233,7 +233,7 @@ loop_over_bytes:
     
     call read_bytes            ; returns byte to byte_ from buffer
     loop_bytes:                ; do this until the end of file
-    cmp file_end,  1           ; TODO?
+    cmp first_byte_available, 0            ; TODO?
     je exit_byte_loop
 
    
@@ -5506,11 +5506,11 @@ check_commands:
    not_134:
    
 
-   call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
-   ;mov ptr_, offset wtf_n
-   ;call write_to_line
-   ;call end_line
-   ;call read_bytes
+   ;call com_check_done     ;Apkeisti kai norime kad programa sustotu aptikus nezinomai komandai
+   mov ptr_, offset wtf_n
+   call write_to_line
+   call end_line
+   call read_bytes
    quick_exit_135:
 
 RET

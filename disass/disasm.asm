@@ -684,6 +684,7 @@ number_to_hex:
     pop cx
     pop bx
     pop ax
+    call reset_double_byte_number
 RET
 double_byte_number_to_hex:
     push ax
@@ -721,7 +722,7 @@ double_byte_number_to_hex:
     pop cx
     pop bx
     pop ax
-
+    call reset_double_byte_number
 
 RET
 convert_half_byte_to_HEX: ; takes register 'cl' as input
@@ -854,6 +855,7 @@ convert_to_decimal:       ; takes number in the binary_number
     pop dx
     pop ax
     
+    call reset_double_byte_number
 RET
 
 

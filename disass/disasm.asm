@@ -1497,12 +1497,19 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     jne smol
     mov al, byte_
     mov [byte ptr double_byte_number], al
-    smol:
     call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
     call convert_to_decimal
+    jmp cv_end
+    smol:
+    call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
+    call read_bytes
+    call convert_to_decimal
+    cv_end:
     pop ax
 RET
 

@@ -1543,6 +1543,7 @@ CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
     call reset_double_byte_number
     mov al, 1
     mov [byte ptr double_byte_number], al
+    call read_bytes
     call convert_to_decimal
     jmp exit_v
     c_poslinkis:

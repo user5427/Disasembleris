@@ -1320,9 +1320,13 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
-    ba:
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
+    call read_bytes
+    jmp pab
+    ba:
+    mov al, byte_
+    mov [byte ptr double_byte_number], al
     call read_bytes
     pab:
     call convert_to_decimal

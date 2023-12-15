@@ -7,7 +7,7 @@
     argument db 127 dup('0')
     fn_in db "HELLO.COM0", 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db "out555.txt0", 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
-    error_msg db "Error! Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
+    error_msg db "Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
     owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
@@ -16,6 +16,18 @@
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
+
+    debug_line db 50 dup(' ')
+    debug_line_len db 0
+    use_debug db 1
+
+    bytes_in_line db 16 dup(0)
+    bytes_in_line_count db 0
+
+    line_ptr_ dw 0
+    line_ptr_len db 0
+    use_line_ptr db 0 ; 0 - do not use line ptr
+    
 
     write_buff db 200 dup(?)
     write_index db 0
@@ -198,7 +210,7 @@
     bp_n db "BP", 24h
     sp_n db "SP", 24h
 
-    segment_line db " : ", 24h
+segment_line db " : ", 24h
 
 
 .code
@@ -227,34 +239,91 @@ com_check_done:
     mov first_byte_available, 0
 RET
 
-debug:
-    push ax
-    pop ax
-RET
 
-loop_over_bytes:
-
-    
-    call read_bytes            ; returns byte to byte_ from buffer
-    loop_bytes:                ; do this until the end of file
-    call reset_double_byte_number
+print_debug:
+    mov debug_line_len, 0
+    mov line_ptr_len, 0
+    mov use_line_ptr, 1
+    mov line_ptr_, offset debug_line
     mov ax, count_segment
     sub ax, 2
+    push ax
+    call reset_debug_line
+    call reset_double_byte_number
+    pop ax
     mov DI, offset double_byte_number
     mov [DI], al
     mov [DI + 1], ah
     call double_byte_number_to_hex
     mov ptr_, offset segment_line
     call write_to_line
+    mov use_line_ptr, 0
+    mov al, line_ptr_len
+    mov debug_line_len, al
+RET
+convert_bytes_debug:
+    xor dx, dx
+    mov dl, bytes_in_line_count
 
-    cmp first_byte_available, 0            ; TODO?
+    mov use_line_ptr, 1
+    mov line_ptr_, offset debug_line
+    mov al, debug_line_len
+    mov line_ptr_len, al
+
+    mov SI, offset bytes_in_line
+    saved_bytes:
+    cmp dx, 0
+    je stop_loop
+    mov bl, [SI]
+    mov cl, bl
+    shr cl, 4
+    call convert_half_byte_to_HEX
+    mov cl, bl
+    shl cl, 4
+    shr cl, 4
+    call convert_half_byte_to_HEX
+    inc SI
+    dec dx
+    jmp saved_bytes
+    stop_loop:
+
+    mov use_line_ptr, 0
+    mov al, line_ptr_len
+    mov debug_line_len, al
+    
+
+RET
+reset_debug_line:
+    mov cx, 50
+
+    mov DI, offset debug_line
+    reset_loop:
+    mov bx, cx
+    mov al, ' '
+    mov [DI + bx], al
+    loop reset_loop
+RET
+
+loop_over_bytes:
+
+    
+    call read_bytes            ; returns byte to byte_ from buffer
+    loop_lines:                ; do this until the end of file
+    cmp first_byte_available, 0
     je exit_byte_loop
+
+    cmp use_debug, 1
+    jne skip_debug
+    call print_debug
+    skip_debug:
+    
 
    
     call check_commands   ; check the command
 
 
-    jmp loop_bytes
+    mov bytes_in_line_count, 0
+    jmp loop_lines
 
     exit_byte_loop:
     call force_write_to_file
@@ -430,6 +499,12 @@ read_bytes:
     mov next_byte_available, 0
     mov al, next_byte
     mov byte_, al
+    xor bx, bx
+    mov bl, bytes_in_line_count
+    mov DI, offset bytes_in_line
+    mov [DI + bx], al
+    inc bl
+    mov bytes_in_line_count, bl
     call get_byte
     loop get_bytes_loop
 
@@ -500,19 +575,32 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     push dx
 
     xor ax, ax
+    cmp use_line_ptr, 1
+    je use_other_line
+    mov SI, offset line
+    mov ah, line_length ; change offset line_length -> line_length
+    mov line_length, 0
+    jmp do_not_use_other_ptr
+    use_other_line:
+    mov SI, line_ptr_
+    mov ah, line_ptr_len
+    mov line_ptr_len, 0
+    do_not_use_other_ptr:
+    push ax
+
     mov al, write_index
-    add al, line_length
-    cmp al, 200
+    add al, ah
+    cmp ax, 200
 
     jnae skip_writing_to_file
     call write_to_file
     mov write_index, 0
     skip_writing_to_file:
 
-    mov SI, offset line
     mov DI, offset write_buff
     xor cx, cx
-    mov cl, line_length
+    pop ax
+    mov cl, ah
 
     exchange_bytes:
     mov al, [SI]
@@ -522,7 +610,6 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     inc write_index
     inc SI
     loop exchange_bytes
-    mov line_length, 0
 
     pop dx
     pop cx
@@ -544,7 +631,17 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     push dx
 
     mov SI, ptr_
+
+    xor dx, dx
+    cmp use_line_ptr, 1
+    jne skip_using_line_ptr
+    mov DI, line_ptr_
+    mov dl, line_ptr_len
+    jmp skip_simple_line
+    skip_using_line_ptr:
     mov DI, offset line
+    mov dl, line_length
+    skip_simple_line:
 
     copy_values:
     mov al, [SI]
@@ -553,13 +650,21 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     je exit_copy_loop
 
     xor bx, bx
-    mov bl, line_length
+    mov bl, dl
     mov [DI + bx], al
-    inc line_length
+    inc dl
     inc SI
 
     jmp copy_values
     exit_copy_loop:
+
+    cmp use_line_ptr, 1
+    jne skip_using_line_ptr1
+    mov line_ptr_len, dl
+    jmp skip_simple_line1
+    skip_using_line_ptr1:
+    mov line_length, dl
+    skip_simple_line1:
 
     pop dx
     pop cx
@@ -573,8 +678,9 @@ end_line: ; add endl to line and output line contents to the write buffer
     push dx
     
     mov SI, offset endl
-    mov DI, offset line
+
     xor bx, bx
+    mov DI, offset line
     mov bl, line_length ; change offset line_length -> line_length
 
     mov cx, 2
@@ -587,6 +693,16 @@ end_line: ; add endl to line and output line contents to the write buffer
 
     add line_length, 2
 
+    cmp use_debug, 1
+    jne skip_double_write
+    call convert_bytes_debug
+
+    mov use_line_ptr, 1
+    mov line_ptr_, offset debug_line
+    mov line_ptr_len, 40
+    call write_to_buff
+    mov use_line_ptr, 0
+    skip_double_write:
     call write_to_buff
 
     pop dx
@@ -727,7 +843,19 @@ double_byte_number_to_hex:
     shr cl, 4
     call convert_half_byte_to_HEX
 
+    cmp use_line_ptr, 1
+    jne skip_using_line_ptr3
+    mov DI, line_ptr_
+    xor bx, bx
+    mov bl, line_ptr_len
+    inc line_ptr_len
+    mov al, 'h'
+    mov [DI + bx], al 
+    jmp skip_simple_line3
+    skip_using_line_ptr3:
     call add_h
+    skip_simple_line3:
+    
 
     pop dx
     pop cx
@@ -737,6 +865,11 @@ double_byte_number_to_hex:
 
 RET
 convert_half_byte_to_HEX: ; takes register 'cl' as input
+    push ax
+    push bx
+    push cx
+    push dx
+
     cmp cl, 9
     jbe number_
     add cl, 55
@@ -744,17 +877,29 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
 
     number_:
     add cl, 48
-
+    
     write_symbol:
+    xor ax, ax
+    cmp use_line_ptr, 1
+    jne skip_using_line_ptr2
+    mov DI, line_ptr_
+    mov al, line_ptr_len
+    inc line_ptr_len
+    jmp skip_simple_line2
+    skip_using_line_ptr2:
+    mov DI, offset line
+    mov al, line_length
+    inc line_length
+    skip_simple_line2:
     xor ch, ch
     xor bx, bx
-    mov bx, offset line
-    xor ax, ax
-    mov al, line_length
-    add bx, ax
-    mov [bx], cl
-    inc line_length
-    
+    add DI, ax
+    mov [DI], cl
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
 RET
 add_counter_segment:
     mov add_cs_bool, 1
@@ -1314,7 +1459,7 @@ CONVERT_poslinkis: ; this one is one byte only!
 RET
 
 
-CONVERT_sw_mod_r_m_poslinkis_bojb_bovb: ; CIA NEVEIKIA FIXME
+CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     push ax
     call reset_double_byte_number
     mov al, r_m_
@@ -1399,7 +1544,7 @@ CONVERT_d_mod_sr_r_m_poslinkis:
 RET
 
 
-CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
+CONVERT_mod_reg_r_m_poslinkis: 
     push ax
     call add_space_line
     mov al, reg_
@@ -1414,7 +1559,7 @@ CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
 RET
 
 
-CONVERT_mod_r_m_poslinkis:; galimai neveikia 
+CONVERT_mod_r_m_poslinkis:
     push ax
     call add_space_line
     call full_reg_detector
@@ -1426,7 +1571,7 @@ CONVERT_mod_r_m_poslinkis:; galimai neveikia
 RET
 
 
-CONVERT_ajb_avb_srjb_srvb:;galimai neveikia nzn
+CONVERT_ajb_avb_srjb_srvb:
 push ax
     call reset_double_byte_number
     call read_bytes

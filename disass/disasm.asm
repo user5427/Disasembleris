@@ -24,7 +24,7 @@
     ptr_ dw 0
 
     index db 0               ; index used to get byte from buffer and remember last location
-    byte_ db 0               ; used to get a byte from buffer
+    byte_ db 0, 24h               ; used to get a byte from buffer
     file_end db 0            ; is set to 1 when file end is reached
     next_byte db 0           
     next_byte_available db 0 
@@ -1078,7 +1078,7 @@ find_effective_address_registers: ; use register_index as input, and when there 
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
-    call double_byte_number_to_hex ;FIXME neveiks, reik double_byte_number skaiciu nurodyti
+    call double_byte_number_to_hex
     jmp end_checking_address_reg
 
     second_column_BP_offset:
@@ -1302,7 +1302,7 @@ CONVERT_poslinkis: ; this one is one byte only!
 RET
 
 
-CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
+CONVERT_sw_mod_r_m_poslinkis_bojb_bovb: ; CIA NEVEIKIA FIXME
     push ax
     call reset_double_byte_number
     mov al, r_m_
@@ -1312,9 +1312,7 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     call add_comma_line
     call add_space_line
     cmp w_, 1
-    je pab
-    cmp s_, 1
-    jne ba
+    jne smoll
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
@@ -1322,10 +1320,26 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
     jmp pab
-    ba:
+    smoll:
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
+
+    ;cmp w_, 1
+    ;je pab
+    ;cmp s_, 1
+    ;jne ba
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number], al
+    ;call read_bytes
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number + 1], al
+    ;call read_bytes
+    ;jmp pab
+    ;ba:
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number], al
+    ;call read_bytes
     pab:
     call convert_to_decimal
     pop ax
@@ -1488,7 +1502,7 @@ CONVERT_bojb_bovb:
 RET
 
 SET_ignore_w_:
-    mov ignore_w_, 1
+    mov w_, 0
 RET
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
@@ -1499,15 +1513,7 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     mov register_index, al
     call full_r_m_detector
     call add_comma_line
-    call add_space_line
-    cmp ignore_w_, 1
-    je skip_w_
     cmp w_, 1
-    jmp skip_reset_w
-    skip_w_:
-    mov w_, 0
-    mov ignore_w_, 0
-    skip_reset_w:
     jne smol
     mov al, byte_
     mov [byte ptr double_byte_number], al
@@ -1538,8 +1544,7 @@ CONVERT_numeris:
 RET
 
 
-CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
-    call debug
+CONVERT_vw_mod_r_m_poslinkis:
     call add_space_line
     push ax
     mov al, v_
@@ -1553,14 +1558,12 @@ CONVERT_vw_mod_r_m_poslinkis:;NEPABAIGTA!
     call reset_double_byte_number
     mov al, 1
     mov [byte ptr double_byte_number], al
-    call read_bytes
     call convert_to_decimal
     jmp exit_v
     c_poslinkis:
     mov al, r_m_
     call full_reg_detector
     call add_comma_line
-    call add_space_line
     call reset_double_byte_number
     xor bx, bx
     mov bl, line_length
@@ -1586,6 +1589,15 @@ RET
 
 
 CONVERT_w_portas:
+    call add_space_line
+    cmp w_, 1
+    jne skip_ax2
+    mov ptr_, offset ax_n
+    jmp skip_al2
+    skip_ax2:
+    mov ptr_, offset al_n
+    skip_al2:
+
     push ax
     call reset_double_byte_number
     cmp w_, 1
@@ -1614,6 +1626,35 @@ CONVERT_w_mod_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     pop ax
+RET
+
+CONVERT_shifters:
+    push ax
+    call add_space_line
+    mov al, r_m_
+    mov register_index, al
+    call full_r_m_detector
+    call add_comma_line
+    call reset_double_byte_number
+    mov al, byte_
+    mov[byte ptr double_byte_number], al
+    call read_bytes
+    call convert_to_decimal
+    pop ax
+RET
+
+CONVERT_akumuliatorius:
+    call add_space_line
+    cmp w_, 1
+    jne skip_ax3
+    mov ptr_, offset ax_n
+    jmp skip_al3
+    skip_ax3:
+    mov ptr_, offset al_n
+    skip_al3:
+    call write_to_line
+    call add_comma_line
+    call CONVERT_w_bojb_bovb
 RET
 
 CONVERT_reg_bef_adr:
@@ -1711,8 +1752,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_1:
    jmp quick_exit_2
@@ -1828,8 +1868,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_5:
    jmp quick_exit_6
@@ -1897,8 +1936,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_7:
    jmp quick_exit_8
@@ -1966,8 +2004,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_9:
    jmp quick_exit_10
@@ -2035,8 +2072,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_11:
    jmp quick_exit_12
@@ -2144,8 +2180,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_15:
    jmp quick_exit_16
@@ -2229,8 +2264,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_18:
    jmp quick_exit_19
@@ -2314,8 +2348,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_reg_bef_adr
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_21:
    jmp quick_exit_22
@@ -3676,7 +3709,7 @@ check_commands:
    mov w_, al
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
-   call CONVERT_w_bojb_bovb
+   call CONVERT_akumuliatorius
    call end_line
    quick_exit_71:
    jmp quick_exit_72
@@ -5593,8 +5626,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call SET_ignore_w_
-   call CONVERT_w_mod_r_m_poslinkis
+   call CONVERT_shifters
    call end_line
    quick_exit_135:
    jmp quick_exit_136
@@ -5640,8 +5672,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call SET_ignore_w_
-   call CONVERT_w_mod_r_m_poslinkis
+   call CONVERT_shifters
    call end_line
    quick_exit_136:
    jmp quick_exit_137
@@ -5653,6 +5684,16 @@ check_commands:
    call write_to_line
    call end_line
    call read_bytes
+
+
+    mov ax, 4000h
+    xor cx, cx
+    mov cl, 1
+    mov bx, 1
+    mov dx, offset byte_
+    int 21h
+
+
    quick_exit_137:
 
 RET

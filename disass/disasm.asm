@@ -47,7 +47,7 @@
     number_in_ASCII db 10 dup(0)
     register_index db 0
 
-    count_segment dw 0
+    count_segment dw 100h
     add_cs_bool db 0
 
 ;lots_of_names:
@@ -198,6 +198,8 @@
     bp_n db "BP", 24h
     sp_n db "SP", 24h
 
+    segment_line db " : ", 24h
+
 
 .code
 
@@ -235,6 +237,16 @@ loop_over_bytes:
     
     call read_bytes            ; returns byte to byte_ from buffer
     loop_bytes:                ; do this until the end of file
+    call reset_double_byte_number
+    mov ax, count_segment
+    sub ax, 2
+    mov DI, offset double_byte_number
+    mov [DI], al
+    mov [DI + 1], ah
+    call double_byte_number_to_hex
+    mov ptr_, offset segment_line
+    call write_to_line
+
     cmp first_byte_available, 0            ; TODO?
     je exit_byte_loop
 

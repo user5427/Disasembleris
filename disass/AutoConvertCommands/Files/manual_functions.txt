@@ -1,0 +1,137 @@
+add_n
+add_n | CONVERT_akumuliatorius --force
+push_n
+pop_n
+or_n
+or_n | CONVERT_akumuliatorius --force
+adc_n
+adc_n | CONVERT_akumuliatorius --force
+sbb_n
+sbb_n | CONVERT_akumuliatorius --force
+and_n
+and_n | CONVERT_akumuliatorius --force
+wtf_n
+daa_n
+sub_n
+sub_n | CONVERT_akumuliatorius --force
+das_n
+xor_n
+xor_n | CONVERT_akumuliatorius --force
+aaa_n
+cmp_n
+cmp_n | CONVERT_akumuliatorius --force
+aas_n
+inc_n
+dec_n
+push_n
+pop_n
+jo_n
+jno_n
+jnae_n
+jae_n
+je_n
+jne_n
+jbe_n
+ja_n
+js_n
+jns_n
+jp_n
+jnp_n
+jl_n
+jge_n
+jle_n
+jg_n
+add_n
+or_n
+adc_n
+sbb_n
+and_n
+sub_n
+xor_n
+cmp_n
+test_n
+xchg_n
+mov_n
+mov_n
+lea_n
+pop_n
+nop_n
+xchg_n
+cbv_n
+cwd_n
+call_n | add_counter_segment
+wait_n
+pushf_n
+popf_n
+sahf_n
+lahf_n
+mov_n | CONVERT_reg_bef_adr --force
+mov_n | CONVERT_reg_aft_adr --force
+movsb_n | add_plus
+cmpsb_n
+test_n | CONVERT_akumuliatorius --force
+stosb_n
+lodsb_n
+scasb_n
+mov_n
+ret_n
+ret_n
+les_n
+lds_n
+mov_n
+retf_n
+retf_n
+int_3_n
+int_n
+into_n
+iret_n
+rol_n
+ror_n
+rcl_n
+rcr_n
+shl_n
+shr_n
+sar_n
+aam_n
+aad_n
+xlat_n
+esc_n
+loopne_n
+loope_n
+loop_n
+jcxz_n
+in_n
+out_n
+call_n | add_counter_segment
+jmp_n
+jmp_n
+jmp_n
+in_n
+out_n
+lock_n
+repnz_n
+rep_n
+hlt_n
+cmc_n
+test_n
+not_n
+neg_n
+mul_n
+imul_n
+div_n
+idiv_n
+clc_n
+stc_n
+cli_n
+sti_n
+cld_n
+std_n
+inc_n
+dec_n
+call_n | add_counter_segment
+call_n | add_counter_segment
+jmp_n
+jmp_n
+push_n
+shr_n | CONVERT_shifters --force
+shl_n | CONVERT_shifters --force

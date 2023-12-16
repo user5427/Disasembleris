@@ -16,6 +16,7 @@
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
+    first_time_reading db 1 ; changes to 0 after reading the file for the first time
 
     debug_line db 50 dup(' ')
     debug_line_len db 0
@@ -23,6 +24,7 @@
 
     bytes_in_line db 16 dup(0)
     bytes_in_line_count db 0
+    saved_command_name_ptr dw 0
 
     line_ptr_ dw 0
     line_ptr_len db 0
@@ -237,9 +239,8 @@ start:
 ; -- The end.
 com_check_done:
     mov first_byte_available, 0
-RET
-
-
+    RET
+;
 print_debug:
     mov debug_line_len, 0
     mov line_ptr_len, 0
@@ -260,7 +261,7 @@ print_debug:
     mov use_line_ptr, 0
     mov al, line_ptr_len
     mov debug_line_len, al
-RET
+    RET
 convert_bytes_debug:
     xor dx, dx
     mov dl, bytes_in_line_count
@@ -292,7 +293,7 @@ convert_bytes_debug:
     mov debug_line_len, al
     
 
-RET
+    RET
 reset_debug_line:
     mov cx, 50
 
@@ -302,12 +303,15 @@ reset_debug_line:
     mov al, ' '
     mov [DI + bx], al
     loop reset_loop
-RET
+    RET
 
-loop_over_bytes:
+;
+loop_over_bytes:    
 
     
     call read_bytes            ; returns byte to byte_ from buffer
+    mov first_time_reading, 0
+
     loop_lines:                ; do this until the end of file
     cmp first_byte_available, 0
     je exit_byte_loop
@@ -327,9 +331,9 @@ loop_over_bytes:
 
     exit_byte_loop:
     call force_write_to_file
-RET
+    RET
 
-error:                  ; output error msg
+error:                 
     xor ax, ax
     mov ah, 9h
     mov dx, offset error_msg
@@ -338,9 +342,9 @@ error:                  ; output error msg
 
     mov ax, 4c01h
     int 21h
-RET
+    RET
 
-;error
+;
 
 read_argument:
     xor cx, cx               ; clear cx to avoid corruuption
@@ -358,7 +362,7 @@ read_argument:
     inc di                   ; inc di to save another symbol in the file name 'array'
     loop SKAITYTI            ; loop till cx register is equal to zero
 
-RET
+    RET
 loop_over_argumet: ; get the argument, try to find space, and dollar symbol whatever
     push ax
     push bx
@@ -413,7 +417,7 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     pop cx
     pop bx
     pop ax
-RET
+    RET
 help_argument:
     push ax
     push bx
@@ -440,7 +444,7 @@ help_argument:
     pop cx
     pop bx
     pop ax
-RET
+    RET
 
 open_input_file:
 
@@ -454,7 +458,7 @@ open_input_file:
     no_error:
     mov fh_in, ax            ; save the file handle in the double word type for later use
 
-RET
+    RET
 open_output_file:
 
     mov ax, 3c00h            ; open existing file in read mode only
@@ -467,8 +471,9 @@ open_output_file:
     no_error_2:
     mov fh_out, ax            ; save the file handle in the double word type for later use
 
-RET
+    RET
 
+;
 test_print:
     push ax
     push dx
@@ -478,8 +483,9 @@ test_print:
     int 21h
     pop dx
     pop ax
-RET
+    RET
 
+;
 read_bytes:
     push ax
     push cx
@@ -497,14 +503,9 @@ read_bytes:
 
     get_bytes_loop:
     mov next_byte_available, 0
+    call save_byte_for_debug
     mov al, next_byte
     mov byte_, al
-    xor bx, bx
-    mov bl, bytes_in_line_count
-    mov DI, offset bytes_in_line
-    mov [DI + bx], al
-    inc bl
-    mov bytes_in_line_count, bl
     call get_byte
     loop get_bytes_loop
 
@@ -515,7 +516,7 @@ read_bytes:
 
     pop cx
     pop ax
-RET
+    RET
 get_byte:
     push ax
     push bx
@@ -554,7 +555,19 @@ get_byte:
     pop bx
     pop ax
 
-RET
+    RET
+save_byte_for_debug:
+    cmp first_time_reading, 1
+    je skip_saving_byte
+    xor bx, bx
+    mov al, byte_
+    mov bl, bytes_in_line_count
+    mov DI, offset bytes_in_line
+    mov [DI + bx], al
+    inc bl
+    mov bytes_in_line_count, bl
+    skip_saving_byte:
+    RET
 read_buffer:
     mov dx, offset buff      ; the start adress of the array "buff"
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
@@ -565,7 +578,7 @@ read_buffer:
     call error                 ; if there are errors, stop the program
     skip_error_3:
     mov cx, ax               ; move the amount of read symbols from ax to cx
-RET
+    RET
 
 
 write_to_buff: ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
@@ -615,7 +628,7 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     pop cx
     pop bx
     pop ax
-RET
+    RET
 write_to_file:
     mov ax, 4000h
     mov bx, fh_out
@@ -623,7 +636,7 @@ write_to_file:
     mov cl, write_index
     mov dx, offset write_buff
     int 21h
-RET
+    RET
 write_to_line: ; takes a pointer and writes its contents to line, yes very simple
     push ax
     push bx
@@ -670,7 +683,7 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     pop cx
     pop bx
     pop ax
-RET
+    RET
 end_line: ; add endl to line and output line contents to the write buffer
     push ax
     push bx
@@ -709,7 +722,7 @@ end_line: ; add endl to line and output line contents to the write buffer
     pop cx
     pop bx
     pop ax
-RET
+    RET
 force_write_to_file:
     push ax
     push bx
@@ -722,8 +735,9 @@ force_write_to_file:
     pop cx
     pop bx
     pop ax
-RET
+    RET
 
+;
 add_space_line:
     mov bx, offset line
     xor ax, ax
@@ -732,7 +746,7 @@ add_space_line:
     mov al, ' '
     mov [bx], al
     inc line_length
-RET
+    RET
 add_left_bracket:
     mov bx, offset line
     xor ax, ax
@@ -741,7 +755,7 @@ add_left_bracket:
     mov al, '['
     mov [bx], al
     inc line_length
-RET
+    RET
 add_right_bracket:
     mov bx, offset line
     xor ax, ax
@@ -750,7 +764,7 @@ add_right_bracket:
     mov al, ']'
     mov [bx], al
     inc line_length
-RET
+    RET
 add_plus:
     mov bx, offset line
     xor ax, ax
@@ -759,7 +773,7 @@ add_plus:
     mov al, '+'
     mov [bx], al
     inc line_length
-RET
+    RET
 add_comma_line:
     mov bx, offset line
     xor ax, ax
@@ -769,7 +783,7 @@ add_comma_line:
     mov [bx], al
     inc line_length
     call add_space_line
-RET
+    RET
 add_h:
     mov bx, offset line
     xor ax, ax
@@ -778,7 +792,7 @@ add_h:
     mov al, 'h'
     mov [bx], al
     inc line_length
-RET
+    RET
 
 ; xddd doble xdddd
 reset_double_byte_number:
@@ -788,7 +802,7 @@ reset_double_byte_number:
     mov [DI], al
     mov [DI+1], al
     pop ax
-RET
+    RET
 number_to_hex:
     push ax
     push bx
@@ -812,7 +826,7 @@ number_to_hex:
     pop bx
     pop ax
     call reset_double_byte_number
-RET
+    RET
 double_byte_number_to_hex:
     push ax
     push bx
@@ -863,7 +877,7 @@ double_byte_number_to_hex:
     pop ax
     call reset_double_byte_number
 
-RET
+    RET
 convert_half_byte_to_HEX: ; takes register 'cl' as input
     push ax
     push bx
@@ -900,10 +914,10 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     pop cx
     pop bx
     pop ax
-RET
+    RET
 add_counter_segment:
     mov add_cs_bool, 1
-RET
+    RET
 convert_to_decimal:       ; takes number in the binary_number
     push ax
     push dx
@@ -1011,9 +1025,10 @@ convert_to_decimal:       ; takes number in the binary_number
     pop ax
     
     call reset_double_byte_number
-RET
+    RET
 
 
+;
 find_word_register: ; use register_index as input
     ; 000 AX
     ; 001 CX
@@ -1090,7 +1105,7 @@ find_word_register: ; use register_index as input
     pop cx
     pop bx
     pop ax
-RET
+    RET
 find_byte_register: ; use register_index as input
     ; 000 AL
     ; 001 CL
@@ -1167,7 +1182,7 @@ find_byte_register: ; use register_index as input
     pop cx
     pop bx
     pop ax
-RET
+    RET
 find_effective_address_registers: ; use register_index as input, and when there is direct address and mod_ for changing between address and BP reg
     cmp register_index, 0
     jne not_BX_SI
@@ -1253,7 +1268,7 @@ find_effective_address_registers: ; use register_index as input, and when there 
 
 
     end_checking_address_reg:
-RET
+    RET
 find_seg_register: ; use register_index as input
     push ax
     push bx
@@ -1298,7 +1313,7 @@ find_seg_register: ; use register_index as input
     pop bx
     pop ax
 
-RET
+    RET
 ; mod_ = 01 for one byte poslinkis, 10 for two byte poslinkis
 find_poslinkis: ; use mod_ as input, uses read_bytes function
     push ax
@@ -1338,7 +1353,7 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     pop cx
     pop bx
     pop ax
-RET
+    RET
 
 find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'double_byte_number if there is adress'
     call add_left_bracket
@@ -1349,7 +1364,7 @@ find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'do
     call find_poslinkis
     skip_poslinkis:
     call add_right_bracket
-RET
+    RET
 
 full_reg_detector:   ; takes register_index and w_
     cmp w_, 1
@@ -1359,7 +1374,7 @@ full_reg_detector:   ; takes register_index and w_
     not_word_sized_reg:
     call find_byte_register
     skip_one_byte_reg:
-RET
+    RET
 
 full_r_m_detector: ; takes mod_, w_ and register_index as input
     cmp mod_, 3
@@ -1372,7 +1387,7 @@ full_r_m_detector: ; takes mod_, w_ and register_index as input
     call find_full_effective_address
     skip_effective_address:
 
-RET
+    RET
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
@@ -1399,7 +1414,7 @@ CONVERT_dw_mod_reg_r_m_poslinki:
             mov register_index, al
             call full_r_m_detector
     pop ax
-RET
+    RET
 
 
 CONVERT_w_bojb_bovb:
@@ -1431,7 +1446,7 @@ CONVERT_w_bojb_bovb:
 
     exit_bojb_function:
     pop ax
-RET
+    RET
 
 CONVERT_sr: ; write IS, CS, SS, DS with one command
     push ax
@@ -1439,7 +1454,7 @@ CONVERT_sr: ; write IS, CS, SS, DS with one command
     mov register_index, al
     call find_seg_register
     pop ax
-RET
+    RET
 
 
 CONVERT_reg: ; take reg_ variable and convert it to word sized register
@@ -1449,14 +1464,14 @@ CONVERT_reg: ; take reg_ variable and convert it to word sized register
     mov register_index, al
     call find_word_register
     pop ax
-RET
+    RET
 
 
 CONVERT_poslinkis: ; this one is one byte only!
     call add_space_line
     mov mod_, 1 ; using the mod_, tell poslinkis function to only get one byte and convert it to hex number
     call find_poslinkis
-RET
+    RET
 
 
 CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
@@ -1500,7 +1515,7 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     pab:
     call convert_to_decimal
     pop ax
-RET
+    RET
 
 
 CONVERT_w_mod_reg_r_m_poslinkis:
@@ -1514,7 +1529,7 @@ CONVERT_w_mod_reg_r_m_poslinkis:
     call full_r_m_detector
     pop ax
 
-RET
+    RET
 
 
 CONVERT_d_mod_sr_r_m_poslinkis:
@@ -1541,7 +1556,7 @@ CONVERT_d_mod_sr_r_m_poslinkis:
     mov register_index, al
     call find_seg_register
     pop ax
-RET
+    RET
 
 
 CONVERT_mod_reg_r_m_poslinkis: 
@@ -1556,10 +1571,10 @@ CONVERT_mod_reg_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     pop ax
-RET
+    RET
 
 
-CONVERT_mod_r_m_poslinkis:
+CONVERT_mod_r_m_poslinkis:  
     push ax
     call add_space_line
     call full_reg_detector
@@ -1568,11 +1583,11 @@ CONVERT_mod_r_m_poslinkis:
     call add_space_line
     call find_poslinkis
     pop ax
-RET
+    RET
 
 
 CONVERT_ajb_avb_srjb_srvb:
-push ax
+    push ax
     call reset_double_byte_number
     call read_bytes
     mov al, byte_
@@ -1592,7 +1607,7 @@ push ax
     call read_bytes
     call convert_to_decimal
     pop ax
-RET
+    RET
 
 
 CONVERT_w_ajb_avb:
@@ -1607,7 +1622,7 @@ CONVERT_w_ajb_avb:
         call convert_to_decimal
     call add_right_bracket
     pop ax
-ret
+    ret
     big:
         mov al, byte_
         mov[byte ptr double_byte_number], al
@@ -1618,7 +1633,7 @@ ret
         call convert_to_decimal  
     call add_right_bracket
     pop ax
-RET
+    RET
 
 
 CONVERT_wreg_bojb_bovb_:
@@ -1635,7 +1650,7 @@ CONVERT_wreg_bojb_bovb_:
         mov [byte ptr double_byte_number], al
         call read_bytes
         call convert_to_decimal
-ret
+    ret
     wordc:
         mov al, byte_
         mov [byte ptr double_byte_number], al
@@ -1644,7 +1659,7 @@ ret
         mov [byte ptr double_byte_number + 1], al
         call read_bytes
         call convert_to_decimal
-RET
+    RET
 
 
 CONVERT_bojb_bovb:
@@ -1656,11 +1671,11 @@ CONVERT_bojb_bovb:
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
     call convert_to_decimal
-RET
+    RET
 
 SET_ignore_w_:
     mov w_, 0
-RET
+    RET
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     push ax
@@ -1687,7 +1702,7 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     call convert_to_decimal
     cv_end:
     pop ax
-RET
+    RET
 
 
 CONVERT_numeris:
@@ -1698,7 +1713,7 @@ CONVERT_numeris:
     call add_space_line
     call number_to_hex
     pop ax
-RET
+    RET
 
 
 CONVERT_vw_mod_r_m_poslinkis:
@@ -1733,7 +1748,7 @@ CONVERT_vw_mod_r_m_poslinkis:
 
     exit_v:
     pop ax
-RET
+    RET
 
 
 CONVERT_xxx_mod_yyy_r_m_poslinkis:
@@ -1742,7 +1757,7 @@ CONVERT_xxx_mod_yyy_r_m_poslinkis:
     mov ptr_, ax
     call write_to_line
     pop ax
-RET
+    RET
 
 
 CONVERT_w_portas:
@@ -1768,12 +1783,12 @@ CONVERT_w_portas:
     call read_bytes
     call convert_to_decimal
     pop ax
-RET
+    RET
 
 
 CONVERT_pjb_pvb:
     call CONVERT_bojb_bovb
-RET
+    RET
 
 
 CONVERT_w_mod_r_m_poslinkis:
@@ -1783,7 +1798,7 @@ CONVERT_w_mod_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     pop ax
-RET
+    RET
 
 CONVERT_shifters:
     push ax
@@ -1798,7 +1813,7 @@ CONVERT_shifters:
     call read_bytes
     call convert_to_decimal
     pop ax
-RET
+    RET
 
 CONVERT_akumuliatorius:
     call add_space_line
@@ -1812,7 +1827,7 @@ CONVERT_akumuliatorius:
     call write_to_line
     call add_comma_line
     call CONVERT_w_bojb_bovb
-RET
+    RET
 
 CONVERT_reg_bef_adr:
     call add_space_line
@@ -1829,7 +1844,7 @@ CONVERT_reg_bef_adr:
     call add_left_bracket
     call CONVERT_bojb_bovb
     call add_right_bracket
-RET
+    RET
 
 CONVERT_reg_aft_adr:
     call add_space_line
@@ -1845,8 +1860,9 @@ CONVERT_reg_aft_adr:
     mov ptr_, offset al_n
     skip_al_1:
     call write_to_line
-RET
+    RET
 
+;
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--
@@ -5841,20 +5857,16 @@ check_commands:
    call write_to_line
    call end_line
    call read_bytes
-
-
-    mov ax, 4000h
-    xor cx, cx
-    mov cl, 1
-    mov bx, 1
-    mov dx, offset byte_
-    int 21h
-
-
    quick_exit_137:
-
+   
 RET
 
 
 end start
 
+;mov ax, 4000h
+;    xor cx, cx
+;    mov cl, 1
+;    mov bx, 1
+;    mov dx, offset byte_
+;    int 21h

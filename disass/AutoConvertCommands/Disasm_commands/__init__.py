@@ -280,7 +280,6 @@ def command_detection(output_file):
 
 
     output_lines = []  # this does not have anything in common with lines or names
-    output_lines.append("check_commands:")
     command_number = 0
     for line in lines:
         spec_jump = 0
@@ -316,6 +315,7 @@ def command_detection(output_file):
 
         if print_word_type_command == 0:
             output_lines.append(f"mov ptr_, offset {new_names[command_number][0]}")
+            output_lines.append(f"mov debug_command_name_ptr_, offset {new_names[command_number][0]}")
             output_lines.append("call write_to_line")
 
         # do the variable detection
@@ -407,7 +407,6 @@ def command_detection(output_file):
     output_lines.append(f"call read_bytes")
     output_lines.append(f"quick_exit_{str(command_number)}:")
     output_lines.append("")
-    output_lines.append("RET")
 
     f = open(output_file, "w")
     for line in output_lines:

@@ -3,7 +3,7 @@
 .stack 100h
 .data
 
-    endl db 0dh, 0ah ;cr, lf
+    endl db 0dh, 0ah, 24h ;cr, lf
     argument db 127 dup('0')
     fn_in db "HELLO.COM0", 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db "out555.txt0", 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
@@ -214,7 +214,6 @@
 
 segment_line db " : ", 24h
 
-
 .code
 
 start:
@@ -321,8 +320,6 @@ loop_over_bytes:
     call print_debug
     skip_debug:
     
-
-   
     call check_commands   ; check the command
 
 
@@ -479,13 +476,51 @@ test_print:
     push dx
     xor ax, ax
     mov ah, 9
+    mov dx, offset endl
+    int 21h
+    mov ah, 9
     mov dx, offset test_msg
     int 21h
     pop dx
     pop ax
+
+    ;xor cx, cx
+    ;mov cx, 50
+    ;delete_lines_console:
+    ;MOV AH, 02h
+    ;MOV BH, 00h    ; Set page number
+    ;MOV DX, DI     ; COLUMN number in low BYTE
+    ;MOV DH, 0      ; ROW number in high BYTE
+    ;INT 10h
+    ;loop delete_lines_console
+    ;
+    ; ...
+    ; Print character of message
+    ; Make sure that your data segment DS is properly set
+    ;MOV SI, offset test_msg
+    ;mov DI, 0      ; Initial column position 
+    ;lop:
+    ; Set cursor position
+    ;MOV AH, 02h
+    ;MOV BH, 00h    ; Set page number
+    ;MOV DX, DI     ; COLUMN number in low BYTE
+    ;MOV DH, 0      ; ROW number in high BYTE
+    ;INT 10h
+    ;LODSB          ; load current character from DS:SI to AL and increment SI
+    ;CMP AL, '$'    ; Is string-end reached?
+    ;JE  fin        ; If yes, continue
+    ; Print current char
+    ;MOV AH,09H
+    ;MOV BH, 0      ; Set page number
+    ;MOV BL, 4      ; Color (RED)
+    ;MOV CX, 1      ; Character count
+    ;INT 10h
+    ;INC DI         ; Increase column position
+    ;jmp lop
+    ;fin:
+    ; ...
     RET
 
-;
 read_bytes:
     push ax
     push cx

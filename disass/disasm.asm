@@ -280,11 +280,8 @@ print_debug:
     call write_to_line
 
     ; write the cs number to debug line
-    mov ax, count_segment
-    sub ax, 2
-    push ax
     call reset_double_byte_number
-    pop ax
+    mov ax, count_segment
     mov DI, offset double_byte_number
     mov [DI], al
     mov [DI + 1], ah
@@ -348,7 +345,7 @@ loop_over_bytes:
 
     
     call read_bytes            ; returns byte to byte_ from buffer
-    mov first_time_reading, 0
+    sub count_segment, 2
 
     ; for .exe files
     cmp is_exe, 1
@@ -361,6 +358,7 @@ loop_over_bytes:
     loop skip_init_sect
     skip_skipping_initial_section:
 
+    mov first_time_reading, 0
 
     loop_lines:                ; do this until the end of file
     cmp first_byte_available, 0
@@ -1051,7 +1049,15 @@ double_byte_number_to_hex:
 
     mov SI, offset double_byte_number
 
-
+    cmp add_cs_bool, 1
+    jne skip_cs_addition2
+    mov dh, [SI + 1]
+    mov dl, [SI]
+    add dx, count_segment
+    mov add_cs_bool, 0
+    mov [SI + 1], dh
+    mov [SI], dl
+    skip_cs_addition2:
     
     mov ah, [SI + 1]  ; while ah is for 00--
     mov cl, ah
@@ -1142,8 +1148,8 @@ convert_to_decimal:       ; takes number in the binary_number
 
 
     mov SI, offset double_byte_number
-    mov dl, [SI]      ; in reality al is actually --00
-    mov dh, [SI + 1]  ; while ah is for 00--
+    mov dl, [SI]      ; in reality dl is actually --00
+    mov dh, [SI + 1]  ; while dh is for 00--
     mov DI, offset number_in_ASCII            
     mov al, 0   
     mov [DI], al ; reset digit count 
@@ -1866,22 +1872,20 @@ CONVERT_bojb_bovb:
     call add_space_line
     call reset_double_byte_number
     mov al, byte_
-    mov DI, offset double_byte_number
-    mov[DI], al
+    mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
-    mov [DI + 1], al
+    mov [byte ptr double_byte_number + 1], al
     call read_bytes
-    call convert_to_decimal
+    call double_byte_number_to_hex
     RET
 
 CONVERT_byte_byte: ; do not add space
     mov al, byte_
-    mov DI, offset double_byte_number
-    mov[DI], al
+    mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
-    mov [DI + 1], al
+    mov [byte ptr double_byte_number + 1], al
     call read_bytes
     call convert_to_decimal
     RET

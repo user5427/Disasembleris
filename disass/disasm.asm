@@ -14,7 +14,8 @@
     fh_out dw 0
     owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
     help_called db 0
-    test_msg db "Done!", 24h
+    test_msg db "test!", 24h
+    done_msg db "Done", 24h
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
@@ -219,7 +220,9 @@
     bp_n db "BP", 24h
     sp_n db "SP", 24h
 
-segment_line db " : ", 24h
+segment_cs db "cs: ", 24h
+segment_line db " ", 24h
+
 
 .code
 
@@ -261,25 +264,41 @@ com_check_done:
     RET
 ;
 print_debug:
+    ; reset length of debug line
     mov debug_line_len, 0
-    mov line_ptr_len, 0
+    mov line_ptr_len, 0 ; same as mov line_ptr_len, debug_line_len
+
+    ; fill the debug line with spaces
+    call reset_debug_line
+
+    ; tell write_to_line and double_byte_number_to_hex functions to use line_ptr_ instead of line variable 
     mov use_line_ptr, 1
-    mov line_ptr_, offset debug_line
+    mov line_ptr_, offset debug_line ; save the address of the debug line
+    
+    ; write the cs characters to start of the debug line
+    mov ptr_, offset segment_cs
+    call write_to_line
+
+    ; write the cs number to debug line
     mov ax, count_segment
     sub ax, 2
     push ax
-    call reset_debug_line
     call reset_double_byte_number
     pop ax
     mov DI, offset double_byte_number
     mov [DI], al
     mov [DI + 1], ah
     call double_byte_number_to_hex
+
+    ; write some characters to debug line
     mov ptr_, offset segment_line
     call write_to_line
+
+    ; save length of the debug line
     mov use_line_ptr, 0
     mov al, line_ptr_len
     mov debug_line_len, al
+
     RET
 convert_bytes_debug:
     xor dx, dx
@@ -331,18 +350,23 @@ loop_over_bytes:
     call read_bytes            ; returns byte to byte_ from buffer
     mov first_time_reading, 0
 
+    ; for .exe files
     cmp is_exe, 1
     jne skip_skipping_initial_section
+    sub count_segment, 512
+    sub count_segment, 100h
     mov cx, 512
     skip_init_sect:
     call read_bytes        
     loop skip_init_sect
     skip_skipping_initial_section:
 
+
     loop_lines:                ; do this until the end of file
     cmp first_byte_available, 0
     je exit_byte_loop
-
+    
+    ; check if there should be debug information
     cmp use_debug, 1
     jne skip_debug
     call print_debug
@@ -350,12 +374,17 @@ loop_over_bytes:
     
     call check_commands   ; check the command
 
-
+    ; reset saved bytes for debug information
     mov bytes_in_line_count, 0
     jmp loop_lines
 
     exit_byte_loop:
     call force_write_to_file
+    
+    xor ax, ax
+    mov ah, 9h
+    mov dx, offset done_msg
+    int 21h
     RET
 
 error:                 
@@ -729,7 +758,6 @@ get_byte:
     jmp skip_file_end_indicator
 
     file_end_reached:
-    call test_print
     mov file_end, 1
     ;dec first_byte_available ; pasirodo baisiai sunkiai tam durnam assembleriui sumazinti sita vienu skaiciu tai tiesiog movinti i ji 0 ir tiketis kad kompas nesprogs
     mov first_byte_available, 0
@@ -1679,28 +1707,13 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
-    jmp pab
+    jmp end999
     smoll:
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
 
-    ;cmp w_, 1
-    ;je pab
-    ;cmp s_, 1
-    ;jne ba
-    ;mov al, byte_
-    ;mov [byte ptr double_byte_number], al
-    ;call read_bytes
-    ;mov al, byte_
-    ;mov [byte ptr double_byte_number + 1], al
-    ;call read_bytes
-    ;jmp pab
-    ;ba:
-    ;mov al, byte_
-    ;mov [byte ptr double_byte_number], al
-    ;call read_bytes
-    pab:
+    end999:
     call convert_to_decimal
     pop ax
     RET
@@ -1722,13 +1735,13 @@ CONVERT_w_mod_reg_r_m_poslinkis:
 
 CONVERT_d_mod_sr_r_m_poslinkis:
     push ax
+    call add_space_line
     cmp d_, 1
     jne bac
     mov al, sr_
     mov register_index, al
     call find_seg_register
     call add_comma_line
-    call add_space_line
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
@@ -1739,7 +1752,6 @@ CONVERT_d_mod_sr_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     call add_comma_line
-    call add_space_line
     mov al, sr_
     mov register_index, al
     call find_seg_register
@@ -1777,16 +1789,16 @@ CONVERT_mod_r_m_poslinkis:
 CONVERT_ajb_avb_srjb_srvb:
     push ax
     call reset_double_byte_number
-    call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
+    call read_bytes
     call convert_to_decimal
     call add_comma_line
     call add_space_line
-    call read_bytes
+    call reset_double_byte_number
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
@@ -1852,15 +1864,27 @@ CONVERT_wreg_bojb_bovb_:
 
 CONVERT_bojb_bovb:
     call add_space_line
+    call reset_double_byte_number
     mov al, byte_
-    mov[byte ptr double_byte_number], al
+    mov DI, offset double_byte_number
+    mov[DI], al
     call read_bytes
     mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
+    mov [DI + 1], al
     call read_bytes
     call convert_to_decimal
     RET
 
+CONVERT_byte_byte: ; do not add space
+    mov al, byte_
+    mov DI, offset double_byte_number
+    mov[DI], al
+    call read_bytes
+    mov al, byte_
+    mov [DI + 1], al
+    call read_bytes
+    call convert_to_decimal
+    RET
 SET_ignore_w_:
     mov w_, 0
     RET
@@ -2030,14 +2054,14 @@ CONVERT_reg_bef_adr:
     call write_to_line
     call add_comma_line
     call add_left_bracket
-    call CONVERT_bojb_bovb
+    call CONVERT_byte_byte
     call add_right_bracket
     RET
 
 CONVERT_reg_aft_adr:
     call add_space_line
     call add_left_bracket
-    call CONVERT_bojb_bovb
+    call CONVERT_byte_byte
     call add_right_bracket
     call add_comma_line
     cmp w_, 1

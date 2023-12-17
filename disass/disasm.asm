@@ -5,8 +5,10 @@
 
     endl db 0dh, 0ah, 24h ;cr, lf
     argument db 127 dup('0')
-    fn_in db "HELLO.COM0", 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
-    fn_out db "out555.txt0", 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
+    console_command db 50 dup ('0')
+    debug_command db "-td", 24h
+    fn_in db "HELLO.COM0", 26 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db "out555.txt0", 26 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
     error_msg db "Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
@@ -20,7 +22,7 @@
 
     debug_line db 50 dup(' ')
     debug_line_len db 0
-    use_debug db 1
+    use_debug db 0
 
     bytes_in_line db 16 dup(0)
     bytes_in_line_count db 0
@@ -29,6 +31,11 @@
     line_ptr_ dw 0
     line_ptr_len db 0
     use_line_ptr db 0 ; 0 - do not use line ptr
+
+    is_exe db 0
+    is_com db 0
+    exe_file_extension db ".exe"
+    com_file_extension db ".com"
     
 
     write_buff db 200 dup(?)
@@ -225,12 +232,25 @@ start:
     cmp help_called, 1
     je end_work
 
-  
+    call check_console_command
+    call check_file_extension
+    cmp is_com, 1
+    je com_file
+    cmp is_exe, 1
+    jne print_error_msg
 
-
+    com_file:
     call open_input_file 
     call open_output_file
     call loop_over_bytes     
+
+    jmp end_work
+    print_error_msg:
+    xor ax, ax
+    mov ah, 9
+    mov dx, offset error_msg
+    int 21h
+
     end_work:
     mov ax, 4c00h
     int 21h 
@@ -393,10 +413,18 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     ;mov [DI], 24h
     mov DI, offset fn_out
     xor cx, cx
+    mov al, '-'
+    cmp [SI], al
+    je third_arg
     loop_second_argument:
+    mov dl, 32
+    cmp [SI], dl ; space
+    je console_command_arg
+
     mov dl, 0
     cmp [SI], dl ; end of line
     je end_argument_copy
+    
 
     mov al, [SI]
     mov [DI], al
@@ -408,6 +436,25 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     jmp loop_second_argument
     ;mov [DI], 24h
 
+    console_command_arg:
+    inc SI ; offset space
+    third_arg:
+    mov DI, offset console_command
+    xor cx, cx
+    loop_third_argument:
+    mov dl, 0
+    cmp [SI], dl ; end of line
+    je end_argument_copy
+    
+
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    inc cx
+    cmp cx, 50
+    jae end_argument_copy
+    jmp loop_third_argument
 
     end_argument_copy:
     pop dx
@@ -443,6 +490,101 @@ help_argument:
     pop ax
     RET
 
+check_console_command:
+    mov SI, offset console_command
+    mov DI, offset debug_command
+
+    call compare_cs_command
+    cmp al, 1
+    jne skip_use_debug
+    mov use_debug, 1
+    skip_use_debug:
+    
+    
+    RET
+
+compare_cs_command: ; returns al set to 1 if equal, otherwise 0 if not equal
+    check_cs_command:
+    mov al, 24h
+    cmp [DI], al
+    je exit_checking
+    mov al, 0
+    cmp [SI], al
+    je exit_checking
+
+    mov al, [DI]
+    cmp [SI], al
+    jne not_td
+
+    inc DI
+    inc SI
+    jmp check_cs_command
+    
+    exit_checking:
+    mov al, 1
+    jmp skip_not_td
+    not_td:
+    mov al, 0
+    skip_not_td:
+
+    RET
+
+check_file_extension:
+    mov SI, offset fn_in
+    xor cx, cx
+    mov cx, 13
+    input_file_name_check:
+    mov al, '.'
+    cmp [SI], al
+    je found_start
+    inc SI
+    loop input_file_name_check
+    jmp ext_not_found
+
+    found_start:
+    inc SI
+
+    mov al, 'e'
+    cmp [SI], al
+    je exe_ext
+    mov al, 'c'
+    cmp [SI], al
+    je com_ext
+    jmp ext_not_found
+
+
+    exe_ext:
+    mov DI, offset exe_file_extension
+    inc DI
+    mov cx, 2
+    l_extension1:
+    inc DI
+    inc SI
+    mov al, [DI]
+    cmp [SI], al
+    jne exit_l
+    loop l_extension1
+    mov is_exe, 1
+
+    com_ext:
+    mov DI, offset com_file_extension
+    inc DI
+    mov cx, 2
+    l_extension2:
+    inc DI
+    inc SI
+    mov al, [DI]
+    cmp [SI], al
+    jne exit_l
+    loop l_extension2
+    mov is_com, 1
+    
+
+    exit_l:
+    ext_not_found:
+    
+    RET
+;
 open_input_file:
 
     mov ax, 3d00h            ; open existing file in read mode only

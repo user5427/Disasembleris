@@ -331,6 +331,14 @@ loop_over_bytes:
     call read_bytes            ; returns byte to byte_ from buffer
     mov first_time_reading, 0
 
+    cmp is_exe, 1
+    jne skip_skipping_initial_section
+    mov cx, 512
+    skip_init_sect:
+    call read_bytes        
+    loop skip_init_sect
+    skip_skipping_initial_section:
+
     loop_lines:                ; do this until the end of file
     cmp first_byte_available, 0
     je exit_byte_loop

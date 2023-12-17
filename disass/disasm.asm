@@ -10,6 +10,7 @@
     fn_in db "HELLO.COM0", 26 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
     fn_out db "out555.txt0", 26 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
     error_msg db "Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
+    fatal_error_msg db "Fatal error! The program was unable to process the file!", 24h
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
     owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
@@ -37,13 +38,21 @@
     is_com db 0
     exe_file_extension db ".exe"
     com_file_extension db ".com"
-    
+
+    fn_tags_opened db 0
+    fn_tags db "debg.txt", 0
+    fh_tags dw 0
+    out_ptr_ dw 0 
+    tags_line db 20 dup('-')
+    is_address db 0
+    use_tags db 0
 
     write_buff db 200 dup(?)
     write_index db 0
     line db 50 dup(?)        ; line buffer, used so the code is not as crazy
     line_length db 0         ; line length
     ptr_ dw 0
+    address_name db 5
 
     index db 0               ; index used to get byte from buffer and remember last location
     byte_ db 0, 24h               ; used to get a byte from buffer
@@ -65,12 +74,15 @@
     ignore_w_ db 0
 
     double_byte_number db 5 dup(0)
+    temp_number dw 0 ; this number is not reset, instead it is overwritten
     binary_number db 0
     number_in_ASCII db 10 dup(0)
     register_index db 0
 
     count_segment dw 100h
     add_cs_bool db 0
+
+    count_lines dw 0
 
 ;lots_of_names:
     wtf_n db "unknown", 24h   
@@ -357,10 +369,11 @@ loop_over_bytes:
     call read_bytes        
     loop skip_init_sect
     skip_skipping_initial_section:
-
     mov first_time_reading, 0
 
+
     loop_lines:                ; do this until the end of file
+
     cmp first_byte_available, 0
     je exit_byte_loop
     
@@ -369,21 +382,29 @@ loop_over_bytes:
     jne skip_debug
     call print_debug
     skip_debug:
-    
     call check_commands   ; check the command
 
     ; reset saved bytes for debug information
     mov bytes_in_line_count, 0
+    inc count_lines
     jmp loop_lines
-
     exit_byte_loop:
+
+
     call force_write_to_file
-    
     xor ax, ax
     mov ah, 9h
     mov dx, offset done_msg
     int 21h
     RET
+
+read_tag:
+
+RET
+
+read_tag_file:
+
+
 
 error:                 
     xor ax, ax
@@ -396,6 +417,16 @@ error:
     int 21h
     RET
 
+big_error:
+    xor ax, ax
+    mov ah, 9h
+    mov dx, offset fatal_error_msg
+    int 21h
+
+
+    mov ax, 4c01h
+    int 21h
+    RET
 ;
 
 read_argument:
@@ -900,6 +931,9 @@ end_line: ; add endl to line and output line contents to the write buffer
     push bx
     push cx
     push dx
+
+    ; check if there is more stuff that end_line should save
+    call save_jump_tag
     
     mov SI, offset endl
 
@@ -1023,7 +1057,9 @@ number_to_hex:
     push cx
     push dx
 
+    xor dx, dx
     mov dl, binary_number
+    mov temp_number, dx
 
     mov cl, dl
     shr cl, 4
@@ -1092,6 +1128,10 @@ double_byte_number_to_hex:
     call add_h
     skip_simple_line3:
     
+    mov SI, offset double_byte_number
+    mov dh, [SI + 1]
+    mov dl, [SI]
+    mov temp_number, dx
 
     pop dx
     pop cx
@@ -1139,6 +1179,8 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
     RET
 add_counter_segment:
     mov add_cs_bool, 1
+    mov is_address, 1
+    mov use_tags, 1
     RET
 convert_to_decimal:       ; takes number in the binary_number
     push ax
@@ -1240,6 +1282,11 @@ convert_to_decimal:       ; takes number in the binary_number
     add ptr_, 1
     
     call write_to_line
+
+    mov SI, offset double_byte_number
+    mov dh, [SI + 1]
+    mov dl, [SI]
+    mov temp_number, dx
 
     pop bx
     pop cx
@@ -2079,6 +2126,108 @@ CONVERT_reg_aft_adr:
     RET
 
 ;
+open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out_ptr_ as output file name
+
+    mov ax, 3c00h            ; open existing file in read mode only
+    mov dx, ptr_     ; return file handle to register AX
+    xor cx, cx
+    int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
+
+    JnC no_error2
+    call big_error                 ; jump if carry flag = 1 (CF = 1)
+    no_error2:
+    mov out_ptr_, ax            ; save the file handle in the double word type for later use
+
+    RET
+;
+
+save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
+    cmp use_tags, 1
+    je use_them
+    RET
+    use_them:
+    mov use_tags, 0
+    
+
+
+    cmp fn_tags_opened, 1
+    je skip_tags_file
+    mov ptr_, offset fn_tags
+    call open_any_file
+    mov ax, out_ptr_
+    mov fh_tags, ax
+    mov fn_tags_opened, 1
+    skip_tags_file:
+
+    mov use_line_ptr, 1
+    mov line_ptr_len, 0
+    mov line_ptr_, offset tags_line
+
+    mov dx, temp_number
+    mov SI, offset double_byte_number
+    mov [SI + 1], dh 
+    mov [SI], dl
+
+    mov SI, offset double_byte_number
+    mov al, 24h
+    mov [SI + 2], al
+    mov ptr_, SI
+    call write_to_line
+
+    xor bx, bx
+    mov bl, line_ptr_len
+    add bx, line_ptr_
+    cmp is_address, 1
+    jne its_jump
+    mov al, 'a'
+    mov [bx], al
+    jmp its_not_jump
+    its_jump:
+    mov al, 'j'
+    mov [bx], al
+    its_not_jump:
+    inc line_ptr_len
+    
+    mov add_cs_bool, 0
+    call double_byte_number_to_hex
+
+    cmp is_address, 0
+    jne skip_position
+    mov dx, count_lines
+    mov SI, offset double_byte_number
+    mov [SI + 1], dh 
+    mov [SI], dl
+    mov al, 24h
+    mov [SI + 2], al
+    mov ptr_, SI
+    call write_to_line
+    skip_position:
+
+    mov ptr_, offset endl
+    call write_to_line
+
+    
+   
+
+    
+
+
+    mov ax, 4000h
+    mov bx, fh_tags
+    xor cx, cx
+    mov cl, line_ptr_len
+    mov dx, offset tags_line
+    int 21h
+
+
+    mov use_line_ptr, 0
+RET
+
+
+jump_func: ; only for check_commands
+    mov use_tags, 1
+    mov is_address, 0
+RET
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--
@@ -2891,6 +3040,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_27:
@@ -2910,6 +3060,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_28:
@@ -2929,6 +3080,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_29:
@@ -2948,6 +3100,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_30:
@@ -2967,6 +3120,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_31:
@@ -2986,6 +3140,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_32:
@@ -3005,6 +3160,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_33:
@@ -3024,6 +3180,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_34:
@@ -3043,6 +3200,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_35:
@@ -3062,6 +3220,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_36:
@@ -3081,6 +3240,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_37:
@@ -3100,6 +3260,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_38:
@@ -3119,6 +3280,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_39:
@@ -3138,6 +3300,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_40:
@@ -3157,6 +3320,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_41:
@@ -3176,6 +3340,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_42:
@@ -5036,6 +5201,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_98:
@@ -5055,6 +5221,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_99:
@@ -5074,6 +5241,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_100:
@@ -5093,6 +5261,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_101:
@@ -5182,6 +5351,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_pjb_pvb
    call end_line
    quick_exit_105:
@@ -5202,6 +5372,7 @@ check_commands:
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_ajb_avb_srjb_srvb
    call end_line
    quick_exit_106:
@@ -5221,6 +5392,7 @@ check_commands:
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_107:
@@ -6015,6 +6187,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_132:
@@ -6056,6 +6229,7 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
+   call jump_func
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_133:

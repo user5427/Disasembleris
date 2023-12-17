@@ -25,22 +25,22 @@ inc_n
 dec_n
 push_n
 pop_n
-jo_n
-jno_n
-jnae_n
-jae_n
-je_n
-jne_n
-jbe_n
-ja_n
-js_n
-jns_n
-jp_n
-jnp_n
-jl_n
-jge_n
-jle_n
-jg_n
+jo_n | jump_func
+jno_n | jump_func
+jnae_n | jump_func
+jae_n | jump_func
+je_n | jump_func
+jne_n | jump_func
+jbe_n | jump_func
+ja_n | jump_func
+js_n | jump_func
+jns_n | jump_func
+jp_n | jump_func
+jnp_n | jump_func
+jl_n | jump_func
+jge_n | jump_func
+jle_n | jump_func
+jg_n | jump_func
 add_n
 or_n
 adc_n
@@ -96,16 +96,16 @@ aam_n
 aad_n
 xlat_n
 esc_n
-loopne_n
-loope_n
-loop_n
-jcxz_n
+loopne_n | jump_func
+loope_n | jump_func
+loop_n | jump_func
+jcxz_n | jump_func
 in_n
 out_n
 call_n | add_counter_segment
-jmp_n
-jmp_n
-jmp_n
+jmp_n | jump_func
+jmp_n | jump_func
+jmp_n | jump_func
 in_n
 out_n
 lock_n
@@ -130,8 +130,8 @@ inc_n
 dec_n
 call_n | add_counter_segment
 call_n | add_counter_segment
-jmp_n
-jmp_n
+jmp_n | jump_func
+jmp_n | jump_func
 push_n
 shr_n | CONVERT_shifters --force
 shl_n | CONVERT_shifters --force

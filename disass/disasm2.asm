@@ -227,20 +227,16 @@
 segment_cs db "cs: ", 24h
 segment_line db " ", 24h
 
-
-
-
     scan_only_commands db 1 ; first time scan through the file to find jump and call labels, address stuff
-    buff_size_ptr_ db 0
-    ptr_buffer_ dw 0
-    file_ptr_ dw 0
-    index_buff_ptr_ db 0
-    file_ptr_end db 0
     
     tags_line db 20 dup('-')
     tags_line_len db 0
     tags_file_end db 0
     tags_offset_ dw 0
+    tags_count dw 0
+    i_ dw 0
+    j_ dw 0
+    swapped db 0
 
     fn_tags_opened db 0
     fn_tags db "debg.txt", 0
@@ -248,7 +244,12 @@ segment_line db " ", 24h
     out_ptr_ dw 0 
     is_address db 0
     use_tags db 0
+    temp_line db 20 dup(?)
+    ind1 dw 0
+    ind2 dw 0
 
+    fn_sort db "s_deb.txt", 0
+    fh_sort dw 0
 
 .code
 
@@ -282,7 +283,16 @@ start:
     call open_input_file
     call reset_values 
 
-    call find_labels
+    ;call find_labels
+    ;call sort_file
+    mov ind1, 0
+    mov ptr_, offset wtf_n
+    ;call read_tags_line
+    mov ind2, 1
+    mov ptr_, offset wtf_n
+    
+    ;call read_tags_line
+    call swap_lines
     call loop_over_bytes
 
 
@@ -2249,32 +2259,93 @@ open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out
 
     RET
 ;
-sort_file: ;pain takes file in file_ptr_
+sort_file: ;using the bubbe
+    mov ptr_, offset fn_sort
+    mov ax, out_ptr_
+    mov fh_sort, ax
 
+    
+
+
+    mov i_, 0
+    i_loop:
+    mov ax, tags_count
+    sub ax, 1
+    cmp i_, ax
+    jae exit_i_loop
+    mov swapped, 0
+
+    mov j_, 0
+    j_loop:
+    mov ax, tags_count
+    sub ax, i_
+    sub ax, 1
+    cmp j_, ax
+    jae exit_j_loop
+    ; i for 
+    mov ax, j_
+    mov ind1, ax
+    mov ptr_, offset tags_line
+    call read_tags_line
+    mov SI, offset tags_line
+        ; j for 
+        mov ax, j_
+        mov ind2, ax
+        add ind2, 1
+        mov ptr_, offset temp_line
+        call read_tags_line
+        mov DI, offset temp_line
+            ; for contents
+            mov al, [SI]
+            mov ah, [SI + 1]
+            mov dl, [DI]
+            mov dh, [SI + 1]
+
+            ;if
+            cmp ax, dx
+            jna skip_if
+                call swap_lines
+                mov swapped, 1
+            skip_if:
+
+        
+        inc j_
+        jmp j_loop
+        ; end for
+        exit_j_loop:
+
+
+        ; if
+        cmp swapped, 0
+        jne skip_exit_loop
+            jmp exit_i_loop
+        skip_exit_loop:
+
+    
+    inc i_
+    jmp i_loop
+    ; end for
+    exit_i_loop:
+    
 
 RET
 
-swap_lines: ; takes file_ptr_, ind1, ind2 - as index
-    
+swap_lines: ;ind1, ind2 - as index, temp_line
+    mov ax, ind1
+    mov tags_offset_, ax    ; line at ind2 to ind1
+    mov ptr_, offset temp_line
+    call write_tags_line
 
-     mov ax, 4000h
-    mov bx, fh_tags
-    xor cx, cx
-    mov cl, 5
-    mov dx, offset wtf_n
-    int 21h
-
-
-
-
+    mov ax, ind2
+    mov tags_offset_, ax    ; line at ind1 to ind2
+    mov ptr_, offset tags_line
+    call write_tags_line
 RET
 
 
 find_labels:
     mov ax, 0
     mov tags_offset_, ax
-    mov ax, fh_tags
-    mov file_ptr_, ax
     
     ;mov ax, 4000h
     ;mov cx, cx
@@ -2308,24 +2379,24 @@ find_labels:
     tags_file_end_reached:
 RET
 
-read_tags_line: ; file_ptr_, tags_offset_
+read_tags_line: ; tags_offset_, ptr_
 
     mov ax, tags_offset_
-    mov bl, 10
-    mul bl
+    mov bx, 10
+    mul bx
     ;add ax, 1
     mov dx, ax
 
     xor ax, ax
     mov ah, 42h
     mov al, 0
-    mov bx, file_ptr_
+    mov bx, fh_tags
     xor cx, cx
     int 21h
 
-    mov dx, offset tags_line         ; output buffer address stored in ptr_out_
+    mov dx, offset ptr_         ; output buffer address stored in ptr_out_
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
-    mov bx, file_ptr_             ; input file handle stored in ptr_
+    mov bx, fh_tags             ; input file handle stored in ptr_
     mov cx, 10
     int 21h                  ;
     JnC skip_error_4
@@ -2336,6 +2407,30 @@ read_tags_line: ; file_ptr_, tags_offset_
     mov tags_file_end, 1
     skip_file_end:
 
+RET
+write_tags_line: ; tags_offset_, ptr_ for line
+
+    mov ax, tags_offset_
+    mov bl, 10
+    mul bl
+    ;add ax, 1
+    mov dx, ax
+
+    xor ax, ax
+    mov ah, 42h
+    mov al, 0
+    mov bx, fh_tags
+    xor cx, cx
+    int 21h
+
+    mov dx, offset ptr_         ; output buffer address stored in ptr_out_
+    mov ax, 4000h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, fh_tags             ; input file handle stored in ptr_
+    mov cx, 10
+    int 21h                  ;
+    JnC skip_error_998
+    call big_error           ; if there are errors, stop the program
+    skip_error_998:
 RET
 
 save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
@@ -2390,7 +2485,7 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     mov ptr_, offset endl
     call write_to_line
 
-    
+    inc tags_count
    
 
     
@@ -2406,6 +2501,8 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
 
     mov use_line_ptr, 0
     RET
+
+
 
 jump_func: ; only for check_commands
     mov use_tags, 1
@@ -6567,9 +6664,3 @@ RET
 
 end start
 
-;mov ax, 4000h
-;    xor cx, cx
-;    mov cl, 1
-;    mov bx, 1
-;    mov dx, offset byte_
-;    int 21h

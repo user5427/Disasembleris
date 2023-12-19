@@ -25,6 +25,7 @@
     debug_line db 50 dup(' ')
     debug_line_len db 0
     use_debug db 0
+    print_debug_msg db 0
 
     bytes_in_line db 16 dup(0)
     bytes_in_line_count db 0
@@ -44,7 +45,6 @@
     line db 50 dup(?)        ; line buffer, used so the code is not as crazy
     line_length db 0         ; line length
     ptr_ dw 0
-    address_name db 5
 
     index db 0               ; index used to get byte from buffer and remember last location
     byte_ db 0, 24h               ; used to get a byte from buffer
@@ -230,7 +230,7 @@ segment_line db " ", 24h
 
 
 
-    scan_commands db 1 ; first time scan through the file to find jump and call labels, address stuff
+    scan_only_commands db 1 ; first time scan through the file to find jump and call labels, address stuff
     buff_size_ptr_ db 0
     ptr_buffer_ dw 0
     file_ptr_ dw 0
@@ -239,11 +239,7 @@ segment_line db " ", 24h
     
     tags_line db 20 dup('-')
     tags_line_len db 0
-    tags_file_handle dw 0
     tags_file_end db 0
-    tags_buffer db 400 dup(?)
-    tags_buffer_size db 0 
-    tags_buffer_index db 0
 
     fn_tags_opened db 0
     fn_tags db "debg.txt", 0
@@ -270,11 +266,22 @@ start:
     je com_file
     cmp is_exe, 1
     jne print_error_msg
-
     com_file:
+
+
+
     call open_input_file 
     call open_output_file
+    mov scan_only_commands, 1
     call loop_over_bytes     
+    mov scan_only_commands, 0
+    mov ax, fh_in
+    mov ptr_, ax
+    call close_file
+    call open_input_file
+    call reset_values 
+    call loop_over_bytes
+
 
     jmp end_work
     print_error_msg:
@@ -293,6 +300,11 @@ com_check_done:
     RET
 ;
 print_debug:
+    cmp use_debug, 1
+    jne skip_debug
+    cmp scan_only_commands, 1
+    je skip_debug
+    mov print_debug_msg, 1
     ; reset length of debug line
     mov debug_line_len, 0
     mov line_ptr_len, 0 ; same as mov line_ptr_len, debug_line_len
@@ -324,7 +336,10 @@ print_debug:
     mov use_line_ptr, 0
     mov al, line_ptr_len
     mov debug_line_len, al
-
+    jmp skip_reset
+    skip_debug:
+    mov print_debug_msg, 0
+    skip_reset:
     RET
 convert_bytes_debug:
     xor dx, dx
@@ -370,6 +385,35 @@ reset_debug_line:
     RET
 
 ;
+reset_values:
+    mov read_symbols, 0
+    mov first_time_reading, 1
+    mov write_index, 0
+    mov line_length, 0
+    mov index, 0
+
+    mov file_end, 0
+    mov next_byte_available, 0
+    mov first_byte_available, 2
+    mov second_byte_used, 1
+    mov count_segment, 100h
+    mov count_lines, 0
+
+    mov byte_, 0
+    mov next_byte, 0
+RET
+reset_file_pointer: ;ptr_ for file handle
+    xor ax, ax
+    mov al, 0
+    mov ah, 42h
+    mov bx, ptr_
+    xor cx, cx
+    xor dx, dx
+    JnC skip_error_5
+    call big_error
+    skip_error_5:
+RET
+
 loop_over_bytes:    
 
     
@@ -390,15 +434,15 @@ loop_over_bytes:
 
 
     loop_lines:                ; do this until the end of file
-
     cmp first_byte_available, 0
     je exit_byte_loop
     
-    ; check if there should be debug information
-    cmp use_debug, 1
-    jne skip_debug
     call print_debug
-    skip_debug:
+    cmp scan_only_commands, 1
+    je no_spec_data
+    call find_labels
+    no_spec_data:
+
     call check_commands   ; check the command
 
     ; reset saved bytes for debug information
@@ -407,17 +451,9 @@ loop_over_bytes:
     jmp loop_lines
     exit_byte_loop:
 
-
     call force_write_to_file
-    xor ax, ax
-    mov ah, 9h
-    mov dx, offset done_msg
-    int 21h
     RET
 
-read_tag:
-
-RET
 
 read_tag_file:
 
@@ -668,6 +704,14 @@ check_file_extension:
     
     RET
 ;
+close_file:
+    mov ax, 3e00h
+    mov bx, ptr_
+    int 21h
+    JnC no_error3
+    call big_error
+    no_error3:
+
 open_input_file:
 
     mov ax, 3d00h            ; open existing file in read mode only
@@ -876,6 +920,8 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     pop ax
     mov cl, ah
 
+    
+
     exchange_bytes:
     mov al, [SI]
     xor bx, bx          ;?
@@ -884,7 +930,6 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     inc write_index
     inc SI
     loop exchange_bytes
-
     pop dx
     pop cx
     pop bx
@@ -915,6 +960,8 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     skip_using_line_ptr:
     mov DI, offset line
     mov dl, line_length
+    cmp scan_only_commands, 1
+    je end_function
     skip_simple_line:
 
     copy_values:
@@ -939,6 +986,8 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     skip_using_line_ptr1:
     mov line_length, dl
     skip_simple_line1:
+    
+    end_function:
 
     pop dx
     pop cx
@@ -950,9 +999,13 @@ end_line: ; add endl to line and output line contents to the write buffer
     push bx
     push cx
     push dx
-
     ; check if there is more stuff that end_line should save
     call save_jump_tag
+
+    cmp scan_only_commands, 1
+    je end_function2
+
+    
     
     mov SI, offset endl
 
@@ -970,7 +1023,7 @@ end_line: ; add endl to line and output line contents to the write buffer
 
     add line_length, 2
 
-    cmp use_debug, 1
+    cmp print_debug_msg, 1
     jne skip_double_write
     call convert_bytes_debug
     mov use_line_ptr, 1
@@ -985,6 +1038,10 @@ end_line: ; add endl to line and output line contents to the write buffer
     skip_double_write:
     call write_to_buff
 
+    jmp skip_this
+    end_function2:
+    mov line_length, 0
+    skip_this:
     pop dx
     pop cx
     pop bx
@@ -995,9 +1052,16 @@ force_write_to_file:
     push bx
     push cx
     push dx
+    cmp scan_only_commands, 1
+    je skip_force_write
     call end_line
     call write_to_file ; this function does not have push or pop so it can mess up register values
     mov write_index, 0
+    xor ax, ax
+    mov ah, 9h
+    mov dx, offset done_msg
+    int 21h
+    skip_force_write:
     pop dx
     pop cx
     pop bx
@@ -2159,23 +2223,111 @@ open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out
 
     RET
 ;
+sort_file: ;pain takes file in file_ptr_
+
+
+RET
+
+swap_lines: ; takes file_ptr_, ind1, ind2 - as index
+    
+
+     mov ax, 4000h
+    mov bx, fh_tags
+    xor cx, cx
+    mov cl, 5
+    mov dx, offset wtf_n
+    int 21h
+
+
+
+
+RET
+
+
 find_labels:
-    cmp tags_file_end, 1
-    je tags_file_end_reached
-    mov al, tags_buffer_size
+
+RET
+
+read_tags_line: ; file_ptr_, tags_offset_
+    mov ah, 42h
+    mov al, 0
+    mov bx, fh_tags
+    xor cx, cx
+    xor dx, dx
+    mov dx, tags_offset_
+    mov dx, 71
+    int 21h
+
+    mov dx, offset tags_line         ; output buffer address stored in ptr_out_
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, file_ptr_             ; input file handle stored in ptr_
+    mov cx, 8
+    int 21h                  ;
+    JnC skip_error_4
+    call big_error           ; if there are errors, stop the program
+    skip_error_4:
+    mov cx, ax               ; move the amount of read symbols
+
+RET
+
+
+find_labels2:
+    mov ah, 42h
+    mov al, 0
+    mov bx, fh_tags
+    xor cx, cx
+    mov dx, 0
+    int 21h
+
+    mov tags_file_end, 1
+    mov al, 0
     mov buff_size_ptr_, al
     mov ptr_buffer_, offset tags_buffer
-    mov ax, tags_file_handle
+    mov ax, fh_tags
     mov file_ptr_, ax
     mov line_ptr_, offset tags_line
     mov al, tags_buffer_index
     mov index_buff_ptr_, al
 
+
+    call read_line
+    call read_line
+    call read_line
+    call read_line
+    call read_line
+    call read_line
+    mov ax, 4000h
+    xor cx, cx
+    mov cl, 8
+    mov bx, 1
+    mov dx, offset tags_line
+    int 21h
+
+    jmp exit_this_little_shit
     
-
+    loop_labels:
+    cmp tags_file_end, 0
+    je tags_file_end_reached
+    call read_line
+    mov SI, offset tags_line    
+    mov al, [SI]
+    mov ah, [SI + 1]
+    mov dx, count_segment
+    cmp ax, dx
+    je found_tag
+    jmp loop_labels
     tags_file_end_reached:
-RET
 
+    found_tag:
+    add SI, 2
+    mov al, 24h
+    mov [SI + 6], al
+    mov ptr_, SI
+    call write_to_line
+    call end_line
+
+    exit_this_little_shit:
+    RET
 read_any_buffer: ; use ptr_buffer_ as output buffer, file_ptr_ for input file handle, cx as how many symbols to read and cx as how many symbols it read
     push ax
     push bx
@@ -2198,10 +2350,10 @@ read_any_buffer: ; use ptr_buffer_ as output buffer, file_ptr_ for input file ha
 read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer, file_ptr_ as file handle, line_ptr_ as output line, index_buff_ptr_ as index where the read head was left
     cmp buff_size_ptr_, 0
     jne skip_reading_
-    mov cx, 400
-    mov buff_size_ptr_, cx
+    mov cx, 200
+    call read_any_buffer
+    mov buff_size_ptr_, cl
     mov index_buff_ptr_, 0  
-
     cmp buff_size_ptr_, 0
     je end_of_file_reached
     skip_reading_:
@@ -2213,13 +2365,15 @@ read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer
     mov SI, ptr_buffer_
 
     ; move the reading head to its correct position
+    xor ax, ax
     mov al, index_buff_ptr_
-    add SI, al
+    add SI, ax
 
     ; copy elements from file to line until the new line symbol
     loop_line_elements:
-    cmp [SI], 0dh
-    je, end_of_line_reached
+    mov al, 0dh
+    cmp [SI], al
+    je end_of_line_reached
     mov al, [SI]
     mov [DI], al
     inc SI
@@ -2229,11 +2383,15 @@ read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer
     jmp loop_line_elements
     end_of_line_reached:
 
+
     jmp skip_file_ptr_end_
     end_of_file_reached:
     mov file_ptr_end, 1
     skip_file_ptr_end_:
     RET
+
+
+;
 save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     cmp use_tags, 1
     je use_them

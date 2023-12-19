@@ -2036,6 +2036,10 @@ CONVERT_vw_mod_r_m_poslinkis:
 CONVERT_xxx_mod_yyy_r_m_poslinkis:
     push ax
     mov ax, offset wtf_n
+    push ax
+    mov ax, 0e07h
+    int 10h
+    pop ax
     mov ptr_, ax
     call write_to_line
     pop ax
@@ -2732,6 +2736,10 @@ check_commands:
    yes_12_0:
    mov ptr_, offset wtf_n
    mov debug_command_name_ptr_, offset wtf_n
+   push ax
+   mov ax, 0e07h
+   int 10h
+   pop ax
    call write_to_line
    ;--> The variable 'sr' in reformed byte: '001sr110' <--
    mov al, byte_
@@ -6466,6 +6474,10 @@ check_commands:
 
    ;call com_check_done
    mov ptr_, offset wtf_n
+   push ax
+   mov ax, 0e07h
+   int 10h
+   pop ax
    call write_to_line
    call end_line
    call read_bytes

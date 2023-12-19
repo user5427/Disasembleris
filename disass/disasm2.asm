@@ -240,6 +240,7 @@ segment_line db " ", 24h
     tags_line db 20 dup('-')
     tags_line_len db 0
     tags_file_end db 0
+    tags_offset_ dw 0
 
     fn_tags_opened db 0
     fn_tags db "debg.txt", 0
@@ -280,6 +281,8 @@ start:
     call close_file
     call open_input_file
     call reset_values 
+
+    call find_labels
     call loop_over_bytes
 
 
@@ -440,7 +443,7 @@ loop_over_bytes:
     call print_debug
     cmp scan_only_commands, 1
     je no_spec_data
-    call find_labels
+    ;call find_labels
     no_spec_data:
 
     call check_commands   ; check the command
@@ -1681,6 +1684,29 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
 
     one_byte_poslinkis:
 
+    cmp use_tags, 1
+    jne skip_format
+    cmp is_address, 0
+    jne skip_format
+    call reset_double_byte_number
+    xor bx, bx
+    mov bl, byte_
+    cmp bl, 127
+    ja subtraction
+    mov ax, count_segment
+    add ax, bx
+    jmp skip_this_sstufffff
+    subtraction:
+    mov ax, count_segment
+    sub ax, bx
+    skip_this_sstufffff:
+    mov [byte ptr double_byte_number], al
+    mov [byte ptr double_byte_number + 1], ah
+    call double_byte_number_to_hex
+    call read_bytes
+    jmp exit_poslinkis_function
+    skip_format:
+
     mov al, byte_
     mov binary_number, al
     call read_bytes
@@ -2245,78 +2271,31 @@ RET
 
 
 find_labels:
-
-RET
-
-read_tags_line: ; file_ptr_, tags_offset_
-    mov ah, 42h
-    mov al, 0
-    mov bx, fh_tags
-    xor cx, cx
-    xor dx, dx
-    mov dx, tags_offset_
-    mov dx, 71
-    int 21h
-
-    mov dx, offset tags_line         ; output buffer address stored in ptr_out_
-    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
-    mov bx, file_ptr_             ; input file handle stored in ptr_
-    mov cx, 8
-    int 21h                  ;
-    JnC skip_error_4
-    call big_error           ; if there are errors, stop the program
-    skip_error_4:
-    mov cx, ax               ; move the amount of read symbols
-
-RET
-
-
-find_labels2:
-    mov ah, 42h
-    mov al, 0
-    mov bx, fh_tags
-    xor cx, cx
-    mov dx, 0
-    int 21h
-
-    mov tags_file_end, 1
-    mov al, 0
-    mov buff_size_ptr_, al
-    mov ptr_buffer_, offset tags_buffer
+    mov ax, 0
+    mov tags_offset_, ax
     mov ax, fh_tags
     mov file_ptr_, ax
-    mov line_ptr_, offset tags_line
-    mov al, tags_buffer_index
-    mov index_buff_ptr_, al
-
-
-    call read_line
-    call read_line
-    call read_line
-    call read_line
-    call read_line
-    call read_line
-    mov ax, 4000h
-    xor cx, cx
-    mov cl, 8
-    mov bx, 1
-    mov dx, offset tags_line
-    int 21h
-
-    jmp exit_this_little_shit
     
+    ;mov ax, 4000h
+    ;mov cx, cx
+    ;mov cl, 8
+    ;mov bx, 0
+    ;mov dx, offset tags_line
+    ;int 21h
+
     loop_labels:
-    cmp tags_file_end, 0
+    cmp tags_file_end, 1
     je tags_file_end_reached
-    call read_line
+    call read_tags_line
     mov SI, offset tags_line    
     mov al, [SI]
     mov ah, [SI + 1]
     mov dx, count_segment
     cmp ax, dx
-    je found_tag
+    jae found_tag
+    inc tags_offset_
     jmp loop_labels
-    tags_file_end_reached:
+
 
     found_tag:
     add SI, 2
@@ -2326,72 +2305,39 @@ find_labels2:
     call write_to_line
     call end_line
 
-    exit_this_little_shit:
-    RET
-read_any_buffer: ; use ptr_buffer_ as output buffer, file_ptr_ for input file handle, cx as how many symbols to read and cx as how many symbols it read
-    push ax
-    push bx
-    push cx
-    push dx
-    mov dx, ptr_buffer_         ; output buffer address stored in ptr_out_
+    tags_file_end_reached:
+RET
+
+read_tags_line: ; file_ptr_, tags_offset_
+
+    mov ax, tags_offset_
+    mov bl, 10
+    mul bl
+    ;add ax, 1
+    mov dx, ax
+
+    xor ax, ax
+    mov ah, 42h
+    mov al, 0
+    mov bx, file_ptr_
+    xor cx, cx
+    int 21h
+
+    mov dx, offset tags_line         ; output buffer address stored in ptr_out_
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
     mov bx, file_ptr_             ; input file handle stored in ptr_
+    mov cx, 10
     int 21h                  ;
     JnC skip_error_4
     call big_error           ; if there are errors, stop the program
     skip_error_4:
-    mov cx, ax               ; move the amount of read symbols from ax to cx
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    RET
-; copy line to its end
-read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer, file_ptr_ as file handle, line_ptr_ as output line, index_buff_ptr_ as index where the read head was left
-    cmp buff_size_ptr_, 0
-    jne skip_reading_
-    mov cx, 200
-    call read_any_buffer
-    mov buff_size_ptr_, cl
-    mov index_buff_ptr_, 0  
-    cmp buff_size_ptr_, 0
-    je end_of_file_reached
-    skip_reading_:
+    cmp ax, 0
+    jne skip_file_end
+    mov tags_file_end, 1
+    skip_file_end:
 
+RET
 
-    ; 0ah - new line maybe
-    ; 0dh - carriage return maybe
-    mov DI, line_ptr_
-    mov SI, ptr_buffer_
-
-    ; move the reading head to its correct position
-    xor ax, ax
-    mov al, index_buff_ptr_
-    add SI, ax
-
-    ; copy elements from file to line until the new line symbol
-    loop_line_elements:
-    mov al, 0dh
-    cmp [SI], al
-    je end_of_line_reached
-    mov al, [SI]
-    mov [DI], al
-    inc SI
-    inc DI
-    dec buff_size_ptr_ ; keep track of how many new symbols are still in the buffer
-    inc index_buff_ptr_ ; this value is saved to offset the reading head next time
-    jmp loop_line_elements
-    end_of_line_reached:
-
-
-    jmp skip_file_ptr_end_
-    end_of_file_reached:
-    mov file_ptr_end, 1
-    skip_file_ptr_end_:
-    RET
-
-
-;
 save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     cmp use_tags, 1
     je use_them
@@ -2399,7 +2345,6 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     use_them:
     mov use_tags, 0
     
-
 
     cmp fn_tags_opened, 1
     je skip_tags_file
@@ -2441,18 +2386,6 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     
     mov add_cs_bool, 0
     call double_byte_number_to_hex
-
-    cmp is_address, 0
-    jne skip_position
-    mov dx, count_lines
-    mov SI, offset double_byte_number
-    mov [SI + 1], dh 
-    mov [SI], dl
-    mov al, 24h
-    mov [SI + 2], al
-    mov ptr_, SI
-    call write_to_line
-    skip_position:
 
     mov ptr_, offset endl
     call write_to_line

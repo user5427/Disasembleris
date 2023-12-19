@@ -1,0 +1,23 @@
+mod|md mod_
+reg|reg reg_
+r/m|r/m r_m_
+[poslinkis] poslinkis|poslinki #
+[bovb]|bovb #
+bojb|bojb #
+portas|portas-- #
+xxx|xxx - #
+yyy|yyy - #
+ajv|ajb- #
+avb|avb- #
+pjb|pjb- #
+pvb|pvb- #
+numeris|numberis- com_num_
+dx_portas|dxportas #
+srjb|srjb #
+srvb|srvb #
+wreg|wreg #
+sr|sr sr_
+d|d d_
+s|s s_
+v|v v_
+w|w w_

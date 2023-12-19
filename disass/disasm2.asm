@@ -39,14 +39,6 @@
     exe_file_extension db ".exe"
     com_file_extension db ".com"
 
-    fn_tags_opened db 0
-    fn_tags db "debg.txt", 0
-    fh_tags dw 0
-    out_ptr_ dw 0 
-    tags_line db 20 dup('-')
-    is_address db 0
-    use_tags db 0
-
     write_buff db 200 dup(?)
     write_index db 0
     line db 50 dup(?)        ; line buffer, used so the code is not as crazy
@@ -234,6 +226,31 @@
 
 segment_cs db "cs: ", 24h
 segment_line db " ", 24h
+
+
+
+
+    scan_commands db 1 ; first time scan through the file to find jump and call labels, address stuff
+    buff_size_ptr_ db 0
+    ptr_buffer_ dw 0
+    file_ptr_ dw 0
+    index_buff_ptr_ db 0
+    file_ptr_end db 0
+    
+    tags_line db 20 dup('-')
+    tags_line_len db 0
+    tags_file_handle dw 0
+    tags_file_end db 0
+    tags_buffer db 400 dup(?)
+    tags_buffer_size db 0 
+    tags_buffer_index db 0
+
+    fn_tags_opened db 0
+    fn_tags db "debg.txt", 0
+    fh_tags dw 0
+    out_ptr_ dw 0 
+    is_address db 0
+    use_tags db 0
 
 
 .code
@@ -677,6 +694,8 @@ open_output_file:
     mov fh_out, ax            ; save the file handle in the double word type for later use
 
     RET
+
+
 
 ;
 test_print:
@@ -2140,7 +2159,81 @@ open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out
 
     RET
 ;
+find_labels:
+    cmp tags_file_end, 1
+    je tags_file_end_reached
+    mov al, tags_buffer_size
+    mov buff_size_ptr_, al
+    mov ptr_buffer_, offset tags_buffer
+    mov ax, tags_file_handle
+    mov file_ptr_, ax
+    mov line_ptr_, offset tags_line
+    mov al, tags_buffer_index
+    mov index_buff_ptr_, al
 
+    
+
+    tags_file_end_reached:
+RET
+
+read_any_buffer: ; use ptr_buffer_ as output buffer, file_ptr_ for input file handle, cx as how many symbols to read and cx as how many symbols it read
+    push ax
+    push bx
+    push cx
+    push dx
+    mov dx, ptr_buffer_         ; output buffer address stored in ptr_out_
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, file_ptr_             ; input file handle stored in ptr_
+    int 21h                  ;
+    JnC skip_error_4
+    call big_error           ; if there are errors, stop the program
+    skip_error_4:
+    mov cx, ax               ; move the amount of read symbols from ax to cx
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    RET
+; copy line to its end
+read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer, file_ptr_ as file handle, line_ptr_ as output line, index_buff_ptr_ as index where the read head was left
+    cmp buff_size_ptr_, 0
+    jne skip_reading_
+    mov cx, 400
+    mov buff_size_ptr_, cx
+    mov index_buff_ptr_, 0  
+
+    cmp buff_size_ptr_, 0
+    je end_of_file_reached
+    skip_reading_:
+
+
+    ; 0ah - new line maybe
+    ; 0dh - carriage return maybe
+    mov DI, line_ptr_
+    mov SI, ptr_buffer_
+
+    ; move the reading head to its correct position
+    mov al, index_buff_ptr_
+    add SI, al
+
+    ; copy elements from file to line until the new line symbol
+    loop_line_elements:
+    cmp [SI], 0dh
+    je, end_of_line_reached
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    dec buff_size_ptr_ ; keep track of how many new symbols are still in the buffer
+    inc index_buff_ptr_ ; this value is saved to offset the reading head next time
+    jmp loop_line_elements
+    end_of_line_reached:
+
+    jmp skip_file_ptr_end_
+    end_of_file_reached:
+    mov file_ptr_end, 1
+    skip_file_ptr_end_:
+    RET
 save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     cmp use_tags, 1
     je use_them
@@ -2221,13 +2314,12 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
 
 
     mov use_line_ptr, 0
-RET
-
+    RET
 
 jump_func: ; only for check_commands
     mov use_tags, 1
     mov is_address, 0
-RET
+    RET
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--

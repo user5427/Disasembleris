@@ -315,6 +315,7 @@ def command_detection(output_file):
 
         if print_word_type_command == 0:
             output_lines.append(f"mov ptr_, offset {new_names[command_number][0]}")
+            output_lines.append(f"mov debug_command_name_ptr_, offset {new_names[command_number][0]}")
             output_lines.append("call write_to_line")
 
         # do the variable detection
@@ -375,12 +376,20 @@ def command_detection(output_file):
                     break
 
         funct = manual_functions[command_number]
+        skip_other_funcs = 0
         if not funct == '-':
+            if "--force" in funct:
+                skip_other_funcs = 1
+                funct = funct.replace("--force", "")
+                funct = funct.strip()
+
             output_lines.append(f"call {funct}")
 
-        # execute functions based on what variables were used
-        for command in commands:
-            output_lines.append(f"call {command}")
+        # execute other functions if --force was not used in manual_functions.txt
+        if skip_other_funcs == 0:
+            # execute functions based on what variables were used
+            for command in commands:
+                output_lines.append(f"call {command}")
 
         output_lines.append("call end_line")
 
@@ -397,6 +406,8 @@ def command_detection(output_file):
     output_lines.append(f"call end_line")
     output_lines.append(f"call read_bytes")
     output_lines.append(f"quick_exit_{str(command_number)}:")
+    output_lines.append("")
+
     f = open(output_file, "w")
     for line in output_lines:
         f.write('   ' + line + '\n')

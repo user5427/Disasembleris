@@ -1,0 +1,21 @@
+dw mod reg r/m [poslinkis] | CONVERT_dw_mod_reg_r_m_poslinki
+w bojb [bovb] | CONVERT_w_bojb_bovb
+sr | CONVERT_sr
+reg | CONVERT_reg
+poslinkis | CONVERT_poslinkis
+sw mod  r/m [poslinkis] bojb [bovb] | CONVERT_sw_mod_r_m_poslinkis_bojb_bovb
+w mod reg r/m [poslinkis] | CONVERT_w_mod_reg_r_m_poslinkis
+d mod sr r/m [poslinkis] | CONVERT_d_mod_sr_r_m_poslinkis
+mod reg r/m [poslinkis] | CONVERT_mod_reg_r_m_poslinkis
+mod  r/m [poslinkis] | CONVERT_mod_r_m_poslinkis
+ajb avb srjb srvb | CONVERT_ajb_avb_srjb_srvb
+w ajb avb |
+wreg bojb [bovb] | CONVERT_wreg_bojb_bovb_
+bojb bovb | CONVERT_bojb_bovb
+w mod  r/m [poslinkis] bojb [bovb] | CONVERT_w_mod_r_m_poslinkis_bojb_bovb
+numeris | CONVERT_numeris
+vw mod  r/m [poslinkis] | CONVERT_vw_mod_r_m_poslinkis
+xxx mod yyy r/m [poslinkis] | CONVERT_xxx_mod_yyy_r_m_poslinkis
+w portas | CONVERT_w_portas
+pjb pvb | CONVERT_pjb_pvb
+w mod  r/m [poslinkis] | CONVERT_w_mod_r_m_poslinkis

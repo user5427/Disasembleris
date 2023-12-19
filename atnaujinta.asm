@@ -3,56 +3,25 @@
 .stack 100h
 .data
 
-    endl db 0dh, 0ah, 24h ;cr, lf
+    endl db 0dh, 0ah ;cr, lf
     argument db 127 dup('0')
-    console_command db 50 dup ('0')
-    debug_command db "-td", 24h
-    fn_in db "HELLO.COM0", 26 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
-    fn_out db "out555.txt0", 26 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
-    error_msg db "Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
-    fatal_error_msg db "Fatal error! The program was unable to process the file!", 24h
+    fn_in db "HELLO.COM0", 13 dup(0)    ; 127 dup(?)      ; input file name (must be .com) ;Filename is limited to 12 characters
+    fn_out db "out555.txt0", 13 dup(0)   ; 127 dup(?)      ;filenames are 0 terminated
+    error_msg db "Error! Iskvieskite programa su \?", 24h     ; numbers_in_binary error message if something went wrong
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
     owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
     help_called db 0
-    test_msg db "test!", 24h
-    done_msg db "Done", 24h
+    test_msg db " Done! ", 24h
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
-    first_time_reading db 1 ; changes to 0 after reading the file for the first time
-
-    debug_line db 50 dup(' ')
-    debug_line_len db 0
-    use_debug db 0
-
-    bytes_in_line db 16 dup(0)
-    bytes_in_line_count db 0
-    debug_command_name_ptr_ dw 0
-
-    line_ptr_ dw 0
-    line_ptr_len db 0
-    use_line_ptr db 0 ; 0 - do not use line ptr
-
-    is_exe db 0
-    is_com db 0
-    exe_file_extension db ".exe"
-    com_file_extension db ".com"
-
-    fn_tags_opened db 0
-    fn_tags db "debg.txt", 0
-    fh_tags dw 0
-    out_ptr_ dw 0 
-    tags_line db 20 dup('-')
-    is_address db 0
-    use_tags db 0
 
     write_buff db 200 dup(?)
     write_index db 0
     line db 50 dup(?)        ; line buffer, used so the code is not as crazy
     line_length db 0         ; line length
     ptr_ dw 0
-    address_name db 5
 
     index db 0               ; index used to get byte from buffer and remember last location
     byte_ db 0, 24h               ; used to get a byte from buffer
@@ -74,15 +43,12 @@
     ignore_w_ db 0
 
     double_byte_number db 5 dup(0)
-    temp_number dw 0 ; this number is not reset, instead it is overwritten
     binary_number db 0
     number_in_ASCII db 10 dup(0)
     register_index db 0
 
-    count_segment dw 100h
+    count_segment dw 0
     add_cs_bool db 0
-
-    count_lines dw 0
 
 ;lots_of_names:
     wtf_n db "unknown", 24h   
@@ -232,9 +198,6 @@
     bp_n db "BP", 24h
     sp_n db "SP", 24h
 
-segment_cs db "cs: ", 24h
-segment_line db " ", 24h
-
 
 .code
 
@@ -247,25 +210,12 @@ start:
     cmp help_called, 1
     je end_work
 
-    call check_console_command
-    call check_file_extension
-    cmp is_com, 1
-    je com_file
-    cmp is_exe, 1
-    jne print_error_msg
+  
 
-    com_file:
+
     call open_input_file 
     call open_output_file
     call loop_over_bytes     
-
-    jmp end_work
-    print_error_msg:
-    xor ax, ax
-    mov ah, 9
-    mov dx, offset error_msg
-    int 21h
-
     end_work:
     mov ax, 4c00h
     int 21h 
@@ -273,140 +223,32 @@ start:
 ; -- The end.
 com_check_done:
     mov first_byte_available, 0
-    RET
-;
-print_debug:
-    ; reset length of debug line
-    mov debug_line_len, 0
-    mov line_ptr_len, 0 ; same as mov line_ptr_len, debug_line_len
+RET
 
-    ; fill the debug line with spaces
-    call reset_debug_line
+debug:
+    push ax
+    pop ax
+RET
 
-    ; tell write_to_line and double_byte_number_to_hex functions to use line_ptr_ instead of line variable 
-    mov use_line_ptr, 1
-    mov line_ptr_, offset debug_line ; save the address of the debug line
-    
-    ; write the cs characters to start of the debug line
-    mov ptr_, offset segment_cs
-    call write_to_line
-
-    ; write the cs number to debug line
-    call reset_double_byte_number
-    mov ax, count_segment
-    mov DI, offset double_byte_number
-    mov [DI], al
-    mov [DI + 1], ah
-    call double_byte_number_to_hex
-
-    ; write some characters to debug line
-    mov ptr_, offset segment_line
-    call write_to_line
-
-    ; save length of the debug line
-    mov use_line_ptr, 0
-    mov al, line_ptr_len
-    mov debug_line_len, al
-
-    RET
-convert_bytes_debug:
-    xor dx, dx
-    mov dl, bytes_in_line_count
-
-    mov use_line_ptr, 1
-    mov line_ptr_, offset debug_line
-    mov al, debug_line_len
-    mov line_ptr_len, al
-
-    mov SI, offset bytes_in_line
-    saved_bytes:
-    cmp dx, 0
-    je stop_loop
-    mov bl, [SI]
-    mov cl, bl
-    shr cl, 4
-    call convert_half_byte_to_HEX
-    mov cl, bl
-    shl cl, 4
-    shr cl, 4
-    call convert_half_byte_to_HEX
-    inc SI
-    dec dx
-    jmp saved_bytes
-    stop_loop:
-
-    mov use_line_ptr, 0
-    mov al, line_ptr_len
-    mov debug_line_len, al
-    
-
-    RET
-reset_debug_line:
-    mov cx, 50
-
-    mov DI, offset debug_line
-    reset_loop:
-    mov bx, cx
-    mov al, ' '
-    mov [DI + bx], al
-    loop reset_loop
-    RET
-
-;
-loop_over_bytes:    
+loop_over_bytes:
 
     
     call read_bytes            ; returns byte to byte_ from buffer
-    sub count_segment, 2
-
-    ; for .exe files
-    cmp is_exe, 1
-    jne skip_skipping_initial_section
-    sub count_segment, 512
-    sub count_segment, 100h
-    mov cx, 512
-    skip_init_sect:
-    call read_bytes        
-    loop skip_init_sect
-    skip_skipping_initial_section:
-    mov first_time_reading, 0
-
-
-    loop_lines:                ; do this until the end of file
-
-    cmp first_byte_available, 0
+    loop_bytes:                ; do this until the end of file
+    cmp first_byte_available, 0            ; TODO?
     je exit_byte_loop
-    
-    ; check if there should be debug information
-    cmp use_debug, 1
-    jne skip_debug
-    call print_debug
-    skip_debug:
+
+   
     call check_commands   ; check the command
 
-    ; reset saved bytes for debug information
-    mov bytes_in_line_count, 0
-    inc count_lines
-    jmp loop_lines
+
+    jmp loop_bytes
+
     exit_byte_loop:
-
-
     call force_write_to_file
-    xor ax, ax
-    mov ah, 9h
-    mov dx, offset done_msg
-    int 21h
-    RET
-
-read_tag:
-
 RET
 
-read_tag_file:
-
-
-
-error:                 
+error:                  ; output error msg
     xor ax, ax
     mov ah, 9h
     mov dx, offset error_msg
@@ -415,19 +257,9 @@ error:
 
     mov ax, 4c01h
     int 21h
-    RET
+RET
 
-big_error:
-    xor ax, ax
-    mov ah, 9h
-    mov dx, offset fatal_error_msg
-    int 21h
-
-
-    mov ax, 4c01h
-    int 21h
-    RET
-;
+;error
 
 read_argument:
     xor cx, cx               ; clear cx to avoid corruuption
@@ -445,7 +277,7 @@ read_argument:
     inc di                   ; inc di to save another symbol in the file name 'array'
     loop SKAITYTI            ; loop till cx register is equal to zero
 
-    RET
+RET
 loop_over_argumet: ; get the argument, try to find space, and dollar symbol whatever
     push ax
     push bx
@@ -479,18 +311,10 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     ;mov [DI], 24h
     mov DI, offset fn_out
     xor cx, cx
-    mov al, '-'
-    cmp [SI], al
-    je third_arg
     loop_second_argument:
-    mov dl, 32
-    cmp [SI], dl ; space
-    je console_command_arg
-
     mov dl, 0
     cmp [SI], dl ; end of line
     je end_argument_copy
-    
 
     mov al, [SI]
     mov [DI], al
@@ -502,32 +326,13 @@ loop_over_argumet: ; get the argument, try to find space, and dollar symbol what
     jmp loop_second_argument
     ;mov [DI], 24h
 
-    console_command_arg:
-    inc SI ; offset space
-    third_arg:
-    mov DI, offset console_command
-    xor cx, cx
-    loop_third_argument:
-    mov dl, 0
-    cmp [SI], dl ; end of line
-    je end_argument_copy
-    
-
-    mov al, [SI]
-    mov [DI], al
-    inc SI
-    inc DI
-    inc cx
-    cmp cx, 50
-    jae end_argument_copy
-    jmp loop_third_argument
 
     end_argument_copy:
     pop dx
     pop cx
     pop bx
     pop ax
-    RET
+RET
 help_argument:
     push ax
     push bx
@@ -554,103 +359,8 @@ help_argument:
     pop cx
     pop bx
     pop ax
-    RET
+RET
 
-check_console_command:
-    mov SI, offset console_command
-    mov DI, offset debug_command
-
-    call compare_cs_command
-    cmp al, 1
-    jne skip_use_debug
-    mov use_debug, 1
-    skip_use_debug:
-    
-    
-    RET
-
-compare_cs_command: ; returns al set to 1 if equal, otherwise 0 if not equal
-    check_cs_command:
-    mov al, 24h
-    cmp [DI], al
-    je exit_checking
-    mov al, 0
-    cmp [SI], al
-    je exit_checking
-
-    mov al, [DI]
-    cmp [SI], al
-    jne not_td
-
-    inc DI
-    inc SI
-    jmp check_cs_command
-    
-    exit_checking:
-    mov al, 1
-    jmp skip_not_td
-    not_td:
-    mov al, 0
-    skip_not_td:
-
-    RET
-
-check_file_extension:
-    mov SI, offset fn_in
-    xor cx, cx
-    mov cx, 13
-    input_file_name_check:
-    mov al, '.'
-    cmp [SI], al
-    je found_start
-    inc SI
-    loop input_file_name_check
-    jmp ext_not_found
-
-    found_start:
-    inc SI
-
-    mov al, 'e'
-    cmp [SI], al
-    je exe_ext
-    mov al, 'c'
-    cmp [SI], al
-    je com_ext
-    jmp ext_not_found
-
-
-    exe_ext:
-    mov DI, offset exe_file_extension
-    inc DI
-    mov cx, 2
-    l_extension1:
-    inc DI
-    inc SI
-    mov al, [DI]
-    cmp [SI], al
-    jne exit_l
-    loop l_extension1
-    mov is_exe, 1
-
-    com_ext:
-    mov DI, offset com_file_extension
-    inc DI
-    mov cx, 2
-    l_extension2:
-    inc DI
-    inc SI
-    mov al, [DI]
-    cmp [SI], al
-    jne exit_l
-    loop l_extension2
-    mov is_com, 1
-    
-
-    exit_l:
-    ext_not_found:
-    
-    RET
-;
 open_input_file:
 
     mov ax, 3d00h            ; open existing file in read mode only
@@ -663,7 +373,7 @@ open_input_file:
     no_error:
     mov fh_in, ax            ; save the file handle in the double word type for later use
 
-    RET
+RET
 open_output_file:
 
     mov ax, 3c00h            ; open existing file in read mode only
@@ -676,58 +386,18 @@ open_output_file:
     no_error_2:
     mov fh_out, ax            ; save the file handle in the double word type for later use
 
-    RET
+RET
 
-;
 test_print:
     push ax
     push dx
     xor ax, ax
     mov ah, 9
-    mov dx, offset endl
-    int 21h
-    mov ah, 9
     mov dx, offset test_msg
     int 21h
     pop dx
     pop ax
-
-    ;xor cx, cx
-    ;mov cx, 50
-    ;delete_lines_console:
-    ;MOV AH, 02h
-    ;MOV BH, 00h    ; Set page number
-    ;MOV DX, DI     ; COLUMN number in low BYTE
-    ;MOV DH, 0      ; ROW number in high BYTE
-    ;INT 10h
-    ;loop delete_lines_console
-    ;
-    ; ...
-    ; Print character of message
-    ; Make sure that your data segment DS is properly set
-    ;MOV SI, offset test_msg
-    ;mov DI, 0      ; Initial column position 
-    ;lop:
-    ; Set cursor position
-    ;MOV AH, 02h
-    ;MOV BH, 00h    ; Set page number
-    ;MOV DX, DI     ; COLUMN number in low BYTE
-    ;MOV DH, 0      ; ROW number in high BYTE
-    ;INT 10h
-    ;LODSB          ; load current character from DS:SI to AL and increment SI
-    ;CMP AL, '$'    ; Is string-end reached?
-    ;JE  fin        ; If yes, continue
-    ; Print current char
-    ;MOV AH,09H
-    ;MOV BH, 0      ; Set page number
-    ;MOV BL, 4      ; Color (RED)
-    ;MOV CX, 1      ; Character count
-    ;INT 10h
-    ;INC DI         ; Increase column position
-    ;jmp lop
-    ;fin:
-    ; ...
-    RET
+RET
 
 read_bytes:
     push ax
@@ -746,7 +416,6 @@ read_bytes:
 
     get_bytes_loop:
     mov next_byte_available, 0
-    call save_byte_for_debug
     mov al, next_byte
     mov byte_, al
     call get_byte
@@ -759,7 +428,7 @@ read_bytes:
 
     pop cx
     pop ax
-    RET
+RET
 get_byte:
     push ax
     push bx
@@ -787,6 +456,7 @@ get_byte:
     jmp skip_file_end_indicator
 
     file_end_reached:
+    call test_print
     mov file_end, 1
     ;dec first_byte_available ; pasirodo baisiai sunkiai tam durnam assembleriui sumazinti sita vienu skaiciu tai tiesiog movinti i ji 0 ir tiketis kad kompas nesprogs
     mov first_byte_available, 0
@@ -797,19 +467,7 @@ get_byte:
     pop bx
     pop ax
 
-    RET
-save_byte_for_debug:
-    cmp first_time_reading, 1
-    je skip_saving_byte
-    xor bx, bx
-    mov al, byte_
-    mov bl, bytes_in_line_count
-    mov DI, offset bytes_in_line
-    mov [DI + bx], al
-    inc bl
-    mov bytes_in_line_count, bl
-    skip_saving_byte:
-    RET
+RET
 read_buffer:
     mov dx, offset buff      ; the start adress of the array "buff"
     mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
@@ -820,7 +478,105 @@ read_buffer:
     call error                 ; if there are errors, stop the program
     skip_error_3:
     mov cx, ax               ; move the amount of read symbols from ax to cx
-    RET
+RET
+
+
+
+; tags_line db 20 dup(?)
+; tags_line_len db 0
+; tags_file_handle dw 0
+; tags_file_end db 0
+; tags_buffer db 400 dup(?)
+; tags_buffer_size db 0 
+; tags_buffer_index db 0
+
+
+find_labels:
+    cmp tags_file_end, 1
+    je tags_file_end_reached
+    mov al, tags_buffer_size
+    mov buff_size_ptr_, al
+    mov ptr_buffer_, offset tags_buffer
+    mov ax, tags_file_handle
+    mov file_ptr_, ax
+    mov line_ptr_, offset tags_line
+    mov al, tags_buffer_index
+    mov index_buff_ptr_, al
+
+    
+
+    tags_file_end_reached:
+RET
+
+; variables
+; scan_commands db 1 ; first time scan through the file to find jump and call labels, address stuff
+; buff_size_ptr_ dw 0
+; ptr_buffer_ dw 0
+; file_ptr_ dw 0
+; index_buff_ptr_ db 0
+; file_ptr_end db 0
+; line_ptr_ dw 0 <- should exist already
+read_any_buffer: ; use ptr_buffer_ as output buffer, file_ptr_ for input file handle, cx as how many symbols to read and cx as how many symbols it read
+    push ax
+    push bx
+    push cx
+    push dx
+    mov dx, ptr_buffer_         ; output buffer address stored in ptr_out_
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, file_ptr_             ; input file handle stored in ptr_
+    int 21h                  ;
+    JnC skip_error_4
+    call big_error           ; if there are errors, stop the program
+    skip_error_4:
+    mov cx, ax               ; move the amount of read symbols from ax to cx
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+RET
+; copy line to its end
+read_line: ; takes buff_size_ptr_ as size of input buffer, ptr_buffer_ as buffer, file_ptr_ as file handle, line_ptr_ as output line, index_buff_ptr_ as index where the read head was left
+    cmp buff_size_ptr_, 0
+    jne skip_reading_
+    mov cx, 400
+    mov buff_size_ptr_, cx
+    mov index_buff_ptr_, 0  
+
+    cmp buff_size_ptr_, 0
+    je end_of_file_reached
+    skip_reading_:
+
+
+    ; 0ah - new line maybe
+    ; 0dh - carriage return maybe
+    mov DI, line_ptr_
+    mov SI, ptr_buffer_
+
+    ; move the reading head to its correct position
+    mov al, index_buff_ptr_
+    add SI, al
+
+    ; copy elements from file to line until the new line symbol
+    loop_line_elements:
+    cmp [SI], 0dh
+    je, end_of_line_reached
+    mov al, [SI]
+    mov [DI], al
+    inc SI
+    inc DI
+    dec buff_size_ptr_ ; keep track of how many new symbols are still in the buffer
+    inc index_buff_ptr_ ; this value is saved to offset the reading head next time
+    jmp loop_line_elements
+    end_of_line_reached:
+
+    jmp skip_file_ptr_end_
+    end_of_file_reached:
+    mov file_ptr_end, 1
+    skip_file_ptr_end_:
+RET
+
+
+
 
 
 write_to_buff: ; call this and give it a text string, this will save it in buffer and when buffer reaches limit it will write to file *.asm
@@ -830,32 +586,19 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     push dx
 
     xor ax, ax
-    cmp use_line_ptr, 1
-    je use_other_line
-    mov SI, offset line
-    mov ah, line_length ; change offset line_length -> line_length
-    mov line_length, 0
-    jmp do_not_use_other_ptr
-    use_other_line:
-    mov SI, line_ptr_
-    mov ah, line_ptr_len
-    mov line_ptr_len, 0
-    do_not_use_other_ptr:
-    push ax
-
     mov al, write_index
-    add al, ah
-    cmp ax, 200
+    add al, line_length
+    cmp al, 200
 
     jnae skip_writing_to_file
     call write_to_file
     mov write_index, 0
     skip_writing_to_file:
 
+    mov SI, offset line
     mov DI, offset write_buff
     xor cx, cx
-    pop ax
-    mov cl, ah
+    mov cl, line_length
 
     exchange_bytes:
     mov al, [SI]
@@ -865,12 +608,13 @@ write_to_buff: ; call this and give it a text string, this will save it in buffe
     inc write_index
     inc SI
     loop exchange_bytes
+    mov line_length, 0
 
     pop dx
     pop cx
     pop bx
     pop ax
-    RET
+RET
 write_to_file:
     mov ax, 4000h
     mov bx, fh_out
@@ -878,7 +622,7 @@ write_to_file:
     mov cl, write_index
     mov dx, offset write_buff
     int 21h
-    RET
+RET
 write_to_line: ; takes a pointer and writes its contents to line, yes very simple
     push ax
     push bx
@@ -886,17 +630,7 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     push dx
 
     mov SI, ptr_
-
-    xor dx, dx
-    cmp use_line_ptr, 1
-    jne skip_using_line_ptr
-    mov DI, line_ptr_
-    mov dl, line_ptr_len
-    jmp skip_simple_line
-    skip_using_line_ptr:
     mov DI, offset line
-    mov dl, line_length
-    skip_simple_line:
 
     copy_values:
     mov al, [SI]
@@ -905,40 +639,28 @@ write_to_line: ; takes a pointer and writes its contents to line, yes very simpl
     je exit_copy_loop
 
     xor bx, bx
-    mov bl, dl
+    mov bl, line_length
     mov [DI + bx], al
-    inc dl
+    inc line_length
     inc SI
 
     jmp copy_values
     exit_copy_loop:
 
-    cmp use_line_ptr, 1
-    jne skip_using_line_ptr1
-    mov line_ptr_len, dl
-    jmp skip_simple_line1
-    skip_using_line_ptr1:
-    mov line_length, dl
-    skip_simple_line1:
-
     pop dx
     pop cx
     pop bx
     pop ax
-    RET
+RET
 end_line: ; add endl to line and output line contents to the write buffer
     push ax
     push bx
     push cx
     push dx
-
-    ; check if there is more stuff that end_line should save
-    call save_jump_tag
     
     mov SI, offset endl
-
-    xor bx, bx
     mov DI, offset line
+    xor bx, bx
     mov bl, line_length ; change offset line_length -> line_length
 
     mov cx, 2
@@ -951,26 +673,13 @@ end_line: ; add endl to line and output line contents to the write buffer
 
     add line_length, 2
 
-    cmp use_debug, 1
-    jne skip_double_write
-    call convert_bytes_debug
-    mov use_line_ptr, 1
-    mov line_ptr_, offset debug_line
-    mov ax, debug_command_name_ptr_
-    mov ptr_, ax
-    mov line_ptr_len, 28
-    call write_to_line
-    mov line_ptr_len, 40
-    call write_to_buff
-    mov use_line_ptr, 0
-    skip_double_write:
     call write_to_buff
 
     pop dx
     pop cx
     pop bx
     pop ax
-    RET
+RET
 force_write_to_file:
     push ax
     push bx
@@ -983,9 +692,8 @@ force_write_to_file:
     pop cx
     pop bx
     pop ax
-    RET
+RET
 
-;
 add_space_line:
     mov bx, offset line
     xor ax, ax
@@ -994,7 +702,7 @@ add_space_line:
     mov al, ' '
     mov [bx], al
     inc line_length
-    RET
+RET
 add_left_bracket:
     mov bx, offset line
     xor ax, ax
@@ -1003,7 +711,7 @@ add_left_bracket:
     mov al, '['
     mov [bx], al
     inc line_length
-    RET
+RET
 add_right_bracket:
     mov bx, offset line
     xor ax, ax
@@ -1012,7 +720,7 @@ add_right_bracket:
     mov al, ']'
     mov [bx], al
     inc line_length
-    RET
+RET
 add_plus:
     mov bx, offset line
     xor ax, ax
@@ -1021,7 +729,7 @@ add_plus:
     mov al, '+'
     mov [bx], al
     inc line_length
-    RET
+RET
 add_comma_line:
     mov bx, offset line
     xor ax, ax
@@ -1031,7 +739,7 @@ add_comma_line:
     mov [bx], al
     inc line_length
     call add_space_line
-    RET
+RET
 add_h:
     mov bx, offset line
     xor ax, ax
@@ -1040,7 +748,7 @@ add_h:
     mov al, 'h'
     mov [bx], al
     inc line_length
-    RET
+RET
 
 ; xddd doble xdddd
 reset_double_byte_number:
@@ -1050,16 +758,14 @@ reset_double_byte_number:
     mov [DI], al
     mov [DI+1], al
     pop ax
-    RET
+RET
 number_to_hex:
     push ax
     push bx
     push cx
     push dx
 
-    xor dx, dx
     mov dl, binary_number
-    mov temp_number, dx
 
     mov cl, dl
     shr cl, 4
@@ -1076,7 +782,7 @@ number_to_hex:
     pop bx
     pop ax
     call reset_double_byte_number
-    RET
+RET
 double_byte_number_to_hex:
     push ax
     push bx
@@ -1085,15 +791,7 @@ double_byte_number_to_hex:
 
     mov SI, offset double_byte_number
 
-    cmp add_cs_bool, 1
-    jne skip_cs_addition2
-    mov dh, [SI + 1]
-    mov dl, [SI]
-    add dx, count_segment
-    mov add_cs_bool, 0
-    mov [SI + 1], dh
-    mov [SI], dl
-    skip_cs_addition2:
+
     
     mov ah, [SI + 1]  ; while ah is for 00--
     mov cl, ah
@@ -1115,23 +813,7 @@ double_byte_number_to_hex:
     shr cl, 4
     call convert_half_byte_to_HEX
 
-    cmp use_line_ptr, 1
-    jne skip_using_line_ptr3
-    mov DI, line_ptr_
-    xor bx, bx
-    mov bl, line_ptr_len
-    inc line_ptr_len
-    mov al, 'h'
-    mov [DI + bx], al 
-    jmp skip_simple_line3
-    skip_using_line_ptr3:
     call add_h
-    skip_simple_line3:
-    
-    mov SI, offset double_byte_number
-    mov dh, [SI + 1]
-    mov dl, [SI]
-    mov temp_number, dx
 
     pop dx
     pop cx
@@ -1139,13 +821,8 @@ double_byte_number_to_hex:
     pop ax
     call reset_double_byte_number
 
-    RET
+RET
 convert_half_byte_to_HEX: ; takes register 'cl' as input
-    push ax
-    push bx
-    push cx
-    push dx
-
     cmp cl, 9
     jbe number_
     add cl, 55
@@ -1153,35 +830,21 @@ convert_half_byte_to_HEX: ; takes register 'cl' as input
 
     number_:
     add cl, 48
-    
+
     write_symbol:
-    xor ax, ax
-    cmp use_line_ptr, 1
-    jne skip_using_line_ptr2
-    mov DI, line_ptr_
-    mov al, line_ptr_len
-    inc line_ptr_len
-    jmp skip_simple_line2
-    skip_using_line_ptr2:
-    mov DI, offset line
-    mov al, line_length
-    inc line_length
-    skip_simple_line2:
     xor ch, ch
     xor bx, bx
-    add DI, ax
-    mov [DI], cl
-
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    RET
+    mov bx, offset line
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov [bx], cl
+    inc line_length
+    
+RET
 add_counter_segment:
     mov add_cs_bool, 1
-    mov is_address, 1
-    mov use_tags, 1
-    RET
+RET
 convert_to_decimal:       ; takes number in the binary_number
     push ax
     push dx
@@ -1190,8 +853,8 @@ convert_to_decimal:       ; takes number in the binary_number
 
 
     mov SI, offset double_byte_number
-    mov dl, [SI]      ; in reality dl is actually --00
-    mov dh, [SI + 1]  ; while dh is for 00--
+    mov dl, [SI]      ; in reality al is actually --00
+    mov dh, [SI + 1]  ; while ah is for 00--
     mov DI, offset number_in_ASCII            
     mov al, 0   
     mov [DI], al ; reset digit count 
@@ -1283,21 +946,15 @@ convert_to_decimal:       ; takes number in the binary_number
     
     call write_to_line
 
-    mov SI, offset double_byte_number
-    mov dh, [SI + 1]
-    mov dl, [SI]
-    mov temp_number, dx
-
     pop bx
     pop cx
     pop dx
     pop ax
     
     call reset_double_byte_number
-    RET
+RET
 
 
-;
 find_word_register: ; use register_index as input
     ; 000 AX
     ; 001 CX
@@ -1374,7 +1031,7 @@ find_word_register: ; use register_index as input
     pop cx
     pop bx
     pop ax
-    RET
+RET
 find_byte_register: ; use register_index as input
     ; 000 AL
     ; 001 CL
@@ -1451,7 +1108,7 @@ find_byte_register: ; use register_index as input
     pop cx
     pop bx
     pop ax
-    RET
+RET
 find_effective_address_registers: ; use register_index as input, and when there is direct address and mod_ for changing between address and BP reg
     cmp register_index, 0
     jne not_BX_SI
@@ -1537,7 +1194,7 @@ find_effective_address_registers: ; use register_index as input, and when there 
 
 
     end_checking_address_reg:
-    RET
+RET
 find_seg_register: ; use register_index as input
     push ax
     push bx
@@ -1582,7 +1239,7 @@ find_seg_register: ; use register_index as input
     pop bx
     pop ax
 
-    RET
+RET
 ; mod_ = 01 for one byte poslinkis, 10 for two byte poslinkis
 find_poslinkis: ; use mod_ as input, uses read_bytes function
     push ax
@@ -1622,7 +1279,7 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     pop cx
     pop bx
     pop ax
-    RET
+RET
 
 find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'double_byte_number if there is adress'
     call add_left_bracket
@@ -1633,7 +1290,7 @@ find_full_effective_address:    ;with brackets[]; takes mod, register_index, 'do
     call find_poslinkis
     skip_poslinkis:
     call add_right_bracket
-    RET
+RET
 
 full_reg_detector:   ; takes register_index and w_
     cmp w_, 1
@@ -1643,7 +1300,7 @@ full_reg_detector:   ; takes register_index and w_
     not_word_sized_reg:
     call find_byte_register
     skip_one_byte_reg:
-    RET
+RET
 
 full_r_m_detector: ; takes mod_, w_ and register_index as input
     cmp mod_, 3
@@ -1656,7 +1313,7 @@ full_r_m_detector: ; takes mod_, w_ and register_index as input
     call find_full_effective_address
     skip_effective_address:
 
-    RET
+RET
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
@@ -1683,7 +1340,7 @@ CONVERT_dw_mod_reg_r_m_poslinki:
             mov register_index, al
             call full_r_m_detector
     pop ax
-    RET
+RET
 
 
 CONVERT_w_bojb_bovb:
@@ -1715,7 +1372,7 @@ CONVERT_w_bojb_bovb:
 
     exit_bojb_function:
     pop ax
-    RET
+RET
 
 CONVERT_sr: ; write IS, CS, SS, DS with one command
     push ax
@@ -1723,7 +1380,7 @@ CONVERT_sr: ; write IS, CS, SS, DS with one command
     mov register_index, al
     call find_seg_register
     pop ax
-    RET
+RET
 
 
 CONVERT_reg: ; take reg_ variable and convert it to word sized register
@@ -1733,17 +1390,17 @@ CONVERT_reg: ; take reg_ variable and convert it to word sized register
     mov register_index, al
     call find_word_register
     pop ax
-    RET
+RET
 
 
 CONVERT_poslinkis: ; this one is one byte only!
     call add_space_line
     mov mod_, 1 ; using the mod_, tell poslinkis function to only get one byte and convert it to hex number
     call find_poslinkis
-    RET
+RET
 
 
-CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
+CONVERT_sw_mod_r_m_poslinkis_bojb_bovb: ; CIA NEVEIKIA FIXME
     push ax
     call reset_double_byte_number
     mov al, r_m_
@@ -1760,16 +1417,31 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
-    jmp end999
+    jmp pab
     smoll:
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
 
-    end999:
+    ;cmp w_, 1
+    ;je pab
+    ;cmp s_, 1
+    ;jne ba
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number], al
+    ;call read_bytes
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number + 1], al
+    ;call read_bytes
+    ;jmp pab
+    ;ba:
+    ;mov al, byte_
+    ;mov [byte ptr double_byte_number], al
+    ;call read_bytes
+    pab:
     call convert_to_decimal
     pop ax
-    RET
+RET
 
 
 CONVERT_w_mod_reg_r_m_poslinkis:
@@ -1783,18 +1455,18 @@ CONVERT_w_mod_reg_r_m_poslinkis:
     call full_r_m_detector
     pop ax
 
-    RET
+RET
 
 
 CONVERT_d_mod_sr_r_m_poslinkis:
     push ax
-    call add_space_line
     cmp d_, 1
     jne bac
     mov al, sr_
     mov register_index, al
     call find_seg_register
     call add_comma_line
+    call add_space_line
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
@@ -1805,14 +1477,15 @@ CONVERT_d_mod_sr_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     call add_comma_line
+    call add_space_line
     mov al, sr_
     mov register_index, al
     call find_seg_register
     pop ax
-    RET
+RET
 
 
-CONVERT_mod_reg_r_m_poslinkis: 
+CONVERT_mod_reg_r_m_poslinkis: ; lets say this one is main
     push ax
     call add_space_line
     mov al, reg_
@@ -1824,10 +1497,10 @@ CONVERT_mod_reg_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     pop ax
-    RET
+RET
 
 
-CONVERT_mod_r_m_poslinkis:  
+CONVERT_mod_r_m_poslinkis:; galimai neveikia 
     push ax
     call add_space_line
     call full_reg_detector
@@ -1836,22 +1509,22 @@ CONVERT_mod_r_m_poslinkis:
     call add_space_line
     call find_poslinkis
     pop ax
-    RET
+RET
 
 
-CONVERT_ajb_avb_srjb_srvb:
-    push ax
+CONVERT_ajb_avb_srjb_srvb:;galimai neveikia nzn
+push ax
     call reset_double_byte_number
+    call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
-    call read_bytes
     call convert_to_decimal
     call add_comma_line
     call add_space_line
-    call reset_double_byte_number
+    call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
@@ -1860,7 +1533,7 @@ CONVERT_ajb_avb_srjb_srvb:
     call read_bytes
     call convert_to_decimal
     pop ax
-    RET
+RET
 
 
 CONVERT_w_ajb_avb:
@@ -1875,7 +1548,7 @@ CONVERT_w_ajb_avb:
         call convert_to_decimal
     call add_right_bracket
     pop ax
-    ret
+ret
     big:
         mov al, byte_
         mov[byte ptr double_byte_number], al
@@ -1886,7 +1559,7 @@ CONVERT_w_ajb_avb:
         call convert_to_decimal  
     call add_right_bracket
     pop ax
-    RET
+RET
 
 
 CONVERT_wreg_bojb_bovb_:
@@ -1903,7 +1576,7 @@ CONVERT_wreg_bojb_bovb_:
         mov [byte ptr double_byte_number], al
         call read_bytes
         call convert_to_decimal
-    ret
+ret
     wordc:
         mov al, byte_
         mov [byte ptr double_byte_number], al
@@ -1912,33 +1585,23 @@ CONVERT_wreg_bojb_bovb_:
         mov [byte ptr double_byte_number + 1], al
         call read_bytes
         call convert_to_decimal
-    RET
+RET
 
 
 CONVERT_bojb_bovb:
     call add_space_line
-    call reset_double_byte_number
     mov al, byte_
-    mov [byte ptr double_byte_number], al
-    call read_bytes
-    mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
-    call read_bytes
-    call double_byte_number_to_hex
-    RET
-
-CONVERT_byte_byte: ; do not add space
-    mov al, byte_
-    mov [byte ptr double_byte_number], al
+    mov[byte ptr double_byte_number], al
     call read_bytes
     mov al, byte_
     mov [byte ptr double_byte_number + 1], al
     call read_bytes
     call convert_to_decimal
-    RET
+RET
+
 SET_ignore_w_:
     mov w_, 0
-    RET
+RET
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     push ax
@@ -1965,7 +1628,7 @@ CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     call convert_to_decimal
     cv_end:
     pop ax
-    RET
+RET
 
 
 CONVERT_numeris:
@@ -1976,7 +1639,7 @@ CONVERT_numeris:
     call add_space_line
     call number_to_hex
     pop ax
-    RET
+RET
 
 
 CONVERT_vw_mod_r_m_poslinkis:
@@ -2011,7 +1674,7 @@ CONVERT_vw_mod_r_m_poslinkis:
 
     exit_v:
     pop ax
-    RET
+RET
 
 
 CONVERT_xxx_mod_yyy_r_m_poslinkis:
@@ -2020,7 +1683,7 @@ CONVERT_xxx_mod_yyy_r_m_poslinkis:
     mov ptr_, ax
     call write_to_line
     pop ax
-    RET
+RET
 
 
 CONVERT_w_portas:
@@ -2046,12 +1709,12 @@ CONVERT_w_portas:
     call read_bytes
     call convert_to_decimal
     pop ax
-    RET
+RET
 
 
 CONVERT_pjb_pvb:
     call CONVERT_bojb_bovb
-    RET
+RET
 
 
 CONVERT_w_mod_r_m_poslinkis:
@@ -2061,7 +1724,7 @@ CONVERT_w_mod_r_m_poslinkis:
     mov register_index, al
     call full_r_m_detector
     pop ax
-    RET
+RET
 
 CONVERT_shifters:
     push ax
@@ -2076,7 +1739,7 @@ CONVERT_shifters:
     call read_bytes
     call convert_to_decimal
     pop ax
-    RET
+RET
 
 CONVERT_akumuliatorius:
     call add_space_line
@@ -2090,7 +1753,7 @@ CONVERT_akumuliatorius:
     call write_to_line
     call add_comma_line
     call CONVERT_w_bojb_bovb
-    RET
+RET
 
 CONVERT_reg_bef_adr:
     call add_space_line
@@ -2105,14 +1768,14 @@ CONVERT_reg_bef_adr:
     call write_to_line
     call add_comma_line
     call add_left_bracket
-    call CONVERT_byte_byte
+    call CONVERT_bojb_bovb
     call add_right_bracket
-    RET
+RET
 
 CONVERT_reg_aft_adr:
     call add_space_line
     call add_left_bracket
-    call CONVERT_byte_byte
+    call CONVERT_bojb_bovb
     call add_right_bracket
     call add_comma_line
     cmp w_, 1
@@ -2123,111 +1786,8 @@ CONVERT_reg_aft_adr:
     mov ptr_, offset al_n
     skip_al_1:
     call write_to_line
-    RET
-
-;
-open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out_ptr_ as output file name
-
-    mov ax, 3c00h            ; open existing file in read mode only
-    mov dx, ptr_     ; return file handle to register AX
-    xor cx, cx
-    int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
-
-    JnC no_error2
-    call big_error                 ; jump if carry flag = 1 (CF = 1)
-    no_error2:
-    mov out_ptr_, ax            ; save the file handle in the double word type for later use
-
-    RET
-;
-
-save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
-    cmp use_tags, 1
-    je use_them
-    RET
-    use_them:
-    mov use_tags, 0
-    
-
-
-    cmp fn_tags_opened, 1
-    je skip_tags_file
-    mov ptr_, offset fn_tags
-    call open_any_file
-    mov ax, out_ptr_
-    mov fh_tags, ax
-    mov fn_tags_opened, 1
-    skip_tags_file:
-
-    mov use_line_ptr, 1
-    mov line_ptr_len, 0
-    mov line_ptr_, offset tags_line
-
-    mov dx, temp_number
-    mov SI, offset double_byte_number
-    mov [SI + 1], dh 
-    mov [SI], dl
-
-    mov SI, offset double_byte_number
-    mov al, 24h
-    mov [SI + 2], al
-    mov ptr_, SI
-    call write_to_line
-
-    xor bx, bx
-    mov bl, line_ptr_len
-    add bx, line_ptr_
-    cmp is_address, 1
-    jne its_jump
-    mov al, 'a'
-    mov [bx], al
-    jmp its_not_jump
-    its_jump:
-    mov al, 'j'
-    mov [bx], al
-    its_not_jump:
-    inc line_ptr_len
-    
-    mov add_cs_bool, 0
-    call double_byte_number_to_hex
-
-    cmp is_address, 0
-    jne skip_position
-    mov dx, count_lines
-    mov SI, offset double_byte_number
-    mov [SI + 1], dh 
-    mov [SI], dl
-    mov al, 24h
-    mov [SI + 2], al
-    mov ptr_, SI
-    call write_to_line
-    skip_position:
-
-    mov ptr_, offset endl
-    call write_to_line
-
-    
-   
-
-    
-
-
-    mov ax, 4000h
-    mov bx, fh_tags
-    xor cx, cx
-    mov cl, line_ptr_len
-    mov dx, offset tags_line
-    int 21h
-
-
-    mov use_line_ptr, 0
 RET
 
-
-jump_func: ; only for check_commands
-    mov use_tags, 1
-    mov is_address, 0
-RET
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
    ;--> The byte: 000000dw <--
@@ -2238,7 +1798,6 @@ check_commands:
    jmp not_0
    yes_0_0:
    mov ptr_, offset add_n
-   mov debug_command_name_ptr_, offset add_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '000000dw' <--
    mov al, byte_
@@ -2283,7 +1842,6 @@ check_commands:
    jmp not_1
    yes_1_0:
    mov ptr_, offset add_n
-   mov debug_command_name_ptr_, offset add_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0000010w' <--
    mov al, byte_
@@ -2309,7 +1867,6 @@ check_commands:
    jmp not_2
    yes_2_0:
    mov ptr_, offset push_n
-   mov debug_command_name_ptr_, offset push_n
    call write_to_line
    ;--> The variable 'sr' in reformed byte: '000sr110' <--
    mov al, byte_
@@ -2334,7 +1891,6 @@ check_commands:
    jmp not_3
    yes_3_0:
    mov ptr_, offset pop_n
-   mov debug_command_name_ptr_, offset pop_n
    call write_to_line
    ;--> The variable 'sr' in reformed byte: '000sr111' <--
    mov al, byte_
@@ -2358,7 +1914,6 @@ check_commands:
    jmp not_4
    yes_4_0:
    mov ptr_, offset or_n
-   mov debug_command_name_ptr_, offset or_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '000010dw' <--
    mov al, byte_
@@ -2403,7 +1958,6 @@ check_commands:
    jmp not_5
    yes_5_0:
    mov ptr_, offset or_n
-   mov debug_command_name_ptr_, offset or_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0000110w' <--
    mov al, byte_
@@ -2428,7 +1982,6 @@ check_commands:
    jmp not_6
    yes_6_0:
    mov ptr_, offset adc_n
-   mov debug_command_name_ptr_, offset adc_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '000100dw' <--
    mov al, byte_
@@ -2473,7 +2026,6 @@ check_commands:
    jmp not_7
    yes_7_0:
    mov ptr_, offset adc_n
-   mov debug_command_name_ptr_, offset adc_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0001010w' <--
    mov al, byte_
@@ -2498,7 +2050,6 @@ check_commands:
    jmp not_8
    yes_8_0:
    mov ptr_, offset sbb_n
-   mov debug_command_name_ptr_, offset sbb_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '000110dw' <--
    mov al, byte_
@@ -2543,7 +2094,6 @@ check_commands:
    jmp not_9
    yes_9_0:
    mov ptr_, offset sbb_n
-   mov debug_command_name_ptr_, offset sbb_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0001110w' <--
    mov al, byte_
@@ -2568,7 +2118,6 @@ check_commands:
    jmp not_10
    yes_10_0:
    mov ptr_, offset and_n
-   mov debug_command_name_ptr_, offset and_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '001000dw' <--
    mov al, byte_
@@ -2613,7 +2162,6 @@ check_commands:
    jmp not_11
    yes_11_0:
    mov ptr_, offset and_n
-   mov debug_command_name_ptr_, offset and_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0010010w' <--
    mov al, byte_
@@ -2639,7 +2187,6 @@ check_commands:
    jmp not_12
    yes_12_0:
    mov ptr_, offset wtf_n
-   mov debug_command_name_ptr_, offset wtf_n
    call write_to_line
    ;--> The variable 'sr' in reformed byte: '001sr110' <--
    mov al, byte_
@@ -2662,7 +2209,6 @@ check_commands:
    jmp not_13
    yes_13_0:
    mov ptr_, offset daa_n
-   mov debug_command_name_ptr_, offset daa_n
    call write_to_line
    call read_bytes
    call end_line
@@ -2680,7 +2226,6 @@ check_commands:
    jmp not_14
    yes_14_0:
    mov ptr_, offset sub_n
-   mov debug_command_name_ptr_, offset sub_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '001010dw' <--
    mov al, byte_
@@ -2725,7 +2270,6 @@ check_commands:
    jmp not_15
    yes_15_0:
    mov ptr_, offset sub_n
-   mov debug_command_name_ptr_, offset sub_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0010110w' <--
    mov al, byte_
@@ -2749,7 +2293,6 @@ check_commands:
    jmp not_16
    yes_16_0:
    mov ptr_, offset das_n
-   mov debug_command_name_ptr_, offset das_n
    call write_to_line
    call read_bytes
    call end_line
@@ -2767,7 +2310,6 @@ check_commands:
    jmp not_17
    yes_17_0:
    mov ptr_, offset xor_n
-   mov debug_command_name_ptr_, offset xor_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '001100dw' <--
    mov al, byte_
@@ -2812,7 +2354,6 @@ check_commands:
    jmp not_18
    yes_18_0:
    mov ptr_, offset xor_n
-   mov debug_command_name_ptr_, offset xor_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0011010w' <--
    mov al, byte_
@@ -2836,7 +2377,6 @@ check_commands:
    jmp not_19
    yes_19_0:
    mov ptr_, offset aaa_n
-   mov debug_command_name_ptr_, offset aaa_n
    call write_to_line
    call read_bytes
    call end_line
@@ -2854,7 +2394,6 @@ check_commands:
    jmp not_20
    yes_20_0:
    mov ptr_, offset cmp_n
-   mov debug_command_name_ptr_, offset cmp_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '001110dw' <--
    mov al, byte_
@@ -2899,7 +2438,6 @@ check_commands:
    jmp not_21
    yes_21_0:
    mov ptr_, offset cmp_n
-   mov debug_command_name_ptr_, offset cmp_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '0011110w' <--
    mov al, byte_
@@ -2923,7 +2461,6 @@ check_commands:
    jmp not_22
    yes_22_0:
    mov ptr_, offset aas_n
-   mov debug_command_name_ptr_, offset aas_n
    call write_to_line
    call read_bytes
    call end_line
@@ -2941,7 +2478,6 @@ check_commands:
    jmp not_23
    yes_23_0:
    mov ptr_, offset inc_n
-   mov debug_command_name_ptr_, offset inc_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '01000reg' <--
    mov al, byte_
@@ -2965,7 +2501,6 @@ check_commands:
    jmp not_24
    yes_24_0:
    mov ptr_, offset dec_n
-   mov debug_command_name_ptr_, offset dec_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '01001reg' <--
    mov al, byte_
@@ -2989,7 +2524,6 @@ check_commands:
    jmp not_25
    yes_25_0:
    mov ptr_, offset push_n
-   mov debug_command_name_ptr_, offset push_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '01010reg' <--
    mov al, byte_
@@ -3013,7 +2547,6 @@ check_commands:
    jmp not_26
    yes_26_0:
    mov ptr_, offset pop_n
-   mov debug_command_name_ptr_, offset pop_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '01011reg' <--
    mov al, byte_
@@ -3036,11 +2569,9 @@ check_commands:
    jmp not_27
    yes_27_0:
    mov ptr_, offset jo_n
-   mov debug_command_name_ptr_, offset jo_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_27:
@@ -3056,11 +2587,9 @@ check_commands:
    jmp not_28
    yes_28_0:
    mov ptr_, offset jno_n
-   mov debug_command_name_ptr_, offset jno_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_28:
@@ -3076,11 +2605,9 @@ check_commands:
    jmp not_29
    yes_29_0:
    mov ptr_, offset jnae_n
-   mov debug_command_name_ptr_, offset jnae_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_29:
@@ -3096,11 +2623,9 @@ check_commands:
    jmp not_30
    yes_30_0:
    mov ptr_, offset jae_n
-   mov debug_command_name_ptr_, offset jae_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_30:
@@ -3116,11 +2641,9 @@ check_commands:
    jmp not_31
    yes_31_0:
    mov ptr_, offset je_n
-   mov debug_command_name_ptr_, offset je_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_31:
@@ -3136,11 +2659,9 @@ check_commands:
    jmp not_32
    yes_32_0:
    mov ptr_, offset jne_n
-   mov debug_command_name_ptr_, offset jne_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_32:
@@ -3156,11 +2677,9 @@ check_commands:
    jmp not_33
    yes_33_0:
    mov ptr_, offset jbe_n
-   mov debug_command_name_ptr_, offset jbe_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_33:
@@ -3176,11 +2695,9 @@ check_commands:
    jmp not_34
    yes_34_0:
    mov ptr_, offset ja_n
-   mov debug_command_name_ptr_, offset ja_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_34:
@@ -3196,11 +2713,9 @@ check_commands:
    jmp not_35
    yes_35_0:
    mov ptr_, offset js_n
-   mov debug_command_name_ptr_, offset js_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_35:
@@ -3216,11 +2731,9 @@ check_commands:
    jmp not_36
    yes_36_0:
    mov ptr_, offset jns_n
-   mov debug_command_name_ptr_, offset jns_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_36:
@@ -3236,11 +2749,9 @@ check_commands:
    jmp not_37
    yes_37_0:
    mov ptr_, offset jp_n
-   mov debug_command_name_ptr_, offset jp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_37:
@@ -3256,11 +2767,9 @@ check_commands:
    jmp not_38
    yes_38_0:
    mov ptr_, offset jnp_n
-   mov debug_command_name_ptr_, offset jnp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_38:
@@ -3276,11 +2785,9 @@ check_commands:
    jmp not_39
    yes_39_0:
    mov ptr_, offset jl_n
-   mov debug_command_name_ptr_, offset jl_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_39:
@@ -3296,11 +2803,9 @@ check_commands:
    jmp not_40
    yes_40_0:
    mov ptr_, offset jge_n
-   mov debug_command_name_ptr_, offset jge_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_40:
@@ -3316,11 +2821,9 @@ check_commands:
    jmp not_41
    yes_41_0:
    mov ptr_, offset jle_n
-   mov debug_command_name_ptr_, offset jle_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_41:
@@ -3336,11 +2839,9 @@ check_commands:
    jmp not_42
    yes_42_0:
    mov ptr_, offset jg_n
-   mov debug_command_name_ptr_, offset jg_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_42:
@@ -3369,7 +2870,6 @@ check_commands:
    jmp not_43
    yes_43_2:
    mov ptr_, offset add_n
-   mov debug_command_name_ptr_, offset add_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3422,7 +2922,6 @@ check_commands:
    jmp not_44
    yes_44_2:
    mov ptr_, offset or_n
-   mov debug_command_name_ptr_, offset or_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3475,7 +2974,6 @@ check_commands:
    jmp not_45
    yes_45_2:
    mov ptr_, offset adc_n
-   mov debug_command_name_ptr_, offset adc_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3528,7 +3026,6 @@ check_commands:
    jmp not_46
    yes_46_2:
    mov ptr_, offset sbb_n
-   mov debug_command_name_ptr_, offset sbb_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3581,7 +3078,6 @@ check_commands:
    jmp not_47
    yes_47_2:
    mov ptr_, offset and_n
-   mov debug_command_name_ptr_, offset and_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3634,7 +3130,6 @@ check_commands:
    jmp not_48
    yes_48_2:
    mov ptr_, offset sub_n
-   mov debug_command_name_ptr_, offset sub_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3687,7 +3182,6 @@ check_commands:
    jmp not_49
    yes_49_2:
    mov ptr_, offset xor_n
-   mov debug_command_name_ptr_, offset xor_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3740,7 +3234,6 @@ check_commands:
    jmp not_50
    yes_50_2:
    mov ptr_, offset cmp_n
-   mov debug_command_name_ptr_, offset cmp_n
    call write_to_line
    ;--> The variable 's' in reformed byte: '100000sw' <--
    mov al, byte_
@@ -3781,7 +3274,6 @@ check_commands:
    jmp not_51
    yes_51_0:
    mov ptr_, offset test_n
-   mov debug_command_name_ptr_, offset test_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1000010w' <--
    mov al, byte_
@@ -3821,7 +3313,6 @@ check_commands:
    jmp not_52
    yes_52_0:
    mov ptr_, offset xchg_n
-   mov debug_command_name_ptr_, offset xchg_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1000011w' <--
    mov al, byte_
@@ -3861,7 +3352,6 @@ check_commands:
    jmp not_53
    yes_53_0:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '100010dw' <--
    mov al, byte_
@@ -3919,7 +3409,6 @@ check_commands:
    jmp not_54
    yes_54_2:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'd' in reformed byte: '100011d0' <--
    mov al, byte_
@@ -3958,7 +3447,6 @@ check_commands:
    jmp not_55
    yes_55_0:
    mov ptr_, offset lea_n
-   mov debug_command_name_ptr_, offset lea_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
@@ -4004,7 +3492,6 @@ check_commands:
    jmp not_56
    yes_56_2:
    mov ptr_, offset pop_n
-   mov debug_command_name_ptr_, offset pop_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md000r/m' <--
@@ -4033,7 +3520,6 @@ check_commands:
    jmp not_57
    yes_57_0:
    mov ptr_, offset nop_n
-   mov debug_command_name_ptr_, offset nop_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4051,7 +3537,6 @@ check_commands:
    jmp not_58
    yes_58_0:
    mov ptr_, offset xchg_n
-   mov debug_command_name_ptr_, offset xchg_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '10010reg' <--
    mov al, byte_
@@ -4074,7 +3559,6 @@ check_commands:
    jmp not_59
    yes_59_0:
    mov ptr_, offset cbv_n
-   mov debug_command_name_ptr_, offset cbv_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4091,7 +3575,6 @@ check_commands:
    jmp not_60
    yes_60_0:
    mov ptr_, offset cwd_n
-   mov debug_command_name_ptr_, offset cwd_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4108,7 +3591,6 @@ check_commands:
    jmp not_61
    yes_61_0:
    mov ptr_, offset call_n
-   mov debug_command_name_ptr_, offset call_n
    call write_to_line
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
@@ -4129,7 +3611,6 @@ check_commands:
    jmp not_62
    yes_62_0:
    mov ptr_, offset wait_n
-   mov debug_command_name_ptr_, offset wait_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4146,7 +3627,6 @@ check_commands:
    jmp not_63
    yes_63_0:
    mov ptr_, offset pushf_n
-   mov debug_command_name_ptr_, offset pushf_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4163,7 +3643,6 @@ check_commands:
    jmp not_64
    yes_64_0:
    mov ptr_, offset popf_n
-   mov debug_command_name_ptr_, offset popf_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4180,7 +3659,6 @@ check_commands:
    jmp not_65
    yes_65_0:
    mov ptr_, offset sahf_n
-   mov debug_command_name_ptr_, offset sahf_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4197,7 +3675,6 @@ check_commands:
    jmp not_66
    yes_66_0:
    mov ptr_, offset lahf_n
-   mov debug_command_name_ptr_, offset lahf_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4215,7 +3692,6 @@ check_commands:
    jmp not_67
    yes_67_0:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1010000w' <--
    mov al, byte_
@@ -4240,7 +3716,6 @@ check_commands:
    jmp not_68
    yes_68_0:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1010001w' <--
    mov al, byte_
@@ -4324,7 +3799,6 @@ check_commands:
    jmp not_71
    yes_71_0:
    mov ptr_, offset test_n
-   mov debug_command_name_ptr_, offset test_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1010100w' <--
    mov al, byte_
@@ -4436,7 +3910,6 @@ check_commands:
    jmp not_75
    yes_75_0:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'reg' in reformed byte: '1011wreg' <--
    mov al, byte_
@@ -4465,7 +3938,6 @@ check_commands:
    jmp not_76
    yes_76_0:
    mov ptr_, offset ret_n
-   mov debug_command_name_ptr_, offset ret_n
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
@@ -4484,7 +3956,6 @@ check_commands:
    jmp not_77
    yes_77_0:
    mov ptr_, offset ret_n
-   mov debug_command_name_ptr_, offset ret_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4501,7 +3972,6 @@ check_commands:
    jmp not_78
    yes_78_0:
    mov ptr_, offset les_n
-   mov debug_command_name_ptr_, offset les_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
@@ -4535,7 +4005,6 @@ check_commands:
    jmp not_79
    yes_79_0:
    mov ptr_, offset lds_n
-   mov debug_command_name_ptr_, offset lds_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'mdregr/m' <--
@@ -4582,7 +4051,6 @@ check_commands:
    jmp not_80
    yes_80_2:
    mov ptr_, offset mov_n
-   mov debug_command_name_ptr_, offset mov_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1100011w' <--
    mov al, byte_
@@ -4617,7 +4085,6 @@ check_commands:
    jmp not_81
    yes_81_0:
    mov ptr_, offset retf_n
-   mov debug_command_name_ptr_, offset retf_n
    call write_to_line
    call read_bytes
    ;--> The variable 'bovb' cannot be decoded by this function <--
@@ -4636,7 +4103,6 @@ check_commands:
    jmp not_82
    yes_82_0:
    mov ptr_, offset retf_n
-   mov debug_command_name_ptr_, offset retf_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4653,7 +4119,6 @@ check_commands:
    jmp not_83
    yes_83_0:
    mov ptr_, offset int_3_n
-   mov debug_command_name_ptr_, offset int_3_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4670,7 +4135,6 @@ check_commands:
    jmp not_84
    yes_84_0:
    mov ptr_, offset int_n
-   mov debug_command_name_ptr_, offset int_n
    call write_to_line
    call read_bytes
    ;--> The variable 'numberis-' in reformed byte: 'numberis-' <--
@@ -4692,7 +4156,6 @@ check_commands:
    jmp not_85
    yes_85_0:
    mov ptr_, offset into_n
-   mov debug_command_name_ptr_, offset into_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4709,7 +4172,6 @@ check_commands:
    jmp not_86
    yes_86_0:
    mov ptr_, offset iret_n
-   mov debug_command_name_ptr_, offset iret_n
    call write_to_line
    call read_bytes
    call end_line
@@ -4739,7 +4201,6 @@ check_commands:
    jmp not_87
    yes_87_2:
    mov ptr_, offset rol_n
-   mov debug_command_name_ptr_, offset rol_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -4791,7 +4252,6 @@ check_commands:
    jmp not_88
    yes_88_2:
    mov ptr_, offset ror_n
-   mov debug_command_name_ptr_, offset ror_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -4843,7 +4303,6 @@ check_commands:
    jmp not_89
    yes_89_2:
    mov ptr_, offset rcl_n
-   mov debug_command_name_ptr_, offset rcl_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -4895,7 +4354,6 @@ check_commands:
    jmp not_90
    yes_90_2:
    mov ptr_, offset rcr_n
-   mov debug_command_name_ptr_, offset rcr_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -4947,7 +4405,6 @@ check_commands:
    jmp not_91
    yes_91_2:
    mov ptr_, offset shl_n
-   mov debug_command_name_ptr_, offset shl_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -4999,7 +4456,6 @@ check_commands:
    jmp not_92
    yes_92_2:
    mov ptr_, offset shr_n
-   mov debug_command_name_ptr_, offset shr_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -5051,7 +4507,6 @@ check_commands:
    jmp not_93
    yes_93_2:
    mov ptr_, offset sar_n
-   mov debug_command_name_ptr_, offset sar_n
    call write_to_line
    ;--> The variable 'v' in reformed byte: '110100vw' <--
    mov al, byte_
@@ -5100,7 +4555,6 @@ check_commands:
    jmp not_94
    yes_94_2:
    mov ptr_, offset aam_n
-   mov debug_command_name_ptr_, offset aam_n
    call write_to_line
    call read_bytes
    call read_bytes
@@ -5128,7 +4582,6 @@ check_commands:
    jmp not_95
    yes_95_2:
    mov ptr_, offset aad_n
-   mov debug_command_name_ptr_, offset aad_n
    call write_to_line
    call read_bytes
    call read_bytes
@@ -5146,7 +4599,6 @@ check_commands:
    jmp not_96
    yes_96_0:
    mov ptr_, offset xlat_n
-   mov debug_command_name_ptr_, offset xlat_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5164,7 +4616,6 @@ check_commands:
    jmp not_97
    yes_97_0:
    mov ptr_, offset esc_n
-   mov debug_command_name_ptr_, offset esc_n
    call write_to_line
    ;--> The variable 'xxx' in reformed byte: '11011xxx' <--
    ;--> Failed to find. Missing global variable. <--
@@ -5197,11 +4648,9 @@ check_commands:
    jmp not_98
    yes_98_0:
    mov ptr_, offset loopne_n
-   mov debug_command_name_ptr_, offset loopne_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_98:
@@ -5217,11 +4666,9 @@ check_commands:
    jmp not_99
    yes_99_0:
    mov ptr_, offset loope_n
-   mov debug_command_name_ptr_, offset loope_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_99:
@@ -5237,11 +4684,9 @@ check_commands:
    jmp not_100
    yes_100_0:
    mov ptr_, offset loop_n
-   mov debug_command_name_ptr_, offset loop_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_100:
@@ -5257,11 +4702,9 @@ check_commands:
    jmp not_101
    yes_101_0:
    mov ptr_, offset jcxz_n
-   mov debug_command_name_ptr_, offset jcxz_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_101:
@@ -5278,7 +4721,6 @@ check_commands:
    jmp not_102
    yes_102_0:
    mov ptr_, offset in_n
-   mov debug_command_name_ptr_, offset in_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1110010w' <--
    mov al, byte_
@@ -5303,7 +4745,6 @@ check_commands:
    jmp not_103
    yes_103_0:
    mov ptr_, offset out_n
-   mov debug_command_name_ptr_, offset out_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1110011w' <--
    mov al, byte_
@@ -5327,7 +4768,6 @@ check_commands:
    jmp not_104
    yes_104_0:
    mov ptr_, offset call_n
-   mov debug_command_name_ptr_, offset call_n
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
@@ -5347,11 +4787,9 @@ check_commands:
    jmp not_105
    yes_105_0:
    mov ptr_, offset jmp_n
-   mov debug_command_name_ptr_, offset jmp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'pjb-' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_pjb_pvb
    call end_line
    quick_exit_105:
@@ -5367,12 +4805,10 @@ check_commands:
    jmp not_106
    yes_106_0:
    mov ptr_, offset jmp_n
-   mov debug_command_name_ptr_, offset jmp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'avb-' cannot be decoded by this function <--
    ;--> The variable 'srjb' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_ajb_avb_srjb_srvb
    call end_line
    quick_exit_106:
@@ -5388,11 +4824,9 @@ check_commands:
    jmp not_107
    yes_107_0:
    mov ptr_, offset jmp_n
-   mov debug_command_name_ptr_, offset jmp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_poslinkis
    call end_line
    quick_exit_107:
@@ -5466,7 +4900,6 @@ check_commands:
    jmp not_110
    yes_110_0:
    mov ptr_, offset lock_n
-   mov debug_command_name_ptr_, offset lock_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5483,7 +4916,6 @@ check_commands:
    jmp not_111
    yes_111_0:
    mov ptr_, offset repnz_n
-   mov debug_command_name_ptr_, offset repnz_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5500,7 +4932,6 @@ check_commands:
    jmp not_112
    yes_112_0:
    mov ptr_, offset rep_n
-   mov debug_command_name_ptr_, offset rep_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5517,7 +4948,6 @@ check_commands:
    jmp not_113
    yes_113_0:
    mov ptr_, offset hlt_n
-   mov debug_command_name_ptr_, offset hlt_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5534,7 +4964,6 @@ check_commands:
    jmp not_114
    yes_114_0:
    mov ptr_, offset cmc_n
-   mov debug_command_name_ptr_, offset cmc_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5564,7 +4993,6 @@ check_commands:
    jmp not_115
    yes_115_2:
    mov ptr_, offset test_n
-   mov debug_command_name_ptr_, offset test_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5612,7 +5040,6 @@ check_commands:
    jmp not_116
    yes_116_2:
    mov ptr_, offset not_n
-   mov debug_command_name_ptr_, offset not_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5659,7 +5086,6 @@ check_commands:
    jmp not_117
    yes_117_2:
    mov ptr_, offset neg_n
-   mov debug_command_name_ptr_, offset neg_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5706,7 +5132,6 @@ check_commands:
    jmp not_118
    yes_118_2:
    mov ptr_, offset mul_n
-   mov debug_command_name_ptr_, offset mul_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5753,7 +5178,6 @@ check_commands:
    jmp not_119
    yes_119_2:
    mov ptr_, offset imul_n
-   mov debug_command_name_ptr_, offset imul_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5800,7 +5224,6 @@ check_commands:
    jmp not_120
    yes_120_2:
    mov ptr_, offset div_n
-   mov debug_command_name_ptr_, offset div_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5847,7 +5270,6 @@ check_commands:
    jmp not_121
    yes_121_2:
    mov ptr_, offset idiv_n
-   mov debug_command_name_ptr_, offset idiv_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111011w' <--
    mov al, byte_
@@ -5881,7 +5303,6 @@ check_commands:
    jmp not_122
    yes_122_0:
    mov ptr_, offset clc_n
-   mov debug_command_name_ptr_, offset clc_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5898,7 +5319,6 @@ check_commands:
    jmp not_123
    yes_123_0:
    mov ptr_, offset stc_n
-   mov debug_command_name_ptr_, offset stc_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5915,7 +5335,6 @@ check_commands:
    jmp not_124
    yes_124_0:
    mov ptr_, offset cli_n
-   mov debug_command_name_ptr_, offset cli_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5932,7 +5351,6 @@ check_commands:
    jmp not_125
    yes_125_0:
    mov ptr_, offset sti_n
-   mov debug_command_name_ptr_, offset sti_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5949,7 +5367,6 @@ check_commands:
    jmp not_126
    yes_126_0:
    mov ptr_, offset cld_n
-   mov debug_command_name_ptr_, offset cld_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5966,7 +5383,6 @@ check_commands:
    jmp not_127
    yes_127_0:
    mov ptr_, offset std_n
-   mov debug_command_name_ptr_, offset std_n
    call write_to_line
    call read_bytes
    call end_line
@@ -5996,7 +5412,6 @@ check_commands:
    jmp not_128
    yes_128_2:
    mov ptr_, offset inc_n
-   mov debug_command_name_ptr_, offset inc_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111111w' <--
    mov al, byte_
@@ -6043,7 +5458,6 @@ check_commands:
    jmp not_129
    yes_129_2:
    mov ptr_, offset dec_n
-   mov debug_command_name_ptr_, offset dec_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1111111w' <--
    mov al, byte_
@@ -6089,7 +5503,6 @@ check_commands:
    jmp not_130
    yes_130_2:
    mov ptr_, offset call_n
-   mov debug_command_name_ptr_, offset call_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md010r/m' <--
@@ -6131,7 +5544,6 @@ check_commands:
    jmp not_131
    yes_131_2:
    mov ptr_, offset call_n
-   mov debug_command_name_ptr_, offset call_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md011r/m' <--
@@ -6173,7 +5585,6 @@ check_commands:
    jmp not_132
    yes_132_2:
    mov ptr_, offset jmp_n
-   mov debug_command_name_ptr_, offset jmp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md100r/m' <--
@@ -6187,7 +5598,6 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_132:
@@ -6215,7 +5625,6 @@ check_commands:
    jmp not_133
    yes_133_2:
    mov ptr_, offset jmp_n
-   mov debug_command_name_ptr_, offset jmp_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md101r/m' <--
@@ -6229,7 +5638,6 @@ check_commands:
    mov r_m_, al
    call read_bytes
    ;--> The variable 'poslinki' cannot be decoded by this function <--
-   call jump_func
    call CONVERT_mod_r_m_poslinkis
    call end_line
    quick_exit_133:
@@ -6257,7 +5665,6 @@ check_commands:
    jmp not_134
    yes_134_2:
    mov ptr_, offset push_n
-   mov debug_command_name_ptr_, offset push_n
    call write_to_line
    call read_bytes
    ;--> The variable 'md' in reformed byte: 'md110r/m' <--
@@ -6299,7 +5706,6 @@ check_commands:
    jmp not_135
    yes_135_2:
    mov ptr_, offset shr_n
-   mov debug_command_name_ptr_, offset shr_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1100000w' <--
    mov al, byte_
@@ -6346,7 +5752,6 @@ check_commands:
    jmp not_136
    yes_136_2:
    mov ptr_, offset shl_n
-   mov debug_command_name_ptr_, offset shl_n
    call write_to_line
    ;--> The variable 'w' in reformed byte: '1100000w' <--
    mov al, byte_
@@ -6377,16 +5782,20 @@ check_commands:
    call write_to_line
    call end_line
    call read_bytes
+
+
+    mov ax, 4000h
+    xor cx, cx
+    mov cl, 1
+    mov bx, 1
+    mov dx, offset byte_
+    int 21h
+
+
    quick_exit_137:
-   
+
 RET
 
 
 end start
 
-;mov ax, 4000h
-;    xor cx, cx
-;    mov cl, 1
-;    mov bx, 1
-;    mov dx, offset byte_
-;    int 21h

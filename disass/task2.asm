@@ -1,7 +1,24 @@
-.model tiny
+.model small
+
+.stack 100h
+.data
+ a_little_help db 24h
+    fn_in db 127 dup(?)      ; input file names
+    msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
+    fh_in dw 0               ; used to save file handles
+                             
+    buff db 200h dup(?)      
+    numbers_in_binary db 10 dup(0)     ; symb, words, lowC, highC
+    output_symbols db "Symboliu yra: ", 24h
+    output_words db "Zodziu yra: ", 24h
+    output_low db "Mazuju raidziu yra: ", 24h
+    output_high db "Didziuju raidziu yra: ", 24h   
+    endl db 0dh, 0ah, 24h
+    limit_reached db 0       ; stop reading if the number has reached its maximum value
+    limit_reached_msg db "Pasiektas skaiciu maksimumas!", 24h
+    
+    number_in_ASCII db 0, 255 dup(?)
 .code
-.386                        ; Just to show at what position it has to be
-ORG 0100h
 
 start:
     
@@ -363,21 +380,7 @@ search_buff:                 ; search for information about the elements (amount
     pop bx    
     RET
 
-fn_in db 127 dup(?)      ; input file names
-    msg db "Error!", 24h     ; numbers_in_binary error message if something went wrong
-    fh_in dw 0               ; used to save file handles
-                             
-    buff db 200h dup(?)      
-    numbers_in_binary db 10 dup(0)     ; symb, words, lowC, highC
-    output_symbols db "Symboliu yra: ", 24h
-    output_words db "Zodziu yra: ", 24h
-    output_low db "Mazuju raidziu yra: ", 24h
-    output_high db "Didziuju raidziu yra: ", 24h   
-    endl db 0dh, 0ah, 24h
-    limit_reached db 0       ; stop reading if the number has reached its maximum value
-    limit_reached_msg db "Pasiektas skaiciu maksimumas!", 24h
-    
-    number_in_ASCII db 0, 255 dup(?)
+   
 
 
 end start

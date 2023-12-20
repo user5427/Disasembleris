@@ -13,10 +13,13 @@
     fatal_error_msg db "Fatal error! The program was unable to process the file!", 24h
     fh_in dw 0               ; used to save file handles
     fh_out dw 0
-    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
+    owner_msg db "Disassembleris. Studentai, kurie parase sia amazing programa: Arnas, Tadas. Atnaujino Tadas.", 0dh, 0ah, "Disassembleris. Iveskite ivesties ir isvesties failus atskirtus tarpais argumente.", 24h
     help_called db 0
     test_msg db "test!", 24h
-    done_msg db "Done", 24h
+    done_msg db "Done", 0dh, 0ah, 24h
+    decode_msg db "Decoding finished!", 0dh, 0ah, "Now linking commands...", 0dh, 0ah, 24h
+    data_msg db "Processing data...", 0dh, 0ah, 24h
+    linking_msg db "Processing finished!", 24h
 
     buff db 200 dup(?)      ; the buffer which will be used to read the input file later
     read_symbols db 0
@@ -73,128 +76,128 @@
 
     count_segment dw 100h
     add_cs_bool db 0
-
 ;lots_of_names:
-    wtf_n db "unknown", 24h   
-    mov_n db "MOV", 24h   
-    nop_n db "NOP", 24h
-    add_n db "ADD", 24h
-    push_n db "PUSH", 24h
-    pop_n db "POP", 24h
-    or_n db "OR", 24h
-    adc_n db "ADC", 24h
-    sbb_n db "SBB", 24h
-    and_n db "AND", 24h
-    daa_n db "DAA", 24h
-    sub_n db "SUB", 24h
-    das_n db "DAS", 24h
-    xor_n db "XOR", 24h
-    aaa_n db "AAA", 24h
-    cmp_n db "CMP", 24h
-    aas_n db "AAS", 24h
-    inc_n db "INC", 24h
-    dec_n db "DEC", 24h
-    jo_n db "JO", 24h
-    jno_n db "JNO", 24h
-    jnae_n db "JNAE", 24h
-    jb_n db "JB", 24h
-    jc_n db "JC", 24h
-    jae_n db "JAE", 24h
-    jnb_n db "JNB", 24h
-    jnc_n db "JNC", 24h
-    je_n db "JE", 24h
-    jz_n db "JZ", 24h
-    jne_n db "JNE", 24h
-    jnz_n db "JNZ", 24h
-    jbe_n db "JBE", 24h
-    jna_n db "JNA", 24h
-    ja_n db "JA", 24h
-    jnbe_n db "JNBE", 24h
-    js_n db "JS", 24h
-    jns_n db "JNS", 24h
-    jp_n db "JP", 24h
-    jpe_n db "JPE", 24h
-    jnp_n db "JNP", 24h
-    jpo_n db "JPO", 24h
-    jl_n db "JL", 24h
-    jnge_n db "JNGE", 24h
-    jge_n db "JGE", 24h
-    jnl_n db "JNL", 24h
-    jle_n db "JLE", 24h
-    jng_n db "JNG", 24h
-    jg_n db "JG", 24h
-    jnle_n db "JNLE", 24h
-    test_n db "TEST", 24h
-    xchg_n db "XCHG", 24h
-    lea_n db "LEA", 24h
-    cbv_n db "CBV", 24h
-    cwd_n db "CWD", 24h
-    call_n db "CALL", 24h
-    wait_n db "WAIT", 24h
-    pushf_n db "PUSHF", 24h
-    popf_n db "POPF", 24h
-    sahf_n db "SAHF", 24h
-    lahf_n db "LAHF", 24h
-    movsb_n db "MOVSB", 24h
-    movsw_n db "MOVSW", 24h
-    cmpsb_n db "CMPSB", 24h
-    cmpsw_n db "CMPSW", 24h
-    stosb_n db "STOSB", 24h
-    stosw_n db "STOSW", 24h
-    lodsb_n db "LODSB", 24h
-    lodsw_n db "LODSW", 24h
-    scasb_n db "SCASB", 24h
-    scasw_n db "SCASW", 24h
-    ret_n db "RET", 24h
-    retn_n db "RETN", 24h
-    les_n db "LES", 24h
-    lds_n db "LDS", 24h
-    retf_n db "RETF", 24h
-    int_3_n db "INT 3", 24h
-    int_n db "INT", 24h
-    into_n db "INTO", 24h
-    iret_n db "IRET", 24h
-    rol_n db "ROL", 24h
-    ror_n db "ROR", 24h
-    rcl_n db "RCL", 24h
-    rcr_n db "RCR", 24h
-    shl_n db "SHL", 24h
-    sal_n db "SAL", 24h
-    shr_n db "SHR", 24h
-    sar_n db "SAR", 24h
-    aam_n db "AAM", 24h
-    aad_n db "AAD", 24h
-    xlat_n db "XLAT", 24h
-    esc_n db "ESC", 24h
-    loopne_n db "LOOPNE", 24h
-    loopnz_n db "LOOPNZ", 24h
-    loope_n db "LOOPE", 24h
-    loopz_n db "LOOPZ", 24h
-    loop_n db "LOOP", 24h
-    jcxz_n db "JCXZ", 24h
-    in_n db "IN", 24h
-    out_n db "OUT", 24h
-    jmp_n db "JMP", 24h
-    lock_n db "LOCK", 24h
-    repnz_n db "REPNZ", 24h
-    repne_n db "REPNE", 24h
-    rep_n db "REP", 24h
-    repz_n db "REPZ", 24h
-    repe_n db "REPE", 24h
-    hlt_n db "HLT", 24h
-    cmc_n db "CMC", 24h
-    not_n db "NOT", 24h
-    neg_n db "NEG", 24h
-    mul_n db "MUL", 24h
-    imul_n db "IMUL", 24h
-    div_n db "DIV", 24h
-    idiv_n db "IDIV", 24h
-    clc_n db "CLC", 24h
-    stc_n db "STC", 24h
-    cli_n db "CLI", 24h
-    sti_n db "STI", 24h
-    cld_n db "CLD", 24h
-    std_n db "STD", 24h
+    unknown_n db "Unknown", 24h
+    wtf_n db "ES...", 24h   
+    mov_n db "MOV ", 24h   
+    nop_n db "NOP ", 24h
+    add_n db "ADD ", 24h
+    push_n db "PUSH ", 24h
+    pop_n db "POP ", 24h
+    or_n db "OR ", 24h
+    adc_n db "ADC ", 24h
+    sbb_n db "SBB ", 24h
+    and_n db "AND ", 24h
+    daa_n db "DAA ", 24h
+    sub_n db "SUB ", 24h
+    das_n db "DAS ", 24h
+    xor_n db "XOR ", 24h
+    aaa_n db "AAA ", 24h
+    cmp_n db "CMP ", 24h
+    aas_n db "AAS ", 24h
+    inc_n db "INC ", 24h
+    dec_n db "DEC ", 24h
+    jo_n db "JO ", 24h
+    jno_n db "JNO ", 24h
+    jnae_n db "JNAE ", 24h
+    jb_n db "JB ", 24h
+    jc_n db "JC ", 24h
+    jae_n db "JAE ", 24h
+    jnb_n db "JNB ", 24h
+    jnc_n db "JNC ", 24h
+    je_n db "JE ", 24h
+    jz_n db "JZ ", 24h
+    jne_n db "JNE ", 24h
+    jnz_n db "JNZ ", 24h
+    jbe_n db "JBE ", 24h
+    jna_n db "JNA ", 24h
+    ja_n db "JA ", 24h
+    jnbe_n db "JNBE ", 24h
+    js_n db "JS ", 24h
+    jns_n db "JNS ", 24h
+    jp_n db "JP ", 24h
+    jpe_n db "JPE ", 24h
+    jnp_n db "JNP ", 24h
+    jpo_n db "JPO ", 24h
+    jl_n db "JL ", 24h
+    jnge_n db "JNGE ", 24h
+    jge_n db "JGE ", 24h
+    jnl_n db "JNL ", 24h
+    jle_n db "JLE ", 24h
+    jng_n db "JNG ", 24h
+    jg_n db "JG ", 24h
+    jnle_n db "JNLE ", 24h
+    test_n db "TEST ", 24h
+    xchg_n db "XCHG ", 24h
+    lea_n db "LEA ", 24h
+    cbv_n db "CBV ", 24h
+    cwd_n db "CWD ", 24h
+    call_n db "CALL ", 24h
+    wait_n db "WAIT ", 24h
+    pushf_n db "PUSHF ", 24h
+    popf_n db "POPF ", 24h
+    sahf_n db "SAHF ", 24h
+    lahf_n db "LAHF ", 24h
+    movsb_n db "MOVSB ", 24h
+    movsw_n db "MOVSW ", 24h
+    cmpsb_n db "CMPSB ", 24h
+    cmpsw_n db "CMPSW ", 24h
+    stosb_n db "STOSB ", 24h
+    stosw_n db "STOSW ", 24h
+    lodsb_n db "LODSB ", 24h
+    lodsw_n db "LODSW ", 24h
+    scasb_n db "SCASB ", 24h
+    scasw_n db "SCASW ", 24h
+    ret_n db "RET ", 24h
+    retn_n db "RETN ", 24h
+    les_n db "LES ", 24h
+    lds_n db "LDS ", 24h
+    retf_n db "RETF ", 24h
+    int_3_n db "INT 3 ", 24h
+    int_n db "INT ", 24h
+    into_n db "INTO ", 24h
+    iret_n db "IRET ", 24h
+    rol_n db "ROL ", 24h
+    ror_n db "ROR ", 24h
+    rcl_n db "RCL ", 24h
+    rcr_n db "RCR ", 24h
+    shl_n db "SHL ", 24h
+    sal_n db "SAL ", 24h
+    shr_n db "SHR ", 24h
+    sar_n db "SAR ", 24h
+    aam_n db "AAM ", 24h
+    aad_n db "AAD ", 24h
+    xlat_n db "XLAT ", 24h
+    esc_n db "ESC ", 24h
+    loopne_n db "LOOPNE ", 24h
+    loopnz_n db "LOOPNZ ", 24h
+    loope_n db "LOOPE ", 24h
+    loopz_n db "LOOPZ ", 24h
+    loop_n db "LOOP ", 24h
+    jcxz_n db "JCXZ ", 24h
+    in_n db "IN ", 24h
+    out_n db "OUT ", 24h
+    jmp_n db "JMP ", 24h
+    lock_n db "LOCK ", 24h
+    repnz_n db "REPNZ ", 24h
+    repne_n db "REPNE ", 24h
+    rep_n db "REP ", 24h
+    repz_n db "REPZ ", 24h
+    repe_n db "REPE ", 24h
+    hlt_n db "HLT ", 24h
+    cmc_n db "CMC ", 24h
+    not_n db "NOT ", 24h
+    neg_n db "NEG ", 24h
+    mul_n db "MUL ", 24h
+    imul_n db "IMUL ", 24h
+    div_n db "DIV ", 24h
+    idiv_n db "IDIV ", 24h
+    clc_n db "CLC ", 24h
+    stc_n db "STC ", 24h
+    cli_n db "CLI ", 24h
+    sti_n db "STI ", 24h
+    cld_n db "CLD ", 24h
+    std_n db "STD ", 24h
 
     ; registrai
     ax_n db "AX", 24h
@@ -241,6 +244,8 @@ segment_line db " ", 24h
     fh_tags dw 0
     out_ptr_ dw 0 
     is_address db 0
+    is_data db 0
+    data_adr_number dw 0
     use_tags db 0
     temp_line db 20 dup(?)
     ind1 dw 0
@@ -250,7 +255,24 @@ segment_line db " ", 24h
     fh_sort dw 0
 
     wait_ db 1
+    temp_no_debug db 0
 
+    com_file_start db ".MODEL tiny", 0dh, 0ah, ".CODE", 0dh, 0ah, ".386", 0dh, 0ah, "ORG 0100h", 0dh, 0ah, "start:", 24h
+    com_file_end db "END start", 24h
+
+    exe_file_start db ".model small ", 0dh, 0ah, ".stack 100h ", 0dh, 0ah, ".code ", 0dh, 0ah, "start:", 24h
+    exe_file_end db 0dh, 0ah, "end start", 24h
+
+    data_decoding db 0
+    data_here db 0
+    data_tag_ptr dw 0
+    data_tags db " db ", 24h
+    data_line db ".data", 24h
+    data_byte_ptr db "byte ptr ", 24h
+    data_label_placed db 0
+    previously_ret db 0
+    si_di_reg db 0
+    si_di_spec_word db "offset ", 24h
 .code
 
 start:
@@ -270,48 +292,85 @@ start:
     jne print_error_msg
     com_file:
 
-
+    ; /* decoding
 
     call open_input_file 
     call open_output_file
     mov scan_only_commands, 1
     call loop_over_bytes     
+    mov ah, 9h
+    mov dx, offset decode_msg
+    int 21h
     mov scan_only_commands, 0
     mov ax, fh_in
     mov ptr_, ax
     call close_file
     call open_input_file
-    call reset_values 
+    call reset_values
     ;call sort_file
 
-    ;mov ind1, 1
-    ;mov ptr_, offset wtf_n
-    ;mov tags_offset_, 1
-    ;call read_tags_line
+    ; */
 
-    ;mov ind1, 7
-    ;mov ptr_, offset owner_msg
-    
-    ;mov tags_offset_, 7
-   ;call write_tags_line
-    ;call read_tags_line
+    jmp to_jump
+    end_work:
+    jmp end_work2
+    to_jump:
 
-    ;call swap_lines
+    jmp to_print_msg
+    print_error_msg:
+    jmp print_error_msg2
+    to_print_msg:
 
+    ; // the start of the file
+    cmp is_com, 1
+    jne its_exe
+    mov ptr_, offset com_file_start
+    call write_to_line
+    jmp skip_exe
+    its_exe:
+    mov ptr_, offset exe_file_start
+    call write_to_line
+    skip_exe:
+    mov temp_no_debug, 1
+    call end_line
+    mov temp_no_debug, 0
 
-    ;call find_labels
-    
+    ; // the middle of the file
     call loop_over_bytes
 
+    ; // the end of the file
+    mov use_debug, 0
+    mov temp_no_debug, 1
+    call reset_debug_line
+    mov debug_line_len, 0
+    cmp is_com, 1
+    jne its_exe2
+    mov ptr_, offset com_file_end
+    call write_to_line
+    mov temp_no_debug, 1
+    call end_line
+    jmp skip_exe2
+    its_exe2:
+    mov ptr_, offset exe_file_end
+    call write_to_line
+    mov temp_no_debug, 1
+    call end_line
+    skip_exe2:
+    mov temp_no_debug, 1
+    call force_write_to_file
 
-    jmp end_work
-    print_error_msg:
+    mov ah, 9h
+    mov dx, offset linking_msg
+    int 21h
+
+    jmp end_work2
+    print_error_msg2:
     xor ax, ax
     mov ah, 9
     mov dx, offset error_msg
     int 21h
 
-    end_work:
+    end_work2:
     mov ax, 4c00h
     int 21h 
 
@@ -452,7 +511,6 @@ loop_over_bytes:
     skip_skipping_initial_section:
     mov first_time_reading, 0
 
-
     loop_lines:                ; do this until the end of file
     cmp first_byte_available, 0
     je exit_byte_loop
@@ -462,27 +520,122 @@ loop_over_bytes:
     je no_spec_data
     cmp wait_, 1
     je no_spec_data
-    ;call find_labels
+    call find_labels
     mov wait_, 1
     jmp loop_lines
     no_spec_data:
-
     mov wait_, 0
 
-    call check_commands   ; check the command
+    call data_detection_func    ;
+    cmp data_decoding, 1
+    je data_begin
+    call check_commands         ; check the command
 
     ; reset saved bytes for debug information
     mov bytes_in_line_count, 0
-    jmp loop_lines
+    loop loop_lines
     exit_byte_loop:
-
-    call force_write_to_file
-    RET
-
-
-read_tag_file:
+    
+    jmp exit_data_loop
 
 
+
+
+
+    data_begin:
+    xor ax, ax
+    mov ah, 9
+    mov dx, offset data_msg
+    int 21h
+    mov line_length, 0
+    mov temp_no_debug, 1
+    mov ptr_, offset data_line
+    call write_to_line
+    call end_line
+
+    loop_data:                ; do this until the end of file
+    mov bytes_in_line_count, 0 ; for debug so it does not overfil
+    cmp first_byte_available, 0
+    je exit_data_loop
+
+    call print_debug
+    call find_labels
+    cmp data_here, 1
+    jne skip_label
+    mov temp_no_debug, 1
+    call end_line
+    mov ax, data_tag_ptr
+    mov ptr_, ax
+    call write_to_line
+    mov ptr_, offset data_tags
+    call write_to_line
+    mov data_here, 0
+    mov data_label_placed, 1
+    skip_label:
+
+    mov al, byte_
+    mov binary_number, al
+    cmp line_length, 40
+    jna skip_ending_line
+    mov temp_no_debug, 1
+    call end_line
+    skip_ending_line:
+
+    cmp data_label_placed, 1
+    jne skip_data_nums
+    call number_to_hex
+    call add_comma_line
+    skip_data_nums:
+
+    call read_bytes
+    loop loop_data
+
+    exit_data_loop:
+RET
+
+
+data_detection_func:
+    cmp scan_only_commands, 1
+    je skip_reseting_data
+    cmp data_decoding, 1
+    je skip_reseting_data
+    cmp byte_, 0
+    jne skip_data_detection
+
+    cmp next_byte_available, 1
+    jne skip_data_detection
+    ; // data detection is so fun.
+    cmp next_byte, 0
+    jne skip_data_detection
+    ;mov ax, count_segment
+    ;add ax, 2
+    ;shl al, 4
+    ;shr al, 4
+    ;cmp al, 0
+    ;jne skip_data_detection
+    cmp previously_ret, 1
+    jne skip_data_detection
+    ; // oh yes this may indicate that program reached data segment, this will be so fun!
+    mov data_decoding, 1
+    ; skip until data segment
+    loop_this_thing:
+    mov ax, count_segment
+    shl al, 4
+    shr al, 4
+    cmp al, 0
+    je skipping_done
+    call read_bytes
+    jmp loop_this_thing
+    skipping_done:
+    
+    mov count_segment, 0
+    jmp skip_reseting_data
+    ; // quit doing everything and go to data decoding!
+    skip_data_detection:
+    mov previously_ret, 0
+    mov data_decoding, 0
+    skip_reseting_data:
+RET
 
 error:                 
     xor ax, ax
@@ -1048,6 +1201,8 @@ end_line: ; add endl to line and output line contents to the write buffer
 
     add line_length, 2
 
+    cmp temp_no_debug, 1
+    je skip_temp_debug
     cmp print_debug_msg, 1
     jne skip_double_write
     call convert_bytes_debug
@@ -1060,6 +1215,9 @@ end_line: ; add endl to line and output line contents to the write buffer
     mov line_ptr_len, 40
     call write_to_buff
     mov use_line_ptr, 0
+    jmp skip_double_write
+    skip_temp_debug:
+    mov temp_no_debug, 0
     skip_double_write:
     call write_to_buff
 
@@ -1077,16 +1235,9 @@ force_write_to_file:
     push bx
     push cx
     push dx
-    cmp scan_only_commands, 1
-    je skip_force_write
     call end_line
     call write_to_file ; this function does not have push or pop so it can mess up register values
     mov write_index, 0
-    xor ax, ax
-    mov ah, 9h
-    mov dx, offset done_msg
-    int 21h
-    skip_force_write:
     pop dx
     pop cx
     pop bx
@@ -1289,6 +1440,13 @@ add_counter_segment:
     mov add_cs_bool, 1
     mov is_address, 1
     mov use_tags, 1
+    mov bx, offset line
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'a'
+    mov [bx], al
+    inc line_length
     RET
 convert_to_decimal:       ; takes number in the binary_number
     push ax
@@ -1467,6 +1625,7 @@ find_word_register: ; use register_index as input
     jne not_si
     mov ptr_, offset si_n
     call write_to_line
+    mov si_di_reg, 1
     jmp end_checking_registers
     not_si:
 
@@ -1474,6 +1633,7 @@ find_word_register: ; use register_index as input
     jne not_di
     mov ptr_, offset di_n
     call write_to_line
+    mov si_di_reg, 1
     jmp end_checking_registers
     not_di:
 
@@ -1622,11 +1782,25 @@ find_effective_address_registers: ; use register_index as input, and when there 
     jne second_column_BP_offset
     call reset_double_byte_number
     mov al, byte_
-    mov [byte ptr double_byte_number + 1], al
-    call read_bytes
-    mov al, byte_
     mov [byte ptr double_byte_number], al
     call read_bytes
+    mov al, byte_
+    mov [byte ptr double_byte_number + 1], al
+    call read_bytes
+    mov ptr_, offset data_byte_ptr
+    call write_to_line
+
+    ; FIXME
+    mov bx, offset line
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'd'
+    mov [bx], al
+    inc line_length
+    call data_func
+    ; FIXME
+    
     call double_byte_number_to_hex
     jmp end_checking_address_reg
 
@@ -1713,20 +1887,27 @@ find_poslinkis: ; use mod_ as input, uses read_bytes function
     call reset_double_byte_number
     xor bx, bx
     mov bl, byte_
-    cmp bl, 127
+    push bx
+    call read_bytes
+    pop bx
+
+    cmp bx, 127
     ja subtraction
     mov ax, count_segment
     add ax, bx
     jmp skip_this_sstufffff
     subtraction:
-    mov ax, count_segment
-    sub ax, bx
+    xor ax, ax
+    mov al, 255
+    sub al, bl
+    mov bx, count_segment
+    dec bx
+    sub bx, ax
+    mov ax, bx
     skip_this_sstufffff:
-    add ax, 1
     mov [byte ptr double_byte_number], al
     mov [byte ptr double_byte_number + 1], ah
     call double_byte_number_to_hex
-    call read_bytes
     jmp exit_poslinkis_function
     skip_format:
 
@@ -1792,7 +1973,6 @@ full_r_m_detector: ; takes mod_, w_ and register_index as input
                       
 ; functions used to decode variables and write text  to line 
 CONVERT_dw_mod_reg_r_m_poslinki:
-    call add_space_line
     push ax
         cmp d_, 0
         jne back
@@ -1820,7 +2000,6 @@ CONVERT_dw_mod_reg_r_m_poslinki:
 
 CONVERT_w_bojb_bovb:
     push ax
-    call add_space_line
     call reset_double_byte_number
 
     cmp w_, 1
@@ -1860,7 +2039,6 @@ CONVERT_sr: ; write IS, CS, SS, DS with one command
 
 CONVERT_reg: ; take reg_ variable and convert it to word sized register
     push ax
-    call add_space_line
     mov al, reg_
     mov register_index, al
     call find_word_register
@@ -1869,7 +2047,6 @@ CONVERT_reg: ; take reg_ variable and convert it to word sized register
 
 
 CONVERT_poslinkis: ; this one is one byte only!
-    call add_space_line
     mov mod_, 1 ; using the mod_, tell poslinkis function to only get one byte and convert it to hex number
     call find_poslinkis
     RET
@@ -1880,7 +2057,6 @@ CONVERT_sw_mod_r_m_poslinkis_bojb_bovb:
     call reset_double_byte_number
     mov al, r_m_
     mov register_index, al
-    call add_space_line
     call full_r_m_detector
     call add_comma_line
     call add_space_line
@@ -1908,7 +2084,6 @@ CONVERT_w_mod_reg_r_m_poslinkis:
     push ax
     mov al, reg_
     mov register_index, al
-    call add_space_line
     call full_reg_detector
     call add_comma_line
     call add_space_line
@@ -1920,7 +2095,6 @@ CONVERT_w_mod_reg_r_m_poslinkis:
 
 CONVERT_d_mod_sr_r_m_poslinkis:
     push ax
-    call add_space_line
     cmp d_, 1
     jne bac
     mov al, sr_
@@ -1946,7 +2120,6 @@ CONVERT_d_mod_sr_r_m_poslinkis:
 
 CONVERT_mod_reg_r_m_poslinkis: 
     push ax
-    call add_space_line
     mov al, reg_
     mov register_index, al
     call find_word_register
@@ -1961,7 +2134,6 @@ CONVERT_mod_reg_r_m_poslinkis:
 
 CONVERT_mod_r_m_poslinkis:  
     push ax
-    call add_space_line
     call full_reg_detector
     call add_space_line
     call add_comma_line
@@ -2025,7 +2197,6 @@ CONVERT_wreg_bojb_bovb_:
     mov al, reg_
     mov register_index, al
 
-    call add_space_line
     call full_reg_detector
     call add_comma_line
     call reset_double_byte_number
@@ -2034,21 +2205,40 @@ CONVERT_wreg_bojb_bovb_:
         mov al, byte_
         mov [byte ptr double_byte_number], al
         call read_bytes
-        call convert_to_decimal
+        call double_byte_number_to_hex
     ret
     wordc:
+        cmp si_di_reg, 1
+        jne skip_data_proc
+        mov ptr_, offset si_di_spec_word
+        call write_to_line
+        skip_data_proc:
+
         mov al, byte_
         mov [byte ptr double_byte_number], al
         call read_bytes
         mov al, byte_
         mov [byte ptr double_byte_number + 1], al
         call read_bytes
-        call convert_to_decimal
+        ; FIXME
+        cmp si_di_reg, 1
+        jne skip_data_proc2
+        mov bx, offset line
+        xor ax, ax
+        mov al, line_length
+        add bx, ax
+        mov al, 'd'
+        mov [bx], al
+        inc line_length
+        call data_func
+        mov si_di_reg, 0
+        skip_data_proc2:
+        ; FIXME
+        call double_byte_number_to_hex
     RET
 
 
 CONVERT_bojb_bovb:
-    call add_space_line
     call reset_double_byte_number
     mov al, byte_
     mov [byte ptr double_byte_number], al
@@ -2074,7 +2264,6 @@ SET_ignore_w_:
 
 CONVERT_w_mod_r_m_poslinkis_bojb_bovb:
     push ax
-    call add_space_line
     call reset_double_byte_number
     mov al, r_m_
     mov register_index, al
@@ -2105,14 +2294,12 @@ CONVERT_numeris:
     xor ax, ax
     mov al, com_num_
     mov binary_number, al
-    call add_space_line
     call number_to_hex
     pop ax
     RET
 
 
 CONVERT_vw_mod_r_m_poslinkis:
-    call add_space_line
     push ax
     mov al, v_
     cmp al, 0
@@ -2156,7 +2343,6 @@ CONVERT_xxx_mod_yyy_r_m_poslinkis:
 
 
 CONVERT_w_portas:
-    call add_space_line
     cmp w_, 1
     jne skip_ax2
     mov ptr_, offset ax_n
@@ -2188,7 +2374,6 @@ CONVERT_pjb_pvb:
 
 CONVERT_w_mod_r_m_poslinkis:
     push ax
-    call add_space_line
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
@@ -2197,7 +2382,6 @@ CONVERT_w_mod_r_m_poslinkis:
 
 CONVERT_shifters:
     push ax
-    call add_space_line
     mov al, r_m_
     mov register_index, al
     call full_r_m_detector
@@ -2211,7 +2395,6 @@ CONVERT_shifters:
     RET
 
 CONVERT_akumuliatorius:
-    call add_space_line
     cmp w_, 1
     jne skip_ax3
     mov ptr_, offset ax_n
@@ -2225,7 +2408,6 @@ CONVERT_akumuliatorius:
     RET
 
 CONVERT_reg_bef_adr:
-    call add_space_line
     cmp w_, 1
     jne skip_ax
     mov ptr_, offset ax_n
@@ -2242,7 +2424,6 @@ CONVERT_reg_bef_adr:
     RET
 
 CONVERT_reg_aft_adr:
-    call add_space_line
     call add_left_bracket
     call CONVERT_byte_byte
     call add_right_bracket
@@ -2261,6 +2442,7 @@ CONVERT_reg_aft_adr:
 open_any_file:  ;this will DELETE previous file; takes ptr_ as file name and out_ptr_ as output file name
 
     mov ax, 3c00h            ; open existing file in read mode only
+    mov al, 2
     mov dx, ptr_     ; return file handle to register AX
     xor cx, cx
     int 21h                  ; return: CF set on error, AX = error code. CR clear if successful, AX = file handle
@@ -2361,6 +2543,10 @@ RET
 
 
 find_labels:
+    push ax
+    push bx
+    push cx
+    push dx
     xor ax, ax
     mov ah, 42h
     mov al, 0
@@ -2368,8 +2554,6 @@ find_labels:
     xor cx, cx
     xor dx, dx
     int 21h
-
-    
 
     mov cx, tags_count
     loop_labels:
@@ -2380,33 +2564,80 @@ find_labels:
     mov bx, fh_tags             ; input file handle stored in ptr_
     mov cx, 10
     int 21h                  ;
+
+    cmp ax, 0
+    jne read_at_least_one_symbol
+    mov SI, offset tags_line
+    mov al, 10
+    mov [SI], al
+    inc SI
+    mov dx, SI         ; output buffer address stored in ptr_out_
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, fh_tags             ; input file handle stored in ptr_
+    mov cx, 9
+    int 21h
+    jmp read_successfully
+    read_at_least_one_symbol:
+    cmp ax, 1
+    jne read_successfully
+    mov SI, offset tags_line
+    inc SI
+    mov al, 10
+    mov [SI], al
+    inc SI
+    mov dx, SI         ; output buffer address stored in ptr_out_
+    mov ax, 3f00h            ; 3f - read file with handle, ax - subinstruction
+    mov bx, fh_tags             ; input file handle stored in ptr_
+    mov cx, 8
+    int 21h
+    read_successfully:
     
     JnC skip_error_58
     call big_error           ; if there are errors, stop the program
     skip_error_58:
     cmp ax, 0
-    je tags_file_end_reached
-
+    ;je tags_file_end_reached
+    ;call test_print
 
     mov SI, offset tags_line    
-    mov al, [SI + 1]
-    mov ah, [SI]
+    mov al, [si]
+    mov ah, [SI + 1]
     mov dx, count_segment
+    pop cx
     cmp ax, dx
     je found_tag
-    pop cx
     loop loop_labels
     jmp tags_file_end_reached
 
     found_tag:
+    mov al, [SI + 2]
+    cmp al, 'd'
+    je data_set
+    cmp data_decoding, 1
+    je tags_file_end_reached
+
+    add SI, 2
+    mov al, ':'
+    mov [SI + 6], al
+    mov al, 24h
+    mov [SI + 7], al
+    mov ptr_, SI
+    mov temp_no_debug, 1
+    call write_to_line
+    call end_line
+    
+    jmp tags_file_end_reached
+    data_set:
+    mov data_here, 1
     add SI, 2
     mov al, 24h
     mov [SI + 6], al
-    mov ptr_, SI
-    call write_to_line
-    call end_line
-
+    mov data_tag_ptr, SI
     tags_file_end_reached:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
 RET
 
 read_tags_line: ; tags_offset_, ptr_
@@ -2484,6 +2715,12 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     mov line_ptr_len, 0
     mov line_ptr_, offset tags_line
 
+    cmp is_data, 1
+    jne skip_data
+    mov ax, data_adr_number
+    mov temp_number, ax
+    skip_data:
+
     mov dx, temp_number
     mov SI, offset double_byte_number
     mov [SI + 1], dh 
@@ -2502,12 +2739,20 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
     jne its_jump
     mov al, 'a'
     mov [bx], al
-    jmp its_not_jump
+    inc line_ptr_len
+    jmp exit_letters
     its_jump:
+    cmp is_data, 1
+    je its_data
     mov al, 'j'
     mov [bx], al
-    its_not_jump:
     inc line_ptr_len
+    jmp exit_letters
+    its_data:
+    mov al, 'd'
+    mov [bx], al
+    inc line_ptr_len
+    exit_letters:
     
     mov add_cs_bool, 0
     call double_byte_number_to_hex
@@ -2536,7 +2781,23 @@ save_jump_tag:  ; takes is_address, double_byte_number, number_in_ASCII
 
 jump_func: ; only for check_commands
     mov use_tags, 1
+    mov is_data, 0
     mov is_address, 0
+    mov bx, offset line
+    xor ax, ax
+    mov al, line_length
+    add bx, ax
+    mov al, 'j'
+    mov [bx], al
+    inc line_length
+    RET
+
+data_func:
+    mov use_tags, 1
+    mov is_data, 1
+    mov is_address, 0
+    mov ax, temp_number
+    mov data_adr_number, ax
     RET
 check_commands:
    ;--> 0000 00dw mod reg r/m [poslinkis] -€“ ADD registras += registras/atmintis <--
@@ -4797,6 +5058,7 @@ check_commands:
    mov debug_command_name_ptr_, offset ret_n
    call write_to_line
    call read_bytes
+   mov previously_ret, 1
    call end_line
    quick_exit_77:
    jmp quick_exit_78
@@ -6683,7 +6945,8 @@ check_commands:
    
 
    ;call com_check_done
-   mov ptr_, offset wtf_n
+   mov ptr_, offset unknown_n
+   mov debug_command_name_ptr_, offset unknown_n
    call write_to_line
    call end_line
    call read_bytes
